@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "TMWRR.DiscordBot": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
