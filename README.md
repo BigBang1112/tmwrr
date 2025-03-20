@@ -6,13 +6,25 @@ The goal of this project is to **serve Trackmania record accomplishments acknowl
 
 TMWRR is designed to run seamlessly in case of master server shutdowns or any other long-term future problems. Anyone is also able to host their own instance.
 
+## Dependencies
+
+These are the main dependencies of TMWRR that make this possible.
+
+### ManiaAPI.NET
+
+TMWRR heavily depends on the ManiaAPI.NET v2 library capabilities, which does the abstraction behind the Trackmania internal/external web APIs.
+
+### Revalidate
+
+Used for replay validation. TBD
+
+### Discord.NET 4
+
+Version 4 is freshly developed and expected to be maintained for multiple years.
+
 ## Tests
 
 Major issue with WRR v2 is the lack of testability, which contributed to huge uncertainty. TMWRR aims to have testable code with very high coverage.
-
-## ManiaAPI.NET
-
-TMWRR heavily depends on the ManiaAPI.NET v2 library capabilities.
 
 ## Legacy WRR and TMWR v2
 
