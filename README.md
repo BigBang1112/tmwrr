@@ -2,7 +2,7 @@
 
 **TMWRR (Trackmania World Record Report)**, aka **WRR v3**, is a continuation of the WRR system from 2021-2022 and the TMWR Discord bot for the next years, supporting TM2020, TM2, and TMF TMX/Solo.
 
-Goal with this project is to **serve Trackmania record acomplishments acknowledged, unified, secured, and validated**. TMWR Discord bot then sends notifications about the new records through TMWRR webhooks, and provides command interface to explore those acomplishments on Discord. The TMWRR web API can be used to export data that was tracked over the years.
+The goal of this project is to **serve Trackmania record accomplishments acknowledged, unified, secured, and validated**. The TMWR Discord bot then sends notifications about the new records through TMWRR webhooks and provides a command interface to explore those accomplishments on Discord. The TMWRR web API can be used to export data that has been tracked over the years.
 
 TMWRR is designed to run seamlessly in case of master server shutdowns or any other long-term future problems. Anyone is also able to host their own instance.
 
