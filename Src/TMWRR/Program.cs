@@ -4,11 +4,16 @@ using Serilog.Sinks.SystemConsole.Themes;
 using Serilog;
 using Scalar.AspNetCore;
 using HealthChecks.UI.Client;
+using TMWRR.Services.TMF;
+using ManiaAPI.XmlRpc.TMUF;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddSingleton<MasterServerTMUF>();
+builder.Services.AddHostedService<DailyScoreCheckerHostedService>();
+
+builder.Services.AddHttpClient<MasterServerTMUF>();
 builder.Services.AddOpenApi();
 
 builder.Services.AddOutputCache();
