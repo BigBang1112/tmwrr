@@ -9,11 +9,18 @@ using ManiaAPI.XmlRpc.TMUF;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Host.UseDefaultServiceProvider(options =>
+{
+    options.ValidateScopes = true;
+    options.ValidateOnBuild = true;
+});
+
 // Add services to the container.
-builder.Services.AddSingleton<MasterServerTMUF>();
+builder.Services.AddScoped<MasterServerTMUF>();
+builder.Services.AddHttpClient<MasterServerTMUF>(client => client.BaseAddress = new(MasterServerTMUF.DefaultAddress));
+builder.Services.AddScoped<IScoreCheckerService, ScoreCheckerService>();
 builder.Services.AddHostedService<DailyScoreCheckerHostedService>();
 
-builder.Services.AddHttpClient<MasterServerTMUF>();
 builder.Services.AddOpenApi();
 
 builder.Services.AddOutputCache();
