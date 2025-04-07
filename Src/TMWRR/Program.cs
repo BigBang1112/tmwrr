@@ -5,7 +5,7 @@ using Serilog;
 using Scalar.AspNetCore;
 using HealthChecks.UI.Client;
 using TMWRR.Services.TMF;
-using ManiaAPI.XmlRpc.TMUF;
+using ManiaAPI.Xml.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,8 +16,7 @@ builder.Host.UseDefaultServiceProvider(options =>
 });
 
 // Add services to the container.
-builder.Services.AddScoped<MasterServerTMUF>();
-builder.Services.AddHttpClient<MasterServerTMUF>(client => client.BaseAddress = new(MasterServerTMUF.DefaultAddress));
+builder.Services.AddMasterServerTMUF().AddStandardResilienceHandler();
 builder.Services.AddScoped<IScoreCheckerService, ScoreCheckerService>();
 builder.Services.AddHostedService<DailyScoreCheckerHostedService>();
 
@@ -32,6 +31,8 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.AddHealthChecks();
+
+builder.Services.AddSingleton(TimeProvider.System);
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()

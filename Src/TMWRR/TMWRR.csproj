@@ -9,7 +9,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="ManiaAPI.XmlRpc" Version="2.0.0-beta5" />
+        <PackageReference Include="ManiaAPI.Xml" Version="2.2.0" />
+        <PackageReference Include="ManiaAPI.Xml.Extensions.Hosting" Version="2.2.0" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.3" />
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.2" />
         <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.3.efcore.9.0.0" />
@@ -28,11 +29,11 @@
         <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.11.1" />
         <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="1.11.0-beta.2" />
         <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.11.1" />
-        <PackageReference Include="Scalar.AspNetCore" Version="2.1.1" />
+        <PackageReference Include="Scalar.AspNetCore" Version="2.1.6" />
         <PackageReference Include="AspNetCore.HealthChecks.MySql" Version="9.0.0" />
         <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
         <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
-        <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.0" />
+        <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.1" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
         <PackageReference Include="Serilog.Sinks.OpenTelemetry" Version="4.1.1" />
         <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.3.0" />
@@ -40,6 +41,10 @@
 
     <ItemGroup>
         <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\TMWRR.DiscordReport\TMWRR.DiscordReport.csproj" />
     </ItemGroup>
 
 </Project>

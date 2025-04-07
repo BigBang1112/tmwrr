@@ -3,11 +3,15 @@
 internal sealed class DailyScoreCheckerHostedService : BackgroundService
 {
     private readonly IServiceProvider serviceProvider;
+    private readonly TimeProvider timeProvider;
     private readonly ILogger<DailyScoreCheckerHostedService> logger;
 
-    public DailyScoreCheckerHostedService(IServiceProvider serviceProvider, ILogger<DailyScoreCheckerHostedService> logger)
+    private static readonly TimeZoneInfo CEST = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+
+    public DailyScoreCheckerHostedService(IServiceProvider serviceProvider, TimeProvider timeProvider, ILogger<DailyScoreCheckerHostedService> logger)
     {
         this.serviceProvider = serviceProvider;
+        this.timeProvider = timeProvider;
         this.logger = logger;
     }
 
@@ -18,7 +22,7 @@ internal sealed class DailyScoreCheckerHostedService : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            var delay = nextCheckAt - DateTimeOffset.UtcNow;
+            var delay = nextCheckAt - timeProvider.GetUtcNow();
 
             if (delay < TimeSpan.Zero)
             {
@@ -55,18 +59,19 @@ internal sealed class DailyScoreCheckerHostedService : BackgroundService
 
         var scoreCheckerService = scope.ServiceProvider.GetRequiredService<IScoreCheckerService>();
 
-        var approxLastModifiedDateTime = await scoreCheckerService.CheckScoresAsync(cancellationToken);
+        var nextScoreNumber = await scoreCheckerService.CheckScoresAsync(number: null, cancellationToken);
 
-        if (approxLastModifiedDateTime is null)
+        var now = timeProvider.GetUtcNow();
+        var nextCheckTimeUtc = TimeSpan.FromHours(11) - CEST.GetUtcOffset(now);
+        var nextCheckDateTime = new DateTimeOffset(now.Date.Add(nextCheckTimeUtc), TimeSpan.Zero);
+
+        if (now.TimeOfDay > nextCheckTimeUtc)
         {
-            logger.LogError("No scores info retrieved for any campaign. This skips the check for today, and runs it again at 4am.");
-            return DateTime.Today.AddDays(1).AddHours(4);
+            nextCheckDateTime = nextCheckDateTime.AddDays(1);
         }
 
-        var nextCheckAt = approxLastModifiedDateTime.Value.AddDays(1).AddMinutes(10);
+        logger.LogInformation("Next check at {NextCheckAt}.", nextCheckDateTime);
 
-        logger.LogInformation("Next check at {NextCheckAt}.", nextCheckAt);
-
-        return nextCheckAt;
+        return nextCheckDateTime;
     }
 }

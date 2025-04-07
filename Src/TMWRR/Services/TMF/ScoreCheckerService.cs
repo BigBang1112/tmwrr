@@ -1,15 +1,18 @@
-﻿using ManiaAPI.XmlRpc.TMUF;
+﻿using ManiaAPI.Xml.TMUF;
+using Polly;
+using TMWRR.DiscordReport;
 
 namespace TMWRR.Services.TMF;
 
 internal interface IScoreCheckerService
 {
-    Task<DateTimeOffset?> CheckScoresAsync(CancellationToken cancellationToken);
+    Task<ScoresNumber> CheckScoresAsync(ScoresNumber? number, CancellationToken cancellationToken);
 }
 
 internal sealed class ScoreCheckerService : IScoreCheckerService
 {
-    private const string EarliestZone = "World|Japan";
+    private const int EarliestZoneId = 5;
+    private const int LatestZoneId = 109363;
 
     private static readonly string[] Campaigns = [
         "UnitedRace",
@@ -21,21 +24,85 @@ internal sealed class ScoreCheckerService : IScoreCheckerService
     ];
 
     private readonly MasterServerTMUF masterServer;
+    private readonly TimeProvider timeProvider;
     private readonly ILogger<ScoreCheckerService> logger;
 
-    public ScoreCheckerService(MasterServerTMUF masterServer, ILogger<ScoreCheckerService> logger)
+    private static Dictionary<string, DateTimeOffset> tempDb = [];
+
+    public ScoreCheckerService(MasterServerTMUF masterServer, TimeProvider timeProvider, ILogger<ScoreCheckerService> logger)
     {
         this.masterServer = masterServer;
+        this.timeProvider = timeProvider;
         this.logger = logger;
     }
 
-    public async Task<DateTimeOffset?> CheckScoresAsync(CancellationToken cancellationToken)
+    private static readonly ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
+        .AddTimeout(TimeSpan.FromHours(1))
+        .AddRetry(new Polly.Retry.RetryStrategyOptions
+        {
+            ShouldHandle = new PredicateBuilder().Handle<Exception>(), // temp
+            MaxRetryAttempts = int.MaxValue,
+            Delay = TimeSpan.FromSeconds(30),
+        })
+        .Build();
+
+    public async Task<ScoresNumber> CheckScoresAsync(ScoresNumber? number, CancellationToken cancellationToken)
     {
-        var approxLastModifiedDateTime = default(DateTimeOffset?);
+        ScoresNumber usedNumber;
 
-        var generalScoresInfo = await masterServer.FetchLatestGeneralScoresInfoAsync(EarliestZone, cancellationToken: cancellationToken);
+        if (number.HasValue)
+        {
+            usedNumber = number.Value;
+        }
+        else
+        {
+            var scoresInfo = await masterServer.FetchLatestGeneralScoresInfoAsync(LatestZoneId, cancellationToken: cancellationToken);
+            usedNumber = scoresInfo.Number;
+        }
 
-        if (generalScoresInfo is null)
+        var dateTimeTasks = new Dictionary<Task<DateTimeOffset>, string>
+        {
+            { pipeline.ExecuteAsync(
+                async token => ThrowIfOlderThanDay(await masterServer.FetchGeneralScoresDateTimeAsync(usedNumber, LatestZoneId, token)),
+                cancellationToken).AsTask(), "General" },
+            { pipeline.ExecuteAsync(
+                async token => ThrowIfOlderThanDay(await masterServer.FetchLadderScoresDateTimeAsync(usedNumber, LatestZoneId, token)),
+                cancellationToken).AsTask(), "Multi" }
+        };
+
+        foreach (var campaign in Campaigns)
+        {
+            dateTimeTasks.Add(pipeline.ExecuteAsync(
+                async token => ThrowIfOlderThanDay(await masterServer.FetchCampaignScoresDateTimeAsync(campaign, usedNumber, LatestZoneId, token)),
+                cancellationToken).AsTask(), campaign);
+        }
+
+        while (dateTimeTasks.Count > 0)
+        {
+            var task = await Task.WhenAny(dateTimeTasks.Keys);
+            var scoreType = dateTimeTasks[task];
+            dateTimeTasks.Remove(task);
+
+            var result = await task;
+
+            if (tempDb.TryGetValue(scoreType, out var lastDateTime) && lastDateTime == result)
+            {
+                logger.LogInformation("The scores for {ScoreType} are up to date.", scoreType);
+                continue;
+            }
+
+            tempDb[scoreType] = result;
+
+            logger.LogWarning("New! {ScoreType}: {DateTime}", scoreType, result);
+
+            //await Sample.ReportAsync($"{scoreType}: {result}");
+        }
+
+        return (ScoresNumber)(((int)usedNumber % 6) + 1);
+
+        //var generalScoresInfo = 
+
+        /*if (generalScoresInfo is null)
         {
             logger.LogWarning("Failed to retrieve info for general scores, because the scores file for this zone doesn't exist.");
             return null;
@@ -76,7 +143,7 @@ internal sealed class ScoreCheckerService : IScoreCheckerService
             await ProcessCampaignScoresAsync(campaign, campaignScores.Maps, campaignScores.MedalZones["World"], cancellationToken);
         }
 
-        return approxLastModifiedDateTime;
+        return approxLastModifiedDateTime;*/
     }
 
     private async Task ProcessGeneralScoresAsync(Leaderboard leaderboard, CancellationToken cancellationToken)
@@ -91,5 +158,14 @@ internal sealed class ScoreCheckerService : IScoreCheckerService
         CancellationToken cancellationToken)
     {
 
+    }
+
+    private DateTimeOffset ThrowIfOlderThanDay(DateTimeOffset dateTime)
+    {
+        if (dateTime < timeProvider.GetUtcNow().AddDays(-1))
+        {
+            throw new Exception("The scores are older than a day. The scores will be checked again.");
+        }
+        return dateTime;
     }
 }
