@@ -19,4 +19,4 @@ FROM mcr.microsoft.com/dotnet/runtime:9.0-alpine
 WORKDIR /app
 COPY --link --from=build /app .
 USER $APP_UID
-ENTRYPOINT ["./NationsConverterBot"]
+ENTRYPOINT ["./TMWRR"]
