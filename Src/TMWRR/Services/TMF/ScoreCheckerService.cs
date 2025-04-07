@@ -96,6 +96,7 @@ internal sealed class ScoreCheckerService : IScoreCheckerService
             while (dateTimeTasks.Count > 0)
             {
                 var task = await Task.WhenAny(dateTimeTasks.Keys);
+                var publishedAt = timeProvider.GetUtcNow();
                 var scoreType = dateTimeTasks[task];
                 dateTimeTasks.Remove(task);
 
@@ -130,7 +131,7 @@ internal sealed class ScoreCheckerService : IScoreCheckerService
                         break;
                 }
 
-                sb.AppendLine($"{scoreType}: {Discord.TimestampTag.FromDateTimeOffset(result)}");
+                sb.AppendLine($"{scoreType}: {Discord.TimestampTag.FromDateTimeOffset(result)} (available {Discord.TimestampTag.FromDateTimeOffset(publishedAt)})");
 
                 scoresDate = result.Date;
             }
