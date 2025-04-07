@@ -1,17 +1,18 @@
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
 ARG TARGETARCH
+ARG APPNAME=TMWRR
 WORKDIR /src
 
 # Copy project file and restore as distinct layers
-COPY --link Src/TMWR/*.csproj TMWR/
-COPY --link Src/TMWR.DiscordReport/*.csproj TMWR.DiscordReport/
-RUN dotnet restore -a $TARGETARCH TMWR/TMWR.csproj
+COPY --link Src/$APPNAME/*.csproj $APPNAME/
+COPY --link Src/$APPNAME.DiscordReport/*.csproj $APPNAME.DiscordReport/
+RUN dotnet restore -a $TARGETARCH $APPNAME/$APPNAME.csproj
 
 # Copy source code and publish app
-COPY --link Src/TMWR/ TMWR/
-COPY --link Src/TMWR.DiscordReport/ TMWR.DiscordReport/
+COPY --link Src/$APPNAME/ $APPNAME/
+COPY --link Src/$APPNAME.DiscordReport/ $APPNAME.DiscordReport/
 
-WORKDIR /src/TMWR
+WORKDIR /src/$APPNAME
 RUN dotnet publish -a $TARGETARCH --no-restore -o /app
 
 FROM mcr.microsoft.com/dotnet/runtime:9.0-alpine
