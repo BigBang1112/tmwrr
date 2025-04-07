@@ -15,7 +15,7 @@ COPY --link Src/$APPNAME.DiscordReport/ $APPNAME.DiscordReport/
 WORKDIR /src/$APPNAME
 RUN dotnet publish -a $TARGETARCH --no-restore -o /app
 
-FROM mcr.microsoft.com/dotnet/runtime:9.0-alpine
+FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine
 WORKDIR /app
 COPY --link --from=build /app .
 USER $APP_UID
