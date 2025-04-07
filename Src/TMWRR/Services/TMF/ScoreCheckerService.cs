@@ -100,7 +100,17 @@ internal sealed class ScoreCheckerService : IScoreCheckerService
                 var scoreType = dateTimeTasks[task];
                 dateTimeTasks.Remove(task);
 
-                var result = await task;
+                DateTimeOffset result;
+
+                try
+                {
+                    result = await task;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to fetch {ScoreType} scores.", scoreType);
+                    continue;
+                }
 
                 if (tempDb.TryGetValue(scoreType, out var lastDateTime) && lastDateTime == result)
                 {
