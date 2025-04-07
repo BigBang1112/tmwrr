@@ -1,6 +1,11 @@
 ﻿using ManiaAPI.Xml.TMUF;
-using Polly;
+using Microsoft.Extensions.Options;
+using Polly.Registry;
+using System.IO.Compression;
+using System.Text;
+using System.Text.Json;
 using TMWRR.DiscordReport;
+using TMWRR.Options;
 
 namespace TMWRR.Services.TMF;
 
@@ -25,26 +30,28 @@ internal sealed class ScoreCheckerService : IScoreCheckerService
 
     private readonly MasterServerTMUF masterServer;
     private readonly TimeProvider timeProvider;
+    private readonly ResiliencePipelineProvider<string> pipelineProvider;
+    private readonly TMUFOptions options;
+    private readonly IConfiguration config;
     private readonly ILogger<ScoreCheckerService> logger;
 
-    private static Dictionary<string, DateTimeOffset> tempDb = [];
+    private static readonly Dictionary<string, DateTimeOffset> tempDb = [];
 
-    public ScoreCheckerService(MasterServerTMUF masterServer, TimeProvider timeProvider, ILogger<ScoreCheckerService> logger)
+    public ScoreCheckerService(
+        MasterServerTMUF masterServer, 
+        TimeProvider timeProvider, 
+        ResiliencePipelineProvider<string> pipelineProvider,
+        IOptions<TMUFOptions> options, 
+        IConfiguration config, 
+        ILogger<ScoreCheckerService> logger)
     {
         this.masterServer = masterServer;
         this.timeProvider = timeProvider;
+        this.pipelineProvider = pipelineProvider;
+        this.options = options.Value;
+        this.config = config;
         this.logger = logger;
     }
-
-    private static readonly ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
-        .AddTimeout(TimeSpan.FromHours(1))
-        .AddRetry(new Polly.Retry.RetryStrategyOptions
-        {
-            ShouldHandle = new PredicateBuilder().Handle<Exception>(), // temp
-            MaxRetryAttempts = int.MaxValue,
-            Delay = TimeSpan.FromSeconds(30),
-        })
-        .Build();
 
     public async Task<ScoresNumber> CheckScoresAsync(ScoresNumber? number, CancellationToken cancellationToken)
     {
@@ -59,6 +66,8 @@ internal sealed class ScoreCheckerService : IScoreCheckerService
             var scoresInfo = await masterServer.FetchLatestGeneralScoresInfoAsync(LatestZoneId, cancellationToken: cancellationToken);
             usedNumber = scoresInfo.Number;
         }
+
+        var pipeline = pipelineProvider.GetPipeline("scores");
 
         var dateTimeTasks = new Dictionary<Task<DateTimeOffset>, string>
         {
@@ -77,73 +86,61 @@ internal sealed class ScoreCheckerService : IScoreCheckerService
                 cancellationToken).AsTask(), campaign);
         }
 
-        while (dateTimeTasks.Count > 0)
+        var scoresDate = default(DateTime);
+        var sb = new StringBuilder();
+
+        await using var ms = new MemoryStream();
+
+        using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
         {
-            var task = await Task.WhenAny(dateTimeTasks.Keys);
-            var scoreType = dateTimeTasks[task];
-            dateTimeTasks.Remove(task);
-
-            var result = await task;
-
-            if (tempDb.TryGetValue(scoreType, out var lastDateTime) && lastDateTime == result)
+            while (dateTimeTasks.Count > 0)
             {
-                logger.LogInformation("The scores for {ScoreType} are up to date.", scoreType);
-                continue;
+                var task = await Task.WhenAny(dateTimeTasks.Keys);
+                var scoreType = dateTimeTasks[task];
+                dateTimeTasks.Remove(task);
+
+                var result = await task;
+
+                if (tempDb.TryGetValue(scoreType, out var lastDateTime) && lastDateTime == result)
+                {
+                    logger.LogInformation("The scores for {ScoreType} are up to date.", scoreType);
+                    continue;
+                }
+
+                tempDb[scoreType] = result;
+
+                logger.LogWarning("New! {ScoreType}: {DateTime}", scoreType, result);
+
+                var entry = zip.CreateEntry($"{scoreType}.json");
+                await using var entryStream = entry.Open();
+
+                switch (scoreType)
+                {
+                    case "General":
+                        var generalScores = await masterServer.DownloadGeneralScoresAsync(usedNumber, LatestZoneId, cancellationToken);
+                        await JsonSerializer.SerializeAsync(entryStream, generalScores, AppJsonContext.Default.GeneralScores, cancellationToken);
+                        break;
+                    case "Multi":
+                        var ladderScores = await masterServer.DownloadLadderScoresAsync(usedNumber, LatestZoneId, cancellationToken);
+                        await JsonSerializer.SerializeAsync(entryStream, ladderScores, AppJsonContext.Default.LadderScores, cancellationToken);
+                        break;
+                    default:
+                        var campaignScores = await masterServer.DownloadCampaignScoresAsync(scoreType, usedNumber, LatestZoneId, cancellationToken);
+                        await JsonSerializer.SerializeAsync(entryStream, campaignScores, AppJsonContext.Default.CampaignScores, cancellationToken);
+                        break;
+                }
+
+                sb.AppendLine($"{scoreType}: {Discord.TimestampTag.FromDateTimeOffset(result)}");
+
+                scoresDate = result.Date;
             }
-
-            tempDb[scoreType] = result;
-
-            logger.LogWarning("New! {ScoreType}: {DateTime}", scoreType, result);
-
-            //await Sample.ReportAsync($"{scoreType}: {result}");
         }
+
+        using var webhook = Sample.CreateWebhook(config["WebhookUrl"]!);
+        
+        await webhook.SendFileAsync(new Discord.FileAttachment(ms, $"{scoresDate:yyyyMMdd}.zip"), sb.ToString());
 
         return (ScoresNumber)(((int)usedNumber % 6) + 1);
-
-        //var generalScoresInfo = 
-
-        /*if (generalScoresInfo is null)
-        {
-            logger.LogWarning("Failed to retrieve info for general scores, because the scores file for this zone doesn't exist.");
-            return null;
-        }
-
-        if (approxLastModifiedDateTime is null || generalScoresInfo.Value.LastModified > approxLastModifiedDateTime)
-        {
-            approxLastModifiedDateTime = generalScoresInfo.Value.LastModified;
-        }
-
-        var scoresNumber = generalScoresInfo.Value.Number;
-
-        logger.LogInformation("Retrieved scores info for general scores. Number: {Number}, Approx. date: {Date}.", scoresNumber, approxLastModifiedDateTime);
-
-        var generalScores = await masterServer.DownloadGeneralScoresAsync(scoresNumber, EarliestZone, cancellationToken);
-
-        if (generalScores is null)
-        {
-            throw new InvalidOperationException("Failed to retrieve general scores. The zone was considered existing, but for the download, it doesn't.");
-        }
-
-        logger.LogInformation("Retrieved scores for general scores.");
-
-        await ProcessGeneralScoresAsync(generalScores.Zones["World"], cancellationToken);
-
-        foreach (var campaign in Campaigns)
-        {
-            var campaignScores = await masterServer.DownloadCampaignScoresAsync(campaign, scoresNumber, EarliestZone, cancellationToken);
-
-            if (campaignScores is null)
-            {
-                logger.LogWarning("Failed to retrieve scores for campaign {Campaign}, because the scores file for this zone doesn't exist.", campaign);
-                continue;
-            }
-
-            logger.LogInformation("Retrieved scores for campaign {Campaign}.", campaign);
-
-            await ProcessCampaignScoresAsync(campaign, campaignScores.Maps, campaignScores.MedalZones["World"], cancellationToken);
-        }
-
-        return approxLastModifiedDateTime;*/
     }
 
     private async Task ProcessGeneralScoresAsync(Leaderboard leaderboard, CancellationToken cancellationToken)

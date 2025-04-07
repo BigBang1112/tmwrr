@@ -4,9 +4,8 @@ namespace TMWRR.DiscordReport;
 
 public static class Sample
 {
-    public static async Task ReportAsync(string text)
+    public static DiscordWebhookClient CreateWebhook(string url)
     {
-        var webhook = new DiscordWebhookClient("");
-        await webhook.SendMessageAsync(text);
+        return new DiscordWebhookClient(url);
     }
 }

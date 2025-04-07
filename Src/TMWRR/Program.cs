@@ -6,6 +6,8 @@ using Scalar.AspNetCore;
 using HealthChecks.UI.Client;
 using TMWRR.Services.TMF;
 using ManiaAPI.Xml.Extensions.Hosting;
+using TMWRR.Options;
+using Polly;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +21,23 @@ builder.Host.UseDefaultServiceProvider(options =>
 builder.Services.AddMasterServerTMUF().AddStandardResilienceHandler();
 builder.Services.AddScoped<IScoreCheckerService, ScoreCheckerService>();
 builder.Services.AddHostedService<DailyScoreCheckerHostedService>();
+
+builder.Services.Configure<TMUFOptions>(builder.Configuration.GetSection("TMUF"));
+
+builder.Services.AddResiliencePipeline("scores", x =>
+{
+    var options = builder.Configuration.GetSection("TMUF").Get<TMUFOptions>() ?? throw new InvalidOperationException("TMUF options not found");
+
+    x.AddTimeout(options.CheckRetryTimeout)
+        .AddRetry(new Polly.Retry.RetryStrategyOptions
+        {
+            ShouldHandle = new PredicateBuilder().Handle<Exception>(), // temp
+            MaxRetryAttempts = int.MaxValue,
+            Delay = options.CheckRetryDelay,
+            UseJitter = true,
+        })
+        .Build();
+});
 
 builder.Services.AddOpenApi();
 
@@ -76,7 +95,6 @@ app.UseHttpsRedirection();
 app.MapOpenApi();
 app.MapScalarApiReference(options =>
 {
-    options.DefaultHttpClient = new(ScalarTarget.CSharp, ScalarClient.HttpClient);
     options.Theme = ScalarTheme.DeepSpace;
 });
 
@@ -89,30 +107,6 @@ app.MapHealthChecks("/_health", new()
 
 app.UseOutputCache();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
 app.Run();
-
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
 
 public partial class Program;
