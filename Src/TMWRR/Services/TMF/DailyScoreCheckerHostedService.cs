@@ -8,14 +8,14 @@ internal sealed class DailyScoreCheckerHostedService : BackgroundService
 {
     internal readonly record struct ScoresResult(DateTimeOffset NextCheckAt, ScoresNumber NextNumber);
 
-    private readonly IServiceProvider serviceProvider;
+    private readonly IServiceScopeFactory scopeFactory;
     private readonly TimeProvider timeProvider;
     private readonly IOptions<TMUFOptions> options;
     private readonly ILogger<DailyScoreCheckerHostedService> logger;
 
-    public DailyScoreCheckerHostedService(IServiceProvider serviceProvider, TimeProvider timeProvider, IOptions<TMUFOptions> options, ILogger<DailyScoreCheckerHostedService> logger)
+    public DailyScoreCheckerHostedService(IServiceScopeFactory scopeFactory, TimeProvider timeProvider, IOptions<TMUFOptions> options, ILogger<DailyScoreCheckerHostedService> logger)
     {
-        this.serviceProvider = serviceProvider;
+        this.scopeFactory = scopeFactory;
         this.timeProvider = timeProvider;
         this.options = options;
         this.logger = logger;
@@ -77,7 +77,7 @@ internal sealed class DailyScoreCheckerHostedService : BackgroundService
 
     internal async Task<ScoresResult> RunScoreCheckAsync(ScoresNumber? number, CancellationToken cancellationToken)
     {
-        await using var scope = serviceProvider.CreateAsyncScope();
+        await using var scope = scopeFactory.CreateAsyncScope();
 
         var scoreCheckerService = scope.ServiceProvider.GetRequiredService<IScoreCheckerService>();
 

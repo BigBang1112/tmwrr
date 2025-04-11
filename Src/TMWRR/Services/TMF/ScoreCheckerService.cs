@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using TMWRR.DiscordReport;
+using TMWRR.Exceptions;
 using TMWRR.Options;
 
 namespace TMWRR.Services.TMF;
@@ -170,10 +171,11 @@ internal sealed class ScoreCheckerService : IScoreCheckerService
 
     private DateTimeOffset ThrowIfOlderThanDay(DateTimeOffset dateTime)
     {
-        if (dateTime < timeProvider.GetUtcNow().AddDays(-1))
+        if (dateTime < timeProvider.GetUtcNow().AddDays(-0.1))
         {
-            throw new Exception("The scores are older than a day. The scores will be checked again.");
+            throw new ScoresOlderThanDayException();
         }
+
         return dateTime;
     }
 }

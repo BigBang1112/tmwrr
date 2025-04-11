@@ -8,6 +8,7 @@ using TMWRR.Services.TMF;
 using ManiaAPI.Xml.Extensions.Hosting;
 using TMWRR.Options;
 using Polly;
+using TMWRR.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,7 +32,7 @@ builder.Services.AddResiliencePipeline("scores", x =>
     x.AddTimeout(options.CheckRetryTimeout)
         .AddRetry(new Polly.Retry.RetryStrategyOptions
         {
-            ShouldHandle = new PredicateBuilder().Handle<Exception>(), // temp
+            ShouldHandle = new PredicateBuilder().Handle<ScoresOlderThanDayException>(),
             MaxRetryAttempts = int.MaxValue,
             Delay = options.CheckRetryDelay,
             UseJitter = true,
