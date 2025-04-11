@@ -171,7 +171,7 @@ internal sealed class ScoreCheckerService : IScoreCheckerService
 
     private DateTimeOffset ThrowIfOlderThanDay(DateTimeOffset dateTime)
     {
-        if (dateTime < timeProvider.GetUtcNow().AddDays(-0.1))
+        if (dateTime < timeProvider.GetUtcNow().AddDays(-1))
         {
             throw new ScoresOlderThanDayException();
         }
