@@ -13,6 +13,8 @@ internal sealed class DailyScoreCheckerHostedService : BackgroundService
     private readonly IOptions<TMUFOptions> options;
     private readonly ILogger<DailyScoreCheckerHostedService> logger;
 
+    private static readonly TimeZoneInfo CEST = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+
     public DailyScoreCheckerHostedService(IServiceScopeFactory scopeFactory, TimeProvider timeProvider, IOptions<TMUFOptions> options, ILogger<DailyScoreCheckerHostedService> logger)
     {
         this.scopeFactory = scopeFactory;
@@ -93,7 +95,7 @@ internal sealed class DailyScoreCheckerHostedService : BackgroundService
     internal DateTimeOffset GetNextCheckDateTime()
     {
         var now = timeProvider.GetUtcNow();
-        var nextCheckTimeUtc = options.Value.CheckTimeOfDay;
+        var nextCheckTimeUtc = options.Value.CheckTimeOfDayCEST - CEST.GetUtcOffset(now);
         return new DateTimeOffset(now.Date.Add(nextCheckTimeUtc), TimeSpan.Zero)
             .AddDays(now.TimeOfDay > nextCheckTimeUtc ? 1 : 0);
     }
