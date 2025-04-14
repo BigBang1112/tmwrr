@@ -10,12 +10,12 @@ using TMWRR.Options;
 
 namespace TMWRR.Services.TMF;
 
-internal interface IScoreCheckerService
+public interface IScoreCheckerService
 {
     Task<ScoresNumber> CheckScoresAsync(ScoresNumber? number, CancellationToken cancellationToken);
 }
 
-internal sealed class ScoreCheckerService : IScoreCheckerService
+public sealed class ScoreCheckerService : IScoreCheckerService
 {
     private const int EarliestZoneId = 5;
     private const int LatestZoneId = 109363;

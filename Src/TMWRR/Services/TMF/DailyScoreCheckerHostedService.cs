@@ -4,7 +4,7 @@ using TMWRR.Options;
 
 namespace TMWRR.Services.TMF;
 
-internal sealed class DailyScoreCheckerHostedService : BackgroundService
+public sealed class DailyScoreCheckerHostedService : BackgroundService
 {
     internal readonly record struct ScoresResult(DateTimeOffset NextCheckAt, ScoresNumber NextNumber);
 

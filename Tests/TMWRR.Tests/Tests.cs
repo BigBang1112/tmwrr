@@ -6,6 +6,7 @@ public class Tests
     public required WebApplicationFactory WebApplicationFactory { get; init; }
 
     [Test]
+    [Skip("Sample test")]
     public async Task Test()
     {
         var client = WebApplicationFactory.CreateClient();
