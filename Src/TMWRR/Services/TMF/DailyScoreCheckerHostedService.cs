@@ -7,7 +7,7 @@ namespace TMWRR.Services.TMF;
 
 public sealed class DailyScoreCheckerHostedService : BackgroundService
 {
-    internal readonly record struct ScoresResult(DateTimeOffset NextCheckAt, ScoresNumber NextNumber);
+    internal readonly record struct ScoresResult(DateTimeOffset NextCheckAt, ScoresNumber? NextNumber);
 
     private readonly IServiceScopeFactory scopeFactory;
     private readonly TimeProvider timeProvider;
@@ -43,7 +43,7 @@ public sealed class DailyScoreCheckerHostedService : BackgroundService
         }
     }
 
-    internal async Task<ScoresResult?> WaitForNextCheckAsync(DateTimeOffset nextCheckAt, ScoresNumber nextNumber, CancellationToken stoppingToken)
+    internal async Task<ScoresResult?> WaitForNextCheckAsync(DateTimeOffset nextCheckAt, ScoresNumber? nextNumber, CancellationToken stoppingToken)
     {
         var delay = nextCheckAt - timeProvider.GetUtcNow();
 
@@ -74,8 +74,8 @@ public sealed class DailyScoreCheckerHostedService : BackgroundService
             logger.LogError(ex, "An error occurred executing the scheduled task.");
         }
 
-        // the same scores number will be attempted repeatedly
-        return new ScoresResult(GetNextCheckDateTime(), nextNumber);
+        // its better to look for the latest score again by full scan, so that it can recognize either stucked same scores file, or a skipped one
+        return new ScoresResult(GetNextCheckDateTime(), NextNumber: null);
     }
 
     internal async Task<ScoresResult> RunScoreCheckAsync(ScoresNumber? number, CancellationToken cancellationToken)
