@@ -16,6 +16,16 @@ WORKDIR /src/$APPNAME
 RUN dotnet publish -a $TARGETARCH --no-restore -o /app
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine
+EXPOSE 8080
+
+ENV \
+    DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \
+    LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8
+RUN apk add --no-cache \
+    icu-data-full \
+    icu-libs
+
 WORKDIR /app
 COPY --link --from=build /app .
 USER $APP_UID
