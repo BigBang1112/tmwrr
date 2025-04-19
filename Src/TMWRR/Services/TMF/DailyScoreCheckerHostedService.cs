@@ -1,5 +1,6 @@
 ﻿using ManiaAPI.Xml.TMUF;
 using Microsoft.Extensions.Options;
+using TimeZoneConverter;
 using TMWRR.Options;
 
 namespace TMWRR.Services.TMF;
@@ -13,7 +14,7 @@ public sealed class DailyScoreCheckerHostedService : BackgroundService
     private readonly IOptions<TMUFOptions> options;
     private readonly ILogger<DailyScoreCheckerHostedService> logger;
 
-    private static readonly TimeZoneInfo CEST = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+    private static readonly TimeZoneInfo CET = TZConvert.GetTimeZoneInfo("CET");
 
     public DailyScoreCheckerHostedService(IServiceScopeFactory scopeFactory, TimeProvider timeProvider, IOptions<TMUFOptions> options, ILogger<DailyScoreCheckerHostedService> logger)
     {
@@ -95,7 +96,7 @@ public sealed class DailyScoreCheckerHostedService : BackgroundService
     internal DateTimeOffset GetNextCheckDateTime()
     {
         var now = timeProvider.GetUtcNow();
-        var nextCheckTimeUtc = options.Value.CheckTimeOfDayCEST - CEST.GetUtcOffset(now);
+        var nextCheckTimeUtc = options.Value.CheckTimeOfDayCEST - CET.GetUtcOffset(now);
         return new DateTimeOffset(now.Date.Add(nextCheckTimeUtc), TimeSpan.Zero)
             .AddDays(now.TimeOfDay > nextCheckTimeUtc ? 1 : 0);
     }

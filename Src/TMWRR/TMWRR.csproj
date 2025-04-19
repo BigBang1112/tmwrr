@@ -38,6 +38,7 @@
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
         <PackageReference Include="Serilog.Sinks.OpenTelemetry" Version="4.1.1" />
         <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.4.0" />
+        <PackageReference Include="TimeZoneConverter" Version="7.0.0" />
     </ItemGroup>
 
     <ItemGroup>
