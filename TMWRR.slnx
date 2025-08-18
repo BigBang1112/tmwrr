@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Src/">
+    <Project Path="Src/TMWRR.DiscordBot/TMWRR.DiscordBot.csproj" />
+    <Project Path="Src/TMWRR.DiscordReport/TMWRR.DiscordReport.csproj" />
+    <Project Path="Src/TMWRR/TMWRR.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/TMWRR.Tests/TMWRR.Tests.csproj" />
+  </Folder>
+</Solution>
