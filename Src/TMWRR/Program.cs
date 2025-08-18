@@ -19,8 +19,7 @@ builder.Services.AddTelemetryServices(builder.Configuration, builder.Environment
 
 var app = builder.Build();
 
-app.UseSecurityMiddleware();
-app.UseCacheMiddleware();
+app.UseMiddleware();
 
 app.Run();
 

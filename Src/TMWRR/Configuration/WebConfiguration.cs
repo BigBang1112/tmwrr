@@ -1,7 +1,5 @@
-﻿using HealthChecks.UI.Client;
-using ManiaAPI.Xml.Extensions.Hosting;
+﻿using ManiaAPI.Xml.Extensions.Hosting;
 using Polly;
-using Scalar.AspNetCore;
 using TMWRR.Exceptions;
 using TMWRR.Options;
 
@@ -36,23 +34,5 @@ public static class WebConfiguration
         });
 
         services.AddHealthChecks();
-    }
-
-    public static void UseSecurityMiddleware(this WebApplication app)
-    {
-        app.UseHttpsRedirection();
-
-        app.MapOpenApi();
-        app.MapScalarApiReference(options =>
-        {
-            options.Theme = ScalarTheme.DeepSpace;
-        });
-
-        app.UseRateLimiter();
-
-        app.MapHealthChecks("/_health", new()
-        {
-            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-        }).RequireAuthorization();
     }
 }

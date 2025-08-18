@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using TMWRR.DiscordReport;
 using TMWRR.Exceptions;
+using TMWRR.Extensions;
 using TMWRR.Options;
 
 namespace TMWRR.Services.TMF;
@@ -73,17 +74,17 @@ public sealed class ScoreCheckerService : IScoreCheckerService
         var dateTimeTasks = new Dictionary<Task<DateTimeOffset>, string>
         {
             { pipeline.ExecuteAsync(
-                async token => ThrowIfOlderThanDay(await masterServer.FetchGeneralScoresDateTimeAsync(usedNumber, LatestZoneId, token)),
+                async token => ThrowIfOlderThanDay(await masterServer.FetchGeneralScoresDateTimeAsync(usedNumber, LatestZoneId, cancellationToken: token)),
                 cancellationToken).AsTask(), "General" },
             { pipeline.ExecuteAsync(
-                async token => ThrowIfOlderThanDay(await masterServer.FetchLadderScoresDateTimeAsync(usedNumber, LatestZoneId, token)),
+                async token => ThrowIfOlderThanDay(await masterServer.FetchLadderScoresDateTimeAsync(usedNumber, LatestZoneId, cancellationToken: token)),
                 cancellationToken).AsTask(), "Multi" }
         };
 
         foreach (var campaign in Campaigns)
         {
             dateTimeTasks.Add(pipeline.ExecuteAsync(
-                async token => ThrowIfOlderThanDay(await masterServer.FetchCampaignScoresDateTimeAsync(campaign, usedNumber, LatestZoneId, token)),
+                async token => ThrowIfOlderThanDay(await masterServer.FetchCampaignScoresDateTimeAsync(campaign, usedNumber, LatestZoneId, cancellationToken: token)),
                 cancellationToken).AsTask(), campaign);
         }
 
@@ -94,12 +95,9 @@ public sealed class ScoreCheckerService : IScoreCheckerService
 
         using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
         {
-            while (dateTimeTasks.Count > 0)
+            await foreach (var (scoreType, task) in dateTimeTasks.WhenEachRemove())
             {
-                var task = await Task.WhenAny(dateTimeTasks.Keys);
                 var publishedAt = timeProvider.GetUtcNow();
-                var scoreType = dateTimeTasks[task];
-                dateTimeTasks.Remove(task);
 
                 DateTimeOffset result;
 

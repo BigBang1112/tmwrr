@@ -160,8 +160,9 @@ public class DailyScoreCheckerHostedServiceTests
         var result = await service.RunScoreCheckAsync(null, cancellationToken);
 
         // Assert
+        await Assert.That(result.NextNumber).IsNotNull();
         await Assert.That(expectedNextCheck).IsEqualTo(result.NextCheckAt);
-        await Assert.That(expectedNextNumber).IsEqualTo(result.NextNumber);
+        await Assert.That(expectedNextNumber).IsEqualTo(result.NextNumber!.Value);
 
         // Verify scoreCheckerService was called
         await scoreCheckerService.Received(1).CheckScoresAsync(null, cancellationToken);
