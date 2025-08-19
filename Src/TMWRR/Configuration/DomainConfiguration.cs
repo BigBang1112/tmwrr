@@ -1,4 +1,5 @@
-﻿using TMWRR.Services.TMF;
+﻿using TMWRR.Services;
+using TMWRR.Services.TMF;
 
 namespace TMWRR.Configuration;
 
@@ -8,6 +9,8 @@ public static class DomainConfiguration
     {
         services.AddScoped<IScoreCheckerService, ScoreCheckerService>();
         services.AddHostedService<DailyScoreCheckerHostedService>();
+
+        services.AddSingleton<IDelayService, DelayService>();
 
         services.AddSingleton(TimeProvider.System);
     }
