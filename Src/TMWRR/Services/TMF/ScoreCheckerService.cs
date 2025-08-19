@@ -1,5 +1,4 @@
 ﻿using ManiaAPI.Xml.TMUF;
-using Microsoft.Extensions.Options;
 using Polly.Registry;
 using System.IO.Compression;
 using System.Text;
@@ -7,7 +6,6 @@ using System.Text.Json;
 using TMWRR.DiscordReport;
 using TMWRR.Exceptions;
 using TMWRR.Extensions;
-using TMWRR.Options;
 
 namespace TMWRR.Services.TMF;
 
@@ -33,7 +31,6 @@ public sealed class ScoreCheckerService : IScoreCheckerService
     private readonly MasterServerTMUF masterServer;
     private readonly TimeProvider timeProvider;
     private readonly ResiliencePipelineProvider<string> pipelineProvider;
-    private readonly TMUFOptions options;
     private readonly IConfiguration config;
     private readonly ILogger<ScoreCheckerService> logger;
 
@@ -43,14 +40,12 @@ public sealed class ScoreCheckerService : IScoreCheckerService
         MasterServerTMUF masterServer, 
         TimeProvider timeProvider, 
         ResiliencePipelineProvider<string> pipelineProvider,
-        IOptions<TMUFOptions> options, 
         IConfiguration config, 
         ILogger<ScoreCheckerService> logger)
     {
         this.masterServer = masterServer;
         this.timeProvider = timeProvider;
         this.pipelineProvider = pipelineProvider;
-        this.options = options.Value;
         this.config = config;
         this.logger = logger;
     }

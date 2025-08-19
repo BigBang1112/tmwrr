@@ -10,17 +10,21 @@ public sealed class DailyScoreCheckerHostedService : BackgroundService
     internal readonly record struct ScoresResult(DateTimeOffset NextCheckAt, ScoresNumber? NextNumber);
 
     private readonly IServiceScopeFactory scopeFactory;
+    private readonly IDelayService delayService;
     private readonly TimeProvider timeProvider;
-    private readonly IOptions<TMUFOptions> options;
     private readonly ILogger<DailyScoreCheckerHostedService> logger;
 
     private static readonly TimeZoneInfo CET = TZConvert.GetTimeZoneInfo("CET");
 
-    public DailyScoreCheckerHostedService(IServiceScopeFactory scopeFactory, TimeProvider timeProvider, IOptions<TMUFOptions> options, ILogger<DailyScoreCheckerHostedService> logger)
+    public DailyScoreCheckerHostedService(
+        IServiceScopeFactory scopeFactory,
+        IDelayService delayService,
+        TimeProvider timeProvider, 
+        ILogger<DailyScoreCheckerHostedService> logger)
     {
         this.scopeFactory = scopeFactory;
+        this.delayService = delayService;
         this.timeProvider = timeProvider;
-        this.options = options;
         this.logger = logger;
     }
 
@@ -57,7 +61,7 @@ public sealed class DailyScoreCheckerHostedService : BackgroundService
 
             try
             {
-                await Task.Delay(delay, stoppingToken);
+                await delayService.DelayAsync(delay, stoppingToken);
             }
             catch (TaskCanceledException)
             {
@@ -95,6 +99,10 @@ public sealed class DailyScoreCheckerHostedService : BackgroundService
 
     internal DateTimeOffset GetNextCheckDateTime()
     {
+        using var scope = scopeFactory.CreateScope();
+
+        var options = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<TMUFOptions>>();
+
         var now = timeProvider.GetUtcNow();
         var nextCheckTimeUtc = options.Value.CheckTimeOfDayCEST - CET.GetUtcOffset(now);
         return new DateTimeOffset(now.Date.Add(nextCheckTimeUtc), TimeSpan.Zero)
