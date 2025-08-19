@@ -13,7 +13,7 @@ namespace TMWRR.Services.TMF;
 
 public interface IScoreCheckerService
 {
-    Task<ScoresNumber> CheckScoresAsync(ScoresNumber? number, CancellationToken cancellationToken);
+    Task<ScoresNumber?> CheckScoresAsync(ScoresNumber? number, CancellationToken cancellationToken);
 }
 
 public sealed class ScoreCheckerService : IScoreCheckerService
@@ -55,7 +55,7 @@ public sealed class ScoreCheckerService : IScoreCheckerService
         this.logger = logger;
     }
 
-    public async Task<ScoresNumber> CheckScoresAsync(ScoresNumber? number, CancellationToken cancellationToken)
+    public async Task<ScoresNumber?> CheckScoresAsync(ScoresNumber? number, CancellationToken cancellationToken)
     {
         ScoresNumber usedNumber;
 
@@ -147,6 +147,12 @@ public sealed class ScoreCheckerService : IScoreCheckerService
         }
 
         using var webhook = Sample.CreateWebhook(config["WebhookUrl"]!);
+
+        if (scoresDate == default)
+        {
+            await webhook.SendMessageAsync("No scores were processed. Master server is likely having issues.");
+            return null;
+        }
         
         await webhook.SendFileAsync(new Discord.FileAttachment(ms, $"{scoresDate:yyyyMMdd}.zip"), sb.ToString());
 
