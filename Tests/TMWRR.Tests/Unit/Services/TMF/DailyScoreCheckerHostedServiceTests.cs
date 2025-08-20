@@ -41,7 +41,8 @@ public class DailyScoreCheckerHostedServiceTests
         var checkTimeOfDayCEST = new TimeSpan(11, 0, 0); // 11:00 CEST
         options.Value.Returns(new TMUFOptions
         {
-            CheckTimeOfDayCEST = checkTimeOfDayCEST
+            CheckTimeOfDayCEST = checkTimeOfDayCEST,
+            DiscordWebhookUrl = ""
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(2)), TimeSpan.Zero);
@@ -71,7 +72,8 @@ public class DailyScoreCheckerHostedServiceTests
         var checkTimeOfDayCEST = new TimeSpan(11, 0, 0); // 11:00 CEST
         options.Value.Returns(new TMUFOptions
         {
-            CheckTimeOfDayCEST = checkTimeOfDayCEST
+            CheckTimeOfDayCEST = checkTimeOfDayCEST,
+            DiscordWebhookUrl = ""
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST.Add(TimeSpan.FromDays(1)) - TimeSpan.FromHours(2)), TimeSpan.Zero);
@@ -101,7 +103,8 @@ public class DailyScoreCheckerHostedServiceTests
         var checkTimeOfDayCEST = new TimeSpan(11, 0, 0); // 11:00 CEST
         options.Value.Returns(new TMUFOptions
         {
-            CheckTimeOfDayCEST = checkTimeOfDayCEST
+            CheckTimeOfDayCEST = checkTimeOfDayCEST,
+            DiscordWebhookUrl = ""
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(1)), TimeSpan.Zero);
@@ -131,7 +134,8 @@ public class DailyScoreCheckerHostedServiceTests
         var checkTimeOfDayCEST = new TimeSpan(11, 0, 0); // 11:00 CEST
         options.Value.Returns(new TMUFOptions
         {
-            CheckTimeOfDayCEST = checkTimeOfDayCEST
+            CheckTimeOfDayCEST = checkTimeOfDayCEST,
+            DiscordWebhookUrl = ""
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST.Add(TimeSpan.FromDays(1)) - TimeSpan.FromHours(1)), TimeSpan.Zero);
@@ -155,7 +159,8 @@ public class DailyScoreCheckerHostedServiceTests
         var checkTimeOfDayCEST = new TimeSpan(11, 0, 0); // 11:00 CEST
         options.Value.Returns(new TMUFOptions
         {
-            CheckTimeOfDayCEST = checkTimeOfDayCEST
+            CheckTimeOfDayCEST = checkTimeOfDayCEST,
+            DiscordWebhookUrl = ""
         });
 
         var expectedNextCheck = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(1)), TimeSpan.Zero);
@@ -202,7 +207,8 @@ public class DailyScoreCheckerHostedServiceTests
         {
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
-            CheckRetryTimeout = TimeSpan.FromSeconds(30)
+            CheckRetryTimeout = TimeSpan.FromSeconds(30),
+            DiscordWebhookUrl = ""
         });
 
         // Setup delay to complete successfully.
@@ -257,7 +263,8 @@ public class DailyScoreCheckerHostedServiceTests
         {
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
-            CheckRetryTimeout = TimeSpan.FromSeconds(30)
+            CheckRetryTimeout = TimeSpan.FromSeconds(30),
+            DiscordWebhookUrl = ""
         });
 
         // Setup delay to throw TaskCanceledException.
@@ -302,7 +309,8 @@ public class DailyScoreCheckerHostedServiceTests
         {
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
-            CheckRetryTimeout = TimeSpan.FromSeconds(30)
+            CheckRetryTimeout = TimeSpan.FromSeconds(30),
+            DiscordWebhookUrl = ""
         });
 
         var scoreCheckerService = Substitute.For<IScoreCheckerService>();
@@ -347,7 +355,8 @@ public class DailyScoreCheckerHostedServiceTests
         {
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
-            CheckRetryTimeout = TimeSpan.FromSeconds(30)
+            CheckRetryTimeout = TimeSpan.FromSeconds(30),
+            DiscordWebhookUrl = ""
         });
 
         // Setup delay to complete successfully.

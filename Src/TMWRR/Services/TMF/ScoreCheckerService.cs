@@ -1,11 +1,16 @@
 ﻿using ManiaAPI.Xml.TMUF;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Polly.Registry;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
+using TMWRR.Data;
 using TMWRR.DiscordReport;
+using TMWRR.Entities;
 using TMWRR.Exceptions;
 using TMWRR.Extensions;
+using TMWRR.Options;
 
 namespace TMWRR.Services.TMF;
 
@@ -28,25 +33,35 @@ public sealed class ScoreCheckerService : IScoreCheckerService
         "ManiaStar"
     ];
 
+    private readonly ICampaignScoresJobService campaignScoresJobService;
+    private readonly IGeneralScoresJobService generalScoresJobService;
     private readonly MasterServerTMUF masterServer;
+    private readonly AppDbContext db;
     private readonly TimeProvider timeProvider;
     private readonly ResiliencePipelineProvider<string> pipelineProvider;
-    private readonly IConfiguration config;
+    private readonly IOptionsSnapshot<TMUFOptions> options;
     private readonly ILogger<ScoreCheckerService> logger;
 
+    // TODO: replace with actual DB
     private static readonly Dictionary<string, DateTimeOffset> tempDb = [];
 
     public ScoreCheckerService(
+        ICampaignScoresJobService campaignScoresJobService,
+        IGeneralScoresJobService generalScoresJobService,
         MasterServerTMUF masterServer, 
+        AppDbContext db,
         TimeProvider timeProvider, 
         ResiliencePipelineProvider<string> pipelineProvider,
-        IConfiguration config, 
+        IOptionsSnapshot<TMUFOptions> options, 
         ILogger<ScoreCheckerService> logger)
     {
+        this.campaignScoresJobService = campaignScoresJobService;
+        this.generalScoresJobService = generalScoresJobService;
         this.masterServer = masterServer;
+        this.db = db;
         this.timeProvider = timeProvider;
         this.pipelineProvider = pipelineProvider;
-        this.config = config;
+        this.options = options;
         this.logger = logger;
     }
 
@@ -83,22 +98,21 @@ public sealed class ScoreCheckerService : IScoreCheckerService
                 cancellationToken).AsTask(), campaign);
         }
 
-        var scoresDate = default(DateTime);
-        var sb = new StringBuilder();
+        var scoresDate = default(DateTime?);
+        var sbWebhookMessage = new StringBuilder();
 
         await using var ms = new MemoryStream();
-
-        using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+        await using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
         {
-            await foreach (var (scoreType, task) in dateTimeTasks.WhenEachRemove())
+            await foreach (var (scoreType, lastModifiedAtTask) in dateTimeTasks.WhenEachRemove())
             {
                 var publishedAt = timeProvider.GetUtcNow();
 
-                DateTimeOffset result;
+                DateTimeOffset lastModifiedAt;
 
                 try
                 {
-                    result = await task;
+                    lastModifiedAt = await lastModifiedAtTask;
                 }
                 catch (Exception ex)
                 {
@@ -106,15 +120,23 @@ public sealed class ScoreCheckerService : IScoreCheckerService
                     continue;
                 }
 
-                if (tempDb.TryGetValue(scoreType, out var lastDateTime) && lastDateTime == result)
+                var snapshotExists = await db.TMUFScoresSnapshots
+                    .AnyAsync(x => x.CampaignId == scoreType && x.CreatedAt == lastModifiedAt, cancellationToken);
+
+                if (snapshotExists)
                 {
                     logger.LogInformation("The scores for {ScoreType} are up to date.", scoreType);
                     continue;
                 }
 
-                tempDb[scoreType] = result;
+                await db.TMUFScoresSnapshots.AddAsync(new TMUFScoresSnapshot
+                {
+                    CampaignId = scoreType,
+                    CreatedAt = lastModifiedAt,
+                    PublishedAt = publishedAt
+                }, cancellationToken);
 
-                logger.LogWarning("New! {ScoreType}: {DateTime}", scoreType, result);
+                logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
 
                 var entry = zip.CreateEntry($"{scoreType}.json");
                 await using var entryStream = entry.Open();
@@ -123,52 +145,51 @@ public sealed class ScoreCheckerService : IScoreCheckerService
                 {
                     case "General":
                         var generalScores = await masterServer.DownloadGeneralScoresAsync(usedNumber, LatestZoneId, cancellationToken);
-                        await JsonSerializer.SerializeAsync(entryStream, generalScores, AppJsonContext.Default.GeneralScores, cancellationToken);
+                        await Task.WhenAll(
+                            JsonSerializer.SerializeAsync(entryStream, generalScores, AppJsonContext.Default.GeneralScores, cancellationToken),
+                            generalScoresJobService.ProcessAsync(generalScores.Zones[Constants.World], cancellationToken)
+                        );
                         break;
                     case "Multi":
                         var ladderScores = await masterServer.DownloadLadderScoresAsync(usedNumber, LatestZoneId, cancellationToken);
                         await JsonSerializer.SerializeAsync(entryStream, ladderScores, AppJsonContext.Default.LadderScores, cancellationToken);
+                        // TODO: only count players?
                         break;
                     default:
                         var campaignScores = await masterServer.DownloadCampaignScoresAsync(scoreType, usedNumber, LatestZoneId, cancellationToken);
-                        await JsonSerializer.SerializeAsync(entryStream, campaignScores, AppJsonContext.Default.CampaignScores, cancellationToken);
+                        await Task.WhenAll(
+                            JsonSerializer.SerializeAsync(entryStream, campaignScores, AppJsonContext.Default.CampaignScores, cancellationToken),
+                            campaignScoresJobService.ProcessAsync(
+                                scoreType,
+                                campaignScores.Maps,
+                                campaignScores.MedalZones[Constants.World],
+                                cancellationToken)
+                            );
                         break;
                 }
 
-                sb.AppendLine($"{scoreType}: {Discord.TimestampTag.FromDateTimeOffset(result)} (available {Discord.TimestampTag.FromDateTimeOffset(publishedAt)})");
+                await db.SaveChangesAsync(cancellationToken);
 
-                scoresDate = result.Date;
+                sbWebhookMessage.AppendLine($"{scoreType}: {Discord.TimestampTag.FromDateTimeOffset(lastModifiedAt)} (available {Discord.TimestampTag.FromDateTimeOffset(publishedAt)})");
+
+                scoresDate = lastModifiedAt.Date;
             }
         }
 
-        using var webhook = Sample.CreateWebhook(config["WebhookUrl"]!);
+        using var webhook = Sample.CreateWebhook(options.Value.DiscordWebhookUrl);
 
-        if (scoresDate == default)
+        if (scoresDate is null)
         {
             await webhook.SendMessageAsync("No scores were processed. Master server is likely having issues.");
             return null;
         }
         
-        await webhook.SendFileAsync(new Discord.FileAttachment(ms, $"{scoresDate:yyyyMMdd}.zip"), sb.ToString());
+        await webhook.SendFileAsync(new Discord.FileAttachment(ms, $"{scoresDate:yyyyMMdd}.zip"), sbWebhookMessage.ToString());
 
         return (ScoresNumber)(((int)usedNumber % 6) + 1);
     }
 
-    private async Task ProcessGeneralScoresAsync(Leaderboard leaderboard, CancellationToken cancellationToken)
-    {
-
-    }
-
-    private async Task ProcessCampaignScoresAsync(
-        string campaign, 
-        IReadOnlyDictionary<string, CampaignScoresLeaderboard> maps, 
-        CampaignScoresMedalZone medalsWorld, 
-        CancellationToken cancellationToken)
-    {
-
-    }
-
-    private DateTimeOffset ThrowIfOlderThanDay(DateTimeOffset dateTime)
+    internal DateTimeOffset ThrowIfOlderThanDay(DateTimeOffset dateTime)
     {
         if (dateTime < timeProvider.GetUtcNow().AddDays(-1))
         {
