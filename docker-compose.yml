@@ -1,0 +1,45 @@
+services:
+  tmwrr:
+    image: ${DOCKER_REGISTRY-}tmwrr
+    build:
+      context: .
+      dockerfile: Src/TMWRR/Dockerfile
+    environment:
+      CONNECTIONSTRINGS__DEFAULTCONNECTION: Server=mariadb;Port=3306;Database=tmwrr;User=root;
+    depends_on:
+      mariadb:
+        condition: service_healthy
+  
+  mariadb:
+    image: mariadb
+    restart: unless-stopped
+    command: --max_allowed_packet=32505856
+    environment:
+      TZ: CET
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 1
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  phpmyadmin:
+    image: beeyev/phpmyadmin-lightweight
+    restart: unless-stopped
+    ports:
+      - 9010:80
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: root
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  seq:
+    image: datalust/seq:latest
+    restart: unless-stopped
+    ports:
+      - 8081:80
+    environment:
+      ACCEPT_EULA: Y

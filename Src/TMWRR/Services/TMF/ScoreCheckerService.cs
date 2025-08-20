@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Polly.Registry;
+using System.Collections.Immutable;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
@@ -24,7 +25,7 @@ public sealed class ScoreCheckerService : IScoreCheckerService
     private const int EarliestZoneId = 5;
     private const int LatestZoneId = 109363;
 
-    private static readonly string[] Campaigns = [
+    public static readonly ImmutableArray<string> Campaigns = [
         "UnitedRace",
         "UnitedPuzzle",
         "UnitedPlatform",
@@ -41,9 +42,6 @@ public sealed class ScoreCheckerService : IScoreCheckerService
     private readonly ResiliencePipelineProvider<string> pipelineProvider;
     private readonly IOptionsSnapshot<TMUFOptions> options;
     private readonly ILogger<ScoreCheckerService> logger;
-
-    // TODO: replace with actual DB
-    private static readonly Dictionary<string, DateTimeOffset> tempDb = [];
 
     public ScoreCheckerService(
         ICampaignScoresJobService campaignScoresJobService,
@@ -120,30 +118,14 @@ public sealed class ScoreCheckerService : IScoreCheckerService
                     continue;
                 }
 
-                var snapshotExists = await db.TMUFScoresSnapshots
-                    .AnyAsync(x => x.CampaignId == scoreType && x.CreatedAt == lastModifiedAt, cancellationToken);
-
-                if (snapshotExists)
-                {
-                    logger.LogInformation("The scores for {ScoreType} are up to date.", scoreType);
-                    continue;
-                }
-
-                await db.TMUFScoresSnapshots.AddAsync(new TMUFScoresSnapshot
-                {
-                    CampaignId = scoreType,
-                    CreatedAt = lastModifiedAt,
-                    PublishedAt = publishedAt
-                }, cancellationToken);
-
-                logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
-
                 var entry = zip.CreateEntry($"{scoreType}.json");
                 await using var entryStream = entry.Open();
 
                 switch (scoreType)
                 {
                     case "General":
+                        logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
+
                         var generalScores = await masterServer.DownloadGeneralScoresAsync(usedNumber, LatestZoneId, cancellationToken);
                         await Task.WhenAll(
                             JsonSerializer.SerializeAsync(entryStream, generalScores, AppJsonContext.Default.GeneralScores, cancellationToken),
@@ -151,11 +133,31 @@ public sealed class ScoreCheckerService : IScoreCheckerService
                         );
                         break;
                     case "Multi":
+                        logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
+
                         var ladderScores = await masterServer.DownloadLadderScoresAsync(usedNumber, LatestZoneId, cancellationToken);
                         await JsonSerializer.SerializeAsync(entryStream, ladderScores, AppJsonContext.Default.LadderScores, cancellationToken);
                         // TODO: only count players?
                         break;
                     default:
+                        var snapshotExists = await db.TMUFCampaignScoresSnapshots
+                            .AnyAsync(x => x.CampaignId == scoreType && x.CreatedAt == lastModifiedAt, cancellationToken);
+
+                        if (snapshotExists)
+                        {
+                            logger.LogInformation("Campaign scores for {ScoreType} are up to date.", scoreType);
+                            continue;
+                        }
+
+                        await db.TMUFCampaignScoresSnapshots.AddAsync(new TMUFCampaignScoresSnapshot
+                        {
+                            CampaignId = scoreType,
+                            CreatedAt = lastModifiedAt,
+                            PublishedAt = publishedAt
+                        }, cancellationToken);
+
+                        logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
+
                         var campaignScores = await masterServer.DownloadCampaignScoresAsync(scoreType, usedNumber, LatestZoneId, cancellationToken);
                         await Task.WhenAll(
                             JsonSerializer.SerializeAsync(entryStream, campaignScores, AppJsonContext.Default.CampaignScores, cancellationToken),

@@ -7,4 +7,7 @@
   <Folder Name="/Tests/">
     <Project Path="Tests/TMWRR.Tests/TMWRR.Tests.csproj" />
   </Folder>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
 </Solution>

@@ -6,5 +6,5 @@ namespace TMWRR.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<TMUFCampaign> TMUFCampaigns { get; set; }
-    public DbSet<TMUFScoresSnapshot> TMUFScoresSnapshots { get; set; }
+    public DbSet<TMUFCampaignScoresSnapshot> TMUFCampaignScoresSnapshots { get; set; }
 }

@@ -7,5 +7,5 @@ public class TMUFCampaign
     [StringLength(32)]
     public string Id { get; set; } = string.Empty;
 
-    public ICollection<TMUFScoresSnapshot> ScoresSnapshots { get; set; } = [];
+    public ICollection<TMUFCampaignScoresSnapshot> ScoresSnapshots { get; set; } = [];
 }

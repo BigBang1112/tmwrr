@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace TMWRR.Entities;
 
 [Index(nameof(CreatedAt), IsUnique = true)]
-public class TMUFScoresSnapshot
+public class TMUFCampaignScoresSnapshot
 {
     public int Id { get; set; }
 
