@@ -10,4 +10,7 @@ public sealed class TMUFOptions
 
     [Required]
     public required string DiscordWebhookUrl { get; set; }
+
+    [Required]
+    public required string ChangesDiscordWebhookUrl { get; set; }
 }

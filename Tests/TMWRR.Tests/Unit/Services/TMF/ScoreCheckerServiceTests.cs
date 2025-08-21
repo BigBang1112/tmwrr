@@ -9,6 +9,7 @@ using Polly.Registry;
 using TMWRR.Data;
 using TMWRR.Exceptions;
 using TMWRR.Options;
+using TMWRR.Services;
 using TMWRR.Services.TMF;
 
 namespace TMWRR.Tests.Unit.Services.TMF;
@@ -23,6 +24,7 @@ public class ScoreCheckerServiceTests
     private readonly ICampaignScoresJobService campaignScoresJobService = Substitute.For<ICampaignScoresJobService>();
     private readonly ILadderScoresJobService ladderScoresJobService = Substitute.For<ILadderScoresJobService>();
     private readonly IScoresSnapshotService scoresSnapshotService = Substitute.For<IScoresSnapshotService>();
+    private readonly IReportService reportService = Substitute.For<IReportService>();
 
     [Test]
     public async Task ThrowIfOlderThanDay_ShouldReturnDate_WhenDateIsNotOlder()
@@ -34,7 +36,8 @@ public class ScoreCheckerServiceTests
 
         options.Value.Returns(new TMUFOptions
         {
-            DiscordWebhookUrl = ""
+            DiscordWebhookUrl = "",
+            ChangesDiscordWebhookUrl = ""
         });
 
         var services = new ServiceCollection();
@@ -48,6 +51,7 @@ public class ScoreCheckerServiceTests
             generalScoresJobService,
             ladderScoresJobService,
             scoresSnapshotService,
+            reportService,
             masterServer,
             timeProvider,
             pipelineProvider,
@@ -80,6 +84,7 @@ public class ScoreCheckerServiceTests
             generalScoresJobService,
             ladderScoresJobService,
             scoresSnapshotService,
+            reportService,
             masterServer,
             timeProvider,
             pipelineProvider,

@@ -15,6 +15,8 @@ public class TMFCampaignScoresSnapshot
     public required DateTimeOffset CreatedAt { get; set; }
     public required DateTimeOffset PublishedAt { get; set; }
 
+    public bool NoChanges { get; set; }
+
     public ICollection<TMFCampaignScoresRecord> Records { get; set; } = [];
 
     public override string ToString()

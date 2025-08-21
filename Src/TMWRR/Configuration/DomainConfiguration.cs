@@ -1,4 +1,5 @@
-﻿using TMWRR.Services;
+﻿using TMWRR.DiscordReport;
+using TMWRR.Services;
 using TMWRR.Services.TMF;
 
 namespace TMWRR.Configuration;
@@ -16,6 +17,10 @@ public static class DomainConfiguration
 
         services.AddScoped<IMapService, MapService>();
         services.AddScoped<ILoginService, LoginService>();
+
+        services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<IReportDiscordService, ReportDiscordService>();
+        services.AddSingleton<IDiscordWebhookFactory, DiscordWebhookFactory>();
 
         services.AddSingleton<IDelayService, DelayService>();
 

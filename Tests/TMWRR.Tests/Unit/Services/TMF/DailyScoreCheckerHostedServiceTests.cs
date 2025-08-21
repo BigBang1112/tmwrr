@@ -42,7 +42,8 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            DiscordWebhookUrl = ""
+            DiscordWebhookUrl = "",
+            ChangesDiscordWebhookUrl = ""
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(2)), TimeSpan.Zero);
@@ -73,7 +74,8 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            DiscordWebhookUrl = ""
+            DiscordWebhookUrl = "",
+            ChangesDiscordWebhookUrl = ""
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST.Add(TimeSpan.FromDays(1)) - TimeSpan.FromHours(2)), TimeSpan.Zero);
@@ -104,7 +106,8 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            DiscordWebhookUrl = ""
+            DiscordWebhookUrl = "",
+            ChangesDiscordWebhookUrl = ""
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(1)), TimeSpan.Zero);
@@ -135,7 +138,8 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            DiscordWebhookUrl = ""
+            DiscordWebhookUrl = "",
+            ChangesDiscordWebhookUrl = ""
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST.Add(TimeSpan.FromDays(1)) - TimeSpan.FromHours(1)), TimeSpan.Zero);
@@ -160,7 +164,8 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            DiscordWebhookUrl = ""
+            DiscordWebhookUrl = "",
+            ChangesDiscordWebhookUrl = ""
         });
 
         var expectedNextCheck = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(1)), TimeSpan.Zero);
@@ -208,7 +213,8 @@ public class DailyScoreCheckerHostedServiceTests
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
             CheckRetryTimeout = TimeSpan.FromSeconds(30),
-            DiscordWebhookUrl = ""
+            DiscordWebhookUrl = "",
+            ChangesDiscordWebhookUrl = ""
         });
 
         // Setup delay to complete successfully.
@@ -264,7 +270,8 @@ public class DailyScoreCheckerHostedServiceTests
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
             CheckRetryTimeout = TimeSpan.FromSeconds(30),
-            DiscordWebhookUrl = ""
+            DiscordWebhookUrl = "",
+            ChangesDiscordWebhookUrl = ""
         });
 
         // Setup delay to throw TaskCanceledException.
@@ -310,7 +317,8 @@ public class DailyScoreCheckerHostedServiceTests
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
             CheckRetryTimeout = TimeSpan.FromSeconds(30),
-            DiscordWebhookUrl = ""
+            DiscordWebhookUrl = "",
+            ChangesDiscordWebhookUrl = ""
         });
 
         var scoreCheckerService = Substitute.For<IScoresCheckerService>();
@@ -356,7 +364,8 @@ public class DailyScoreCheckerHostedServiceTests
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
             CheckRetryTimeout = TimeSpan.FromSeconds(30),
-            DiscordWebhookUrl = ""
+            DiscordWebhookUrl = "",
+            ChangesDiscordWebhookUrl = ""
         });
 
         // Setup delay to complete successfully.

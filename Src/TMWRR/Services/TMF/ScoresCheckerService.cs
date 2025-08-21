@@ -36,6 +36,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
     private readonly IGeneralScoresJobService generalScoresJobService;
     private readonly ILadderScoresJobService ladderScoresJobService;
     private readonly IScoresSnapshotService scoresSnapshotService;
+    private readonly IReportService reportService;
     private readonly MasterServerTMUF masterServer;
     private readonly TimeProvider timeProvider;
     private readonly ResiliencePipelineProvider<string> pipelineProvider;
@@ -47,6 +48,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         IGeneralScoresJobService generalScoresJobService,
         ILadderScoresJobService ladderScoresJobService,
         IScoresSnapshotService scoresSnapshotService,
+        IReportService reportService,
         MasterServerTMUF masterServer,
         TimeProvider timeProvider, 
         ResiliencePipelineProvider<string> pipelineProvider,
@@ -57,6 +59,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         this.generalScoresJobService = generalScoresJobService;
         this.ladderScoresJobService = ladderScoresJobService;
         this.scoresSnapshotService = scoresSnapshotService;
+        this.reportService = reportService;
         this.masterServer = masterServer;
         this.timeProvider = timeProvider;
         this.pipelineProvider = pipelineProvider;
@@ -84,10 +87,10 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         {
             { pipeline.ExecuteAsync(
                 async token => ThrowIfOlderThanDay(await masterServer.FetchGeneralScoresDateTimeAsync(usedNumber, LatestZoneId, cancellationToken: token)),
-                cancellationToken).AsTask(), "General" },
+                cancellationToken).AsTask(), Constants.General },
             { pipeline.ExecuteAsync(
                 async token => ThrowIfOlderThanDay(await masterServer.FetchLadderScoresDateTimeAsync(usedNumber, LatestZoneId, cancellationToken: token)),
-                cancellationToken).AsTask(), "Multi" }
+                cancellationToken).AsTask(), Constants.Multi }
         };
 
         foreach (var campaign in Campaigns)
@@ -128,7 +131,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                 // But the debug zip is complicating this part
                 switch (scoreType)
                 {
-                    case "General":
+                    case Constants.General:
                         logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
 
                         var generalScores = await masterServer.DownloadGeneralScoresAsync(usedNumber, LatestZoneId, cancellationToken);
@@ -137,7 +140,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                             generalScoresJobService.ProcessAsync(generalScores.Zones[Constants.World], cancellationToken)
                         );
                         break;
-                    case "Multi":
+                    case Constants.Multi:
                         logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
 
                         var ladderScores = await masterServer.DownloadLadderScoresAsync(usedNumber, LatestZoneId, cancellationToken);
@@ -153,7 +156,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                         if (snapshotExists)
                         {
                             logger.LogInformation("Campaign scores for {ScoreType} are up to date.", scoreType);
-                            continue;
+                            break;
                         }
 
                         var snapshot = new TMFCampaignScoresSnapshot
@@ -184,12 +187,13 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                         // DO NOT USE DIFFS IN THIS COMPARISON because then fresh maps won't be saved in the snapshot
                         if (snapshot.Records.Count == 0)
                         {
+                            snapshot.NoChanges = true;
                             logger.LogInformation("No score changes for {ScoreType}.", scoreType);
                         }
-                        else
-                        {
-                            await scoresSnapshotService.SaveSnapshotAsync(snapshot, cancellationToken);
-                        }
+
+                        await scoresSnapshotService.SaveSnapshotAsync(snapshot, cancellationToken);
+
+                        await reportService.ReportAsync(campaignDiffs, cancellationToken);
 
                         break;
                 }

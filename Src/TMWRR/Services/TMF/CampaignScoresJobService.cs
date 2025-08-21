@@ -7,7 +7,7 @@ namespace TMWRR.Services.TMF;
 
 public interface ICampaignScoresJobService
 {
-    Task<IReadOnlyDictionary<string, TMUFCampaignScoreDiff>> ProcessAsync(
+    Task<IReadOnlyDictionary<string, TMFCampaignScoreDiff>> ProcessAsync(
         string campaignId, 
         IReadOnlyDictionary<string, CampaignScoresLeaderboard> maps, 
         CampaignScoresMedalZone medals, 
@@ -21,14 +21,17 @@ public class CampaignScoresJobService : ICampaignScoresJobService
     private readonly ILoginService loginService;
     private readonly IScoresSnapshotService scoresSnapshotService;
 
-    public CampaignScoresJobService(IMapService mapService, ILoginService loginService, IScoresSnapshotService scoresSnapshotService)
+    public CampaignScoresJobService(
+        IMapService mapService, 
+        ILoginService loginService, 
+        IScoresSnapshotService scoresSnapshotService)
     {
         this.mapService = mapService;
         this.loginService = loginService;
         this.scoresSnapshotService = scoresSnapshotService;
     }
 
-    public async Task<IReadOnlyDictionary<string, TMUFCampaignScoreDiff>> ProcessAsync(
+    public async Task<IReadOnlyDictionary<string, TMFCampaignScoreDiff>> ProcessAsync(
         string campaignId,
         IReadOnlyDictionary<string, CampaignScoresLeaderboard> maps,
         CampaignScoresMedalZone medals,
@@ -45,7 +48,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         var playersByLogin = await loginService.PopulateAsync(nicknamesByLogin, cancellationToken);
         var records = await scoresSnapshotService.GetLatestRecordsAsync(mapsByUid.Values, cancellationToken);
 
-        var diffs = new Dictionary<string, TMUFCampaignScoreDiff>();
+        var diffs = new Dictionary<string, TMFCampaignScoreDiff>();
 
         foreach (var (mapUid, leaderboardZones) in maps)
         {
@@ -64,10 +67,10 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 continue;
             }
 
-            var oldByLogin = existingRecords.ToDictionary(r => r.Player.Id, r => new TMUFCampaignScore(r.Rank, r.Score, r.Player.Id));
-            var newByLogin = leaderboard.HighScores.ToDictionary(r => r.Login, r => new TMUFCampaignScore(r.Rank, r.Score, r.Login));
+            var oldByLogin = existingRecords.ToDictionary(r => r.Player.Id, r => new TMFCampaignScore(r.Rank, r.Score, r.Player.Id));
+            var newByLogin = leaderboard.HighScores.ToDictionary(r => r.Login, r => new TMFCampaignScore(r.Rank, r.Score, r.Login));
 
-            var diff = new TMUFCampaignScoreDiff();
+            var diff = new TMFCampaignScoreDiff();
 
             // Detect new and improved/worsened
             foreach (var (login, updated) in newByLogin)
