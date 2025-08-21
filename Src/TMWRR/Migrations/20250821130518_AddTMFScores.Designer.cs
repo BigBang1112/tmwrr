@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TMWRR.Data;
 
@@ -11,9 +12,11 @@ using TMWRR.Data;
 namespace TMWRR.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250821130518_AddTMFScores")]
+    partial class AddTMFScores
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -61,20 +64,11 @@ namespace TMWRR.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTimeOffset?>("DrivenAt")
-                        .HasColumnType("datetime(6)");
-
                     b.Property<int>("MapId")
                         .HasColumnType("int");
 
-                    b.Property<byte>("Order")
-                        .HasColumnType("tinyint unsigned");
-
                     b.Property<string>("PlayerId")
                         .HasColumnType("varchar(32)");
-
-                    b.Property<int>("Rank")
-                        .HasColumnType("int");
 
                     b.Property<int>("Score")
                         .HasColumnType("int");
@@ -133,7 +127,7 @@ namespace TMWRR.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TMFLogins");
+                    b.ToTable("TMFLogin");
                 });
 
             modelBuilder.Entity("TMWRR.Entities.TMFCampaignScoresRecord", b =>

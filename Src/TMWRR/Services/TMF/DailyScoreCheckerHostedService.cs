@@ -86,7 +86,7 @@ public sealed class DailyScoreCheckerHostedService : BackgroundService
     {
         await using var scope = scopeFactory.CreateAsyncScope();
 
-        var scoreCheckerService = scope.ServiceProvider.GetRequiredService<IScoreCheckerService>();
+        var scoreCheckerService = scope.ServiceProvider.GetRequiredService<IScoresCheckerService>();
 
         var nextScoreNumber = await scoreCheckerService.CheckScoresAsync(number, cancellationToken);
 

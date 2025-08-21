@@ -17,22 +17,22 @@ public static class DataConfiguration
                 .ConfigureWarnings(w => w.Ignore(RelationalEventId.CommandExecuted)) // should be configurable
                 .UseSeeding((context, _) =>
                 {
-                    foreach (var campaignId in ScoreCheckerService.Campaigns)
+                    foreach (var campaignId in ScoresCheckerService.Campaigns)
                     {
-                        if (!context.Set<TMUFCampaign>().Any(x => x.Id == campaignId))
+                        if (!context.Set<TMFCampaign>().Any(x => x.Id == campaignId))
                         {
-                            context.Set<TMUFCampaign>().Add(new TMUFCampaign { Id = campaignId });
+                            context.Set<TMFCampaign>().Add(new TMFCampaign { Id = campaignId });
                         }
                     }
                     context.SaveChanges();
                 })
                 .UseAsyncSeeding(async (context, _, cancellationToken) =>
                 {
-                    foreach (var campaignId in ScoreCheckerService.Campaigns)
+                    foreach (var campaignId in ScoresCheckerService.Campaigns)
                     {
-                        if (!await context.Set<TMUFCampaign>().AnyAsync(x => x.Id == campaignId, cancellationToken))
+                        if (!await context.Set<TMFCampaign>().AnyAsync(x => x.Id == campaignId, cancellationToken))
                         {
-                            await context.Set<TMUFCampaign>().AddAsync(new TMUFCampaign { Id = campaignId }, cancellationToken);
+                            await context.Set<TMFCampaign>().AddAsync(new TMFCampaign { Id = campaignId }, cancellationToken);
                         }
                     }
                     await context.SaveChangesAsync(cancellationToken);

@@ -8,9 +8,14 @@ public static class DomainConfiguration
     public static void AddDomainServices(this IServiceCollection services)
     {
         services.AddHostedService<DailyScoreCheckerHostedService>();
-        services.AddScoped<IScoreCheckerService, ScoreCheckerService>();
+        services.AddScoped<IScoresCheckerService, ScoresCheckerService>();
         services.AddScoped<IGeneralScoresJobService, GeneralScoresJobService>();
         services.AddScoped<ICampaignScoresJobService, CampaignScoresJobService>();
+        services.AddScoped<ILadderScoresJobService, LadderScoresJobService>();
+        services.AddScoped<IScoresSnapshotService, ScoresSnapshotService>();
+
+        services.AddScoped<IMapService, MapService>();
+        services.AddScoped<ILoginService, LoginService>();
 
         services.AddSingleton<IDelayService, DelayService>();
 

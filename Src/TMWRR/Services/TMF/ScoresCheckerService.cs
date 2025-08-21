@@ -1,12 +1,10 @@
 ﻿using ManiaAPI.Xml.TMUF;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Polly.Registry;
 using System.Collections.Immutable;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
-using TMWRR.Data;
 using TMWRR.DiscordReport;
 using TMWRR.Entities;
 using TMWRR.Exceptions;
@@ -15,12 +13,12 @@ using TMWRR.Options;
 
 namespace TMWRR.Services.TMF;
 
-public interface IScoreCheckerService
+public interface IScoresCheckerService
 {
     Task<ScoresNumber?> CheckScoresAsync(ScoresNumber? number, CancellationToken cancellationToken);
 }
 
-public sealed class ScoreCheckerService : IScoreCheckerService
+public sealed class ScoresCheckerService : IScoresCheckerService
 {
     private const int EarliestZoneId = 5;
     private const int LatestZoneId = 109363;
@@ -36,27 +34,30 @@ public sealed class ScoreCheckerService : IScoreCheckerService
 
     private readonly ICampaignScoresJobService campaignScoresJobService;
     private readonly IGeneralScoresJobService generalScoresJobService;
+    private readonly ILadderScoresJobService ladderScoresJobService;
+    private readonly IScoresSnapshotService scoresSnapshotService;
     private readonly MasterServerTMUF masterServer;
-    private readonly AppDbContext db;
     private readonly TimeProvider timeProvider;
     private readonly ResiliencePipelineProvider<string> pipelineProvider;
     private readonly IOptionsSnapshot<TMUFOptions> options;
-    private readonly ILogger<ScoreCheckerService> logger;
+    private readonly ILogger<ScoresCheckerService> logger;
 
-    public ScoreCheckerService(
+    public ScoresCheckerService(
         ICampaignScoresJobService campaignScoresJobService,
         IGeneralScoresJobService generalScoresJobService,
-        MasterServerTMUF masterServer, 
-        AppDbContext db,
+        ILadderScoresJobService ladderScoresJobService,
+        IScoresSnapshotService scoresSnapshotService,
+        MasterServerTMUF masterServer,
         TimeProvider timeProvider, 
         ResiliencePipelineProvider<string> pipelineProvider,
         IOptionsSnapshot<TMUFOptions> options, 
-        ILogger<ScoreCheckerService> logger)
+        ILogger<ScoresCheckerService> logger)
     {
         this.campaignScoresJobService = campaignScoresJobService;
         this.generalScoresJobService = generalScoresJobService;
+        this.ladderScoresJobService = ladderScoresJobService;
+        this.scoresSnapshotService = scoresSnapshotService;
         this.masterServer = masterServer;
-        this.db = db;
         this.timeProvider = timeProvider;
         this.pipelineProvider = pipelineProvider;
         this.options = options;
@@ -99,6 +100,8 @@ public sealed class ScoreCheckerService : IScoreCheckerService
         var scoresDate = default(DateTime?);
         var sbWebhookMessage = new StringBuilder();
 
+        // This zip stores full score snapshots for debugging purposes and uploads them via webhook
+        // It is not stored in the database for now, as the content is very low level and includes unused zones
         await using var ms = new MemoryStream();
         await using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
         {
@@ -121,6 +124,8 @@ public sealed class ScoreCheckerService : IScoreCheckerService
                 var entry = zip.CreateEntry($"{scoreType}.json");
                 await using var entryStream = entry.Open();
 
+                // TODO: should be executed per-thread so that each is not bottlenecked
+                // But the debug zip is complicating this part
                 switch (scoreType)
                 {
                     case "General":
@@ -136,12 +141,14 @@ public sealed class ScoreCheckerService : IScoreCheckerService
                         logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
 
                         var ladderScores = await masterServer.DownloadLadderScoresAsync(usedNumber, LatestZoneId, cancellationToken);
-                        await JsonSerializer.SerializeAsync(entryStream, ladderScores, AppJsonContext.Default.LadderScores, cancellationToken);
+                        await Task.WhenAll(
+                            JsonSerializer.SerializeAsync(entryStream, ladderScores, AppJsonContext.Default.LadderScores, cancellationToken),
+                            ladderScoresJobService.ProcessAsync(ladderScores.Zones[Constants.World], cancellationToken)
+                        );
                         // TODO: only count players?
                         break;
                     default:
-                        var snapshotExists = await db.TMUFCampaignScoresSnapshots
-                            .AnyAsync(x => x.CampaignId == scoreType && x.CreatedAt == lastModifiedAt, cancellationToken);
+                        var snapshotExists = await scoresSnapshotService.CampaignSnapshotExistsAsync(scoreType, lastModifiedAt, cancellationToken);
 
                         if (snapshotExists)
                         {
@@ -149,28 +156,43 @@ public sealed class ScoreCheckerService : IScoreCheckerService
                             continue;
                         }
 
-                        await db.TMUFCampaignScoresSnapshots.AddAsync(new TMUFCampaignScoresSnapshot
+                        var snapshot = new TMFCampaignScoresSnapshot
                         {
                             CampaignId = scoreType,
                             CreatedAt = lastModifiedAt,
                             PublishedAt = publishedAt
-                        }, cancellationToken);
+                        };
 
                         logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
 
                         var campaignScores = await masterServer.DownloadCampaignScoresAsync(scoreType, usedNumber, LatestZoneId, cancellationToken);
+                        
+                        var campaignDiffsTask = campaignScoresJobService.ProcessAsync(
+                            scoreType,
+                            campaignScores.Maps,
+                            campaignScores.MedalZones[Constants.World],
+                            snapshot,
+                            cancellationToken);
+
                         await Task.WhenAll(
-                            JsonSerializer.SerializeAsync(entryStream, campaignScores, AppJsonContext.Default.CampaignScores, cancellationToken),
-                            campaignScoresJobService.ProcessAsync(
-                                scoreType,
-                                campaignScores.Maps,
-                                campaignScores.MedalZones[Constants.World],
-                                cancellationToken)
-                            );
+                            campaignDiffsTask,
+                            JsonSerializer.SerializeAsync(entryStream, campaignScores, AppJsonContext.Default.CampaignScores, cancellationToken)
+                        );  
+
+                        var campaignDiffs = await campaignDiffsTask;
+
+                        // DO NOT USE DIFFS IN THIS COMPARISON because then fresh maps won't be saved in the snapshot
+                        if (snapshot.Records.Count == 0)
+                        {
+                            logger.LogInformation("No score changes for {ScoreType}.", scoreType);
+                        }
+                        else
+                        {
+                            await scoresSnapshotService.SaveSnapshotAsync(snapshot, cancellationToken);
+                        }
+
                         break;
                 }
-
-                await db.SaveChangesAsync(cancellationToken);
 
                 sbWebhookMessage.AppendLine($"{scoreType}: {Discord.TimestampTag.FromDateTimeOffset(lastModifiedAt)} (available {Discord.TimestampTag.FromDateTimeOffset(publishedAt)})");
 

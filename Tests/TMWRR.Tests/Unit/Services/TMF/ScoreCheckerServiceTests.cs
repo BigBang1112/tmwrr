@@ -15,24 +15,14 @@ namespace TMWRR.Tests.Unit.Services.TMF;
 
 public class ScoreCheckerServiceTests
 {
-    private readonly ILogger<ScoreCheckerService> logger;
-    private readonly TimeProvider timeProvider;
-    private readonly MasterServerTMUF masterServer;
-    private readonly IOptionsSnapshot<TMUFOptions> options;
-    private readonly IGeneralScoresJobService generalScoresJobService;
-    private readonly ICampaignScoresJobService campaignScoresJobService;
-    private readonly AppDbContext db;
-
-    public ScoreCheckerServiceTests()
-    {
-        timeProvider = Substitute.For<TimeProvider>();
-        logger = Substitute.For<ILogger<ScoreCheckerService>>();
-        masterServer = Substitute.For<MasterServerTMUF>();
-        options = Substitute.For<IOptionsSnapshot<TMUFOptions>>();
-        generalScoresJobService = Substitute.For<IGeneralScoresJobService>();
-        campaignScoresJobService = Substitute.For<ICampaignScoresJobService>();
-        db = Substitute.For<AppDbContext>(new DbContextOptionsBuilder<AppDbContext>().Options);
-    }
+    private readonly ILogger<ScoresCheckerService> logger = Substitute.For<ILogger<ScoresCheckerService>>();
+    private readonly TimeProvider timeProvider = Substitute.For<TimeProvider>();
+    private readonly MasterServerTMUF masterServer = Substitute.For<MasterServerTMUF>();
+    private readonly IOptionsSnapshot<TMUFOptions> options = Substitute.For<IOptionsSnapshot<TMUFOptions>>();
+    private readonly IGeneralScoresJobService generalScoresJobService = Substitute.For<IGeneralScoresJobService>();
+    private readonly ICampaignScoresJobService campaignScoresJobService = Substitute.For<ICampaignScoresJobService>();
+    private readonly ILadderScoresJobService ladderScoresJobService = Substitute.For<ILadderScoresJobService>();
+    private readonly IScoresSnapshotService scoresSnapshotService = Substitute.For<IScoresSnapshotService>();
 
     [Test]
     public async Task ThrowIfOlderThanDay_ShouldReturnDate_WhenDateIsNotOlder()
@@ -53,11 +43,12 @@ public class ScoreCheckerServiceTests
         var serviceProvider = services.BuildServiceProvider();
         var pipelineProvider = serviceProvider.GetRequiredService<ResiliencePipelineProvider<string>>();
 
-        var scoreCheckerService = new ScoreCheckerService(
+        var scoreCheckerService = new ScoresCheckerService(
             campaignScoresJobService,
             generalScoresJobService,
+            ladderScoresJobService,
+            scoresSnapshotService,
             masterServer,
-            db,
             timeProvider,
             pipelineProvider,
             options,
@@ -84,11 +75,12 @@ public class ScoreCheckerServiceTests
         var serviceProvider = services.BuildServiceProvider();
         var pipelineProvider = serviceProvider.GetRequiredService<ResiliencePipelineProvider<string>>();
 
-        var scoreCheckerService = new ScoreCheckerService(
+        var scoreCheckerService = new ScoresCheckerService(
             campaignScoresJobService,
             generalScoresJobService,
+            ladderScoresJobService,
+            scoresSnapshotService,
             masterServer,
-            db,
             timeProvider,
             pipelineProvider,
             options,

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TMWRR.Data;
 
@@ -11,9 +12,11 @@ using TMWRR.Data;
 namespace TMWRR.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250821143438_AddTMFLogins")]
+    partial class AddTMFLogins
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -67,14 +70,8 @@ namespace TMWRR.Migrations
                     b.Property<int>("MapId")
                         .HasColumnType("int");
 
-                    b.Property<byte>("Order")
-                        .HasColumnType("tinyint unsigned");
-
                     b.Property<string>("PlayerId")
                         .HasColumnType("varchar(32)");
-
-                    b.Property<int>("Rank")
-                        .HasColumnType("int");
 
                     b.Property<int>("Score")
                         .HasColumnType("int");

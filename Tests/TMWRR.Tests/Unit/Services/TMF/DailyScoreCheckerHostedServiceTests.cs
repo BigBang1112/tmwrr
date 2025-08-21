@@ -166,7 +166,7 @@ public class DailyScoreCheckerHostedServiceTests
         var expectedNextCheck = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(1)), TimeSpan.Zero);
         var expectedNextNumber = new ScoresNumber?(ScoresNumber.Scores6);
 
-        var scoreCheckerService = Substitute.For<IScoreCheckerService>();
+        var scoreCheckerService = Substitute.For<IScoresCheckerService>();
         scoreCheckerService.CheckScoresAsync(null, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(expectedNextNumber));
 
@@ -214,7 +214,7 @@ public class DailyScoreCheckerHostedServiceTests
         // Setup delay to complete successfully.
         delayService.DelayAsync(Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
-        var scoreCheckerService = Substitute.For<IScoreCheckerService>();
+        var scoreCheckerService = Substitute.For<IScoresCheckerService>();
 
         // Setup the scoreCheckerService to return a valid result.
         // The RunScoreCheckAsync method uses the result of CheckScoresAsync.
@@ -271,7 +271,7 @@ public class DailyScoreCheckerHostedServiceTests
         delayService.DelayAsync(Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Throws(new TaskCanceledException());
 
-        var scoreCheckerService = Substitute.For<IScoreCheckerService>();
+        var scoreCheckerService = Substitute.For<IScoresCheckerService>();
 
         var services = new ServiceCollection();
         services.AddScoped(_ => scoreCheckerService);
@@ -313,7 +313,7 @@ public class DailyScoreCheckerHostedServiceTests
             DiscordWebhookUrl = ""
         });
 
-        var scoreCheckerService = Substitute.For<IScoreCheckerService>();
+        var scoreCheckerService = Substitute.For<IScoresCheckerService>();
 
         // For past delays, delayService.DelayAsync should never be called.
         scoreCheckerService.CheckScoresAsync(Arg.Any<ScoresNumber?>(), Arg.Any<CancellationToken>())
@@ -362,7 +362,7 @@ public class DailyScoreCheckerHostedServiceTests
         // Setup delay to complete successfully.
         delayService.DelayAsync(Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
-        var scoreCheckerService = Substitute.For<IScoreCheckerService>();
+        var scoreCheckerService = Substitute.For<IScoresCheckerService>();
 
         var services = new ServiceCollection();
         services.AddScoped(_ => scoreCheckerService);
