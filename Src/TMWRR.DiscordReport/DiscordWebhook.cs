@@ -22,6 +22,8 @@ internal sealed class DiscordWebhook : IDiscordWebhook
             .WithDescription(text)
             .WithColor(Discord.Color.Blue)
             .WithFooter("TMWRR (TMUF Solo Changes) Experimental")
+            .WithTitle("TMWRR")
+            .WithUrl("https://github.com/BigBang1112/tmwrr")
             .Build();
 
         await client.SendMessageAsync(embeds: [embed], options: new() { CancelToken = cancellationToken });
