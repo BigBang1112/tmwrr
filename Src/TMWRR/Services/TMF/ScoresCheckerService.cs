@@ -9,6 +9,7 @@ using TMWRR.DiscordReport;
 using TMWRR.Entities;
 using TMWRR.Exceptions;
 using TMWRR.Extensions;
+using TMWRR.Models;
 using TMWRR.Options;
 
 namespace TMWRR.Services.TMF;
@@ -103,6 +104,8 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         var scoresDate = default(DateTime?);
         var sbWebhookMessage = new StringBuilder();
 
+        var allCampaignDiffs = new Dictionary<string, TMFCampaignScoreDiff>();
+
         // This zip stores full score snapshots for debugging purposes and uploads them via webhook
         // It is not stored in the database for now, as the content is very low level and includes unused zones
         await using var ms = new MemoryStream();
@@ -183,6 +186,14 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                         );  
 
                         var campaignDiffs = await campaignDiffsTask;
+                        
+                        foreach (var (mapUid, diff) in campaignDiffs)
+                        {
+                            if (!diff.IsEmpty)
+                            {
+                                allCampaignDiffs[mapUid] = diff;
+                            }
+                        }
 
                         // DO NOT USE DIFFS IN THIS COMPARISON because then fresh maps won't be saved in the snapshot
                         if (snapshot.Records.Count == 0)
@@ -193,8 +204,6 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
                         await scoresSnapshotService.SaveSnapshotAsync(snapshot, cancellationToken);
 
-                        await reportService.ReportAsync(campaignDiffs, cancellationToken);
-
                         break;
                 }
 
@@ -203,6 +212,8 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                 scoresDate = lastModifiedAt.Date;
             }
         }
+
+        await reportService.ReportAsync(allCampaignDiffs, cancellationToken);
 
         using var webhook = Sample.CreateWebhook(options.Value.DiscordWebhookUrl);
 
