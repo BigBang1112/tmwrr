@@ -1,0 +1,38 @@
+{
+  "Speed": {
+    "Name": "Desert",
+    "Game": "TMF"
+  },
+  "Rally": {
+    "Game": "TMF"
+  },
+  "Alpine": {
+    "Name": "Snow",
+    "Game": "TMF"
+  },
+  "Island": {
+    "Game": "TMF"
+  },
+  "Bay": {
+    "Game": "TMF"
+  },
+  "Coast": {
+    "Game": "TMF"
+  },
+  "Stadium": {
+    "Game": "TMF"
+  },
+  "Canyon": {
+    "Game": "MP4"
+  },
+  "Valley": {
+    "Game": "MP4"
+  },
+  "Lagoon": {
+    "Game": "MP4"
+  },
+  "Stadium2020": {
+    "Name": "Stadium (2020)",
+    "Game": "TM2020"
+  }
+}

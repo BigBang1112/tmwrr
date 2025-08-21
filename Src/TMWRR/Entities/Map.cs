@@ -18,6 +18,26 @@ public class Map
     [StringLength(byte.MaxValue)]
     public string? DeformattedName { get; set; }
 
+    public User? Author { get; set; }
+
+    public TMEnvironment? Environment { get; set; }
+    public string? EnvironmentId { get; set; }
+
+    public Mode? Mode { get; set; }
+    public string? ModeId { get; set; }
+
+    public TimeInt32? AuthorTime { get; set; }
+
+    public int? AuthorScore { get; set; }
+
+    public int NbLaps { get; set; } = 1;
+
+    [StringLength(byte.MaxValue)]
+    public string? FileName { get; set; }
+
+    [MaxLength(512_000)]
+    public byte[]? Thumbnail { get; set; }
+
     public override string ToString()
     {
         if (string.IsNullOrEmpty(Name))

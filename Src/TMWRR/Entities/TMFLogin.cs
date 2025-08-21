@@ -19,4 +19,6 @@ public class TMFLogin
 
         return $"{Id} ({Nickname})";
     }
+
+    public ICollection<User> Users { get; set; } = [];
 }

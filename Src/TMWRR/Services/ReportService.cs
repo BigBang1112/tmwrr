@@ -26,6 +26,7 @@ public sealed class ReportService : IReportService
 
         foreach (var (mapUid, diff) in mapUidCampaignScoreDiffs)
         {
+            // CAUTION this also pulls thumbnail data, might need an alternative way.
             var map = await mapService.GetOrCreateAsync(mapUid, cancellationToken);
 
             if (map is null)

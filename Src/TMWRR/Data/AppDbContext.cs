@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using TmEssentials;
+using TMWRR.Converters.Db;
 using TMWRR.Entities;
 
 namespace TMWRR.Data;
@@ -10,4 +12,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<TMFCampaignScoresRecord> TMFCampaignScoresRecords { get; set; }
     public DbSet<Map> Maps { get; set; }
     public DbSet<TMFLogin> TMFLogins { get; set; }
+    public DbSet<User> Users { get; set; }
+    public DbSet<Game> Games { get; set; }
+    public DbSet<Mode> Modes { get; set; }
+    public DbSet<TMEnvironment> Environments { get; set; }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder
+            .Properties<TimeInt32>()
+            .HaveConversion<DbTimeInt32Converter>();
+    }
 }

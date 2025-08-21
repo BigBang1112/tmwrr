@@ -14,29 +14,7 @@ public static class DataConfiguration
         {
             var connectionStr = config.GetConnectionString("DefaultConnection");
             options.UseMySql(connectionStr, ServerVersion.AutoDetect(connectionStr))
-                .ConfigureWarnings(w => w.Ignore(RelationalEventId.CommandExecuted)) // should be configurable
-                .UseSeeding((context, _) =>
-                {
-                    foreach (var campaignId in ScoresCheckerService.Campaigns)
-                    {
-                        if (!context.Set<TMFCampaign>().Any(x => x.Id == campaignId))
-                        {
-                            context.Set<TMFCampaign>().Add(new TMFCampaign { Id = campaignId });
-                        }
-                    }
-                    context.SaveChanges();
-                })
-                .UseAsyncSeeding(async (context, _, cancellationToken) =>
-                {
-                    foreach (var campaignId in ScoresCheckerService.Campaigns)
-                    {
-                        if (!await context.Set<TMFCampaign>().AnyAsync(x => x.Id == campaignId, cancellationToken))
-                        {
-                            await context.Set<TMFCampaign>().AddAsync(new TMFCampaign { Id = campaignId }, cancellationToken);
-                        }
-                    }
-                    await context.SaveChangesAsync(cancellationToken);
-                });
+                .ConfigureWarnings(w => w.Ignore(RelationalEventId.CommandExecuted)); // should be configurable
             //options.UseInMemoryDatabase("TMWRR");
         });
     }

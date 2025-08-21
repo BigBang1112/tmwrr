@@ -8,6 +8,8 @@ public static class DomainConfiguration
 {
     public static void AddDomainServices(this IServiceCollection services)
     {
+        services.AddScoped<Seeding>();
+
         services.AddHostedService<DailyScoreCheckerHostedService>();
         services.AddScoped<IScoresCheckerService, ScoresCheckerService>();
         services.AddScoped<IGeneralScoresJobService, GeneralScoresJobService>();

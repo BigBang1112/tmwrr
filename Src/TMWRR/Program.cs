@@ -1,5 +1,6 @@
 using TMWRR.Options;
 using TMWRR.Configuration;
+using TMWRR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,13 @@ if (builder.Environment.IsDevelopment())
 }
 
 app.UseMiddleware();
+
+var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
+await using (var scope = scopeFactory.CreateAsyncScope())
+{
+    var seeding = scope.ServiceProvider.GetRequiredService<Seeding>();
+    await seeding.SeedAsync(CancellationToken.None);
+}
 
 app.Run();
 

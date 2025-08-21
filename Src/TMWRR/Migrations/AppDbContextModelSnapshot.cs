@@ -22,6 +22,17 @@ namespace TMWRR.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("TMWRR.Entities.Game", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(12)
+                        .HasColumnType("varchar(12)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Games");
+                });
+
             modelBuilder.Entity("TMWRR.Entities.Map", b =>
                 {
                     b.Property<int>("Id")
@@ -30,7 +41,23 @@ namespace TMWRR.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AuthorId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AuthorScore")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AuthorTime")
+                        .HasColumnType("int");
+
                     b.Property<string>("DeformattedName")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("EnvironmentId")
+                        .HasColumnType("varchar(16)");
+
+                    b.Property<string>("FileName")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
@@ -39,15 +66,63 @@ namespace TMWRR.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("varchar(32)");
 
+                    b.Property<string>("ModeId")
+                        .HasColumnType("varchar(16)");
+
                     b.Property<string>("Name")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
+                    b.Property<int>("NbLaps")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("Thumbnail")
+                        .HasMaxLength(512000)
+                        .HasColumnType("longblob");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("EnvironmentId");
 
                     b.HasIndex("MapUid");
 
+                    b.HasIndex("ModeId");
+
                     b.ToTable("Maps");
+                });
+
+            modelBuilder.Entity("TMWRR.Entities.Mode", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Modes");
+                });
+
+            modelBuilder.Entity("TMWRR.Entities.TMEnvironment", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)");
+
+                    b.Property<string>("GameId")
+                        .IsRequired()
+                        .HasColumnType("varchar(12)");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.ToTable("Environments");
                 });
 
             modelBuilder.Entity("TMWRR.Entities.TMFCampaign", b =>
@@ -55,6 +130,10 @@ namespace TMWRR.Migrations
                     b.Property<string>("Id")
                         .HasMaxLength(32)
                         .HasColumnType("varchar(32)");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
 
                     b.HasKey("Id");
 
@@ -147,6 +226,62 @@ namespace TMWRR.Migrations
                     b.ToTable("TMFLogins");
                 });
 
+            modelBuilder.Entity("TMWRR.Entities.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("Guid")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("LoginTMFId")
+                        .HasColumnType("varchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Guid")
+                        .IsUnique();
+
+                    b.HasIndex("LoginTMFId");
+
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("TMWRR.Entities.Map", b =>
+                {
+                    b.HasOne("TMWRR.Entities.User", "Author")
+                        .WithMany("Maps")
+                        .HasForeignKey("AuthorId");
+
+                    b.HasOne("TMWRR.Entities.TMEnvironment", "Environment")
+                        .WithMany("Maps")
+                        .HasForeignKey("EnvironmentId");
+
+                    b.HasOne("TMWRR.Entities.Mode", "Mode")
+                        .WithMany("Maps")
+                        .HasForeignKey("ModeId");
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Environment");
+
+                    b.Navigation("Mode");
+                });
+
+            modelBuilder.Entity("TMWRR.Entities.TMEnvironment", b =>
+                {
+                    b.HasOne("TMWRR.Entities.Game", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+                });
+
             modelBuilder.Entity("TMWRR.Entities.TMFCampaignScoresRecord", b =>
                 {
                     b.HasOne("TMWRR.Entities.Map", "Map")
@@ -183,6 +318,25 @@ namespace TMWRR.Migrations
                     b.Navigation("Campaign");
                 });
 
+            modelBuilder.Entity("TMWRR.Entities.User", b =>
+                {
+                    b.HasOne("TMWRR.Entities.TMFLogin", "LoginTMF")
+                        .WithMany("Users")
+                        .HasForeignKey("LoginTMFId");
+
+                    b.Navigation("LoginTMF");
+                });
+
+            modelBuilder.Entity("TMWRR.Entities.Mode", b =>
+                {
+                    b.Navigation("Maps");
+                });
+
+            modelBuilder.Entity("TMWRR.Entities.TMEnvironment", b =>
+                {
+                    b.Navigation("Maps");
+                });
+
             modelBuilder.Entity("TMWRR.Entities.TMFCampaign", b =>
                 {
                     b.Navigation("ScoresSnapshots");
@@ -191,6 +345,16 @@ namespace TMWRR.Migrations
             modelBuilder.Entity("TMWRR.Entities.TMFCampaignScoresSnapshot", b =>
                 {
                     b.Navigation("Records");
+                });
+
+            modelBuilder.Entity("TMWRR.Entities.TMFLogin", b =>
+                {
+                    b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("TMWRR.Entities.User", b =>
+                {
+                    b.Navigation("Maps");
                 });
 #pragma warning restore 612, 618
         }
