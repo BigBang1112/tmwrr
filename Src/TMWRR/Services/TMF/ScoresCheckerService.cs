@@ -156,7 +156,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                         if (snapshotExists)
                         {
                             logger.LogInformation("Campaign scores for {ScoreType} are up to date.", scoreType);
-                            break;
+                            continue; // MUST BE CONTINUE not break, to skip the debug webhook part
                         }
 
                         var snapshot = new TMFCampaignScoresSnapshot
