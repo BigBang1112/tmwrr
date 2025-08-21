@@ -104,6 +104,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         var scoresDate = default(DateTime?);
         var sbWebhookMessage = new StringBuilder();
 
+        var hasNewCampaignSnapshots = false;
         var allCampaignDiffs = new Dictionary<string, TMFCampaignScoreDiff>();
 
         // This zip stores full score snapshots for debugging purposes and uploads them via webhook
@@ -162,6 +163,8 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                             continue; // MUST BE CONTINUE not break, to skip the debug webhook part
                         }
 
+                        hasNewCampaignSnapshots = true;
+
                         var snapshot = new TMFCampaignScoresSnapshot
                         {
                             CampaignId = scoreType,
@@ -186,7 +189,8 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                         );  
 
                         var campaignDiffs = await campaignDiffsTask;
-                        
+
+                        // populate all campaign diffs for reporting
                         foreach (var (mapUid, diff) in campaignDiffs)
                         {
                             if (!diff.IsEmpty)
@@ -213,7 +217,10 @@ public sealed class ScoresCheckerService : IScoresCheckerService
             }
         }
 
-        await reportService.ReportAsync(allCampaignDiffs, cancellationToken);
+        if (hasNewCampaignSnapshots)
+        {
+            await reportService.ReportAsync(allCampaignDiffs, cancellationToken);
+        }
 
         using var webhook = Sample.CreateWebhook(options.Value.DiscordWebhookUrl);
 
