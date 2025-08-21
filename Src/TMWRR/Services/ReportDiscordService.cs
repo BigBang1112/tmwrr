@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using System.Text;
+using TmEssentials;
 using TMWRR.DiscordReport;
 using TMWRR.Models;
 using TMWRR.Options;
@@ -54,17 +55,24 @@ public class ReportDiscordService : IReportDiscordService
         {
             foreach (var newRecord in report.Diff.NewRecords)
             {
+                var newRecordNickname = logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login;
+
                 sb.Append(report.Map.GetDeformattedName());
                 sb.Append(": `");
                 sb.Append(newRecord.Rank.ToString("00"));
                 sb.Append("` `");
                 sb.Append(newRecord.GetTime().ToString(useHundredths: true));
-                sb.Append("` by ");
-                sb.AppendLine(newRecord.Login);
+                sb.Append("` by **");
+                sb.Append(TextFormatter.Deformat(newRecordNickname));
+                sb.Append("** (");
+                sb.Append(newRecord.Login);
+                sb.AppendLine(")");
             }
 
             foreach (var (oldRecord, newRecord) in report.Diff.ImprovedRecords)
             {
+                var newRecordNickname = logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login;
+
                 sb.Append(report.Map.GetDeformattedName());
                 sb.Append(": `");
                 sb.Append(newRecord.Rank.ToString("00"));
@@ -74,20 +82,27 @@ public class ReportDiscordService : IReportDiscordService
                 sb.Append((newRecord.GetTime() - oldRecord.GetTime()).TotalMilliseconds.ToString("0.00"));
                 sb.Append("` from `");
                 sb.Append(oldRecord.Rank.ToString("0.00"));
-                sb.Append("` by ");
-                sb.AppendLine(newRecord.Login);
+                sb.Append("` by **");
+                sb.Append(TextFormatter.Deformat(newRecordNickname));
+                sb.Append("** (");
+                sb.Append(newRecord.Login);
+                sb.AppendLine(")");
             }
 
             foreach (var removedRecord in report.Diff.RemovedRecords)
             {
+                var removedRecordNickname = logins.GetValueOrDefault(removedRecord.Login) ?? removedRecord.Login;
+
                 sb.Append(report.Map.GetDeformattedName());
                 sb.Append(": `");
                 sb.Append(removedRecord.Rank.ToString("00"));
                 sb.Append("` `");
                 sb.Append(removedRecord.GetTime().ToString(useHundredths: true));
-                sb.Append("` by ");
+                sb.Append("` by **");
+                sb.Append(removedRecordNickname);
+                sb.Append("** (");
                 sb.Append(removedRecord.Login);
-                sb.AppendLine(" was **removed**");
+                sb.AppendLine(") was **removed**");
             }
         }
 
