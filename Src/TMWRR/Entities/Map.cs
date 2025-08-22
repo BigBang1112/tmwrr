@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using TmEssentials;
+using TMWRR.Enums;
 
 namespace TMWRR.Entities;
 
@@ -63,8 +64,23 @@ public class Map
         return MapUid;
     }
 
+    public EMode? GetMode()
+    {
+        if (string.IsNullOrEmpty(ModeId))
+        {
+            return null;
+        }
+
+        return Enum.Parse<EMode>(ModeId);
+    }
+
     public bool IsStunts()
     {
-        return ModeId == "Stunts";
+        return ModeId == nameof(EMode.Stunts);
+    }
+
+    public bool IsPlatform()
+    {
+        return ModeId == nameof(EMode.Platform);
     }
 }

@@ -2,6 +2,7 @@
 using System.Text;
 using TmEssentials;
 using TMWRR.DiscordReport;
+using TMWRR.Enums;
 using TMWRR.Models;
 using TMWRR.Options;
 
@@ -57,7 +58,7 @@ public class ReportDiscordService : IReportDiscordService
             foreach (var newRecord in report.Diff.NewRecords)
             {
                 var newRecordNickname = logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login;
-                var score = report.Map.IsStunts()
+                var score = report.Map.IsStunts() || report.Map.IsPlatform()
                     ? newRecord.Score.ToString()
                     : newRecord.GetTime().ToString(useHundredths: true);
 
@@ -73,7 +74,7 @@ public class ReportDiscordService : IReportDiscordService
             foreach (var pushedOffRecord in report.Diff.PushedOffRecords)
             {
                 var pushedOffRecordNickname = logins.GetValueOrDefault(pushedOffRecord.Login) ?? pushedOffRecord.Login;
-                var score = report.Map.IsStunts()
+                var score = report.Map.IsStunts() || report.Map.IsPlatform()
                     ? pushedOffRecord.Score.ToString()
                     : pushedOffRecord.GetTime().ToString(useHundredths: true);
 
@@ -89,12 +90,15 @@ public class ReportDiscordService : IReportDiscordService
             foreach (var (oldRecord, newRecord) in report.Diff.ImprovedRecords)
             {
                 var newRecordNickname = logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login;
-                var score = report.Map.IsStunts()
+                var score = report.Map.IsStunts() || report.Map.IsPlatform()
                     ? newRecord.Score.ToString()
                     : newRecord.GetTime().ToString(useHundredths: true);
-                var delta = report.Map.IsStunts()
-                    ? $"+{newRecord.Score - oldRecord.Score}"
-                    : (newRecord.GetTime() - oldRecord.GetTime()).TotalSeconds.ToString("0.00");
+                var delta = report.Map.GetMode() switch
+                {
+                    EMode.Stunts => $"+{newRecord.Score - oldRecord.Score}",
+                    EMode.Platform => (newRecord.Score - oldRecord.Score).ToString(),
+                    _ => (newRecord.GetTime() - oldRecord.GetTime()).TotalSeconds.ToString("0.00")
+                };
 
                 sb.AppendFormat("**{0}**: `{1}` `{2}` `{3}` from `{4}` by **{5}** ({6})",
                     report.Map.GetDeformattedName(),
@@ -110,7 +114,7 @@ public class ReportDiscordService : IReportDiscordService
             foreach (var removedRecord in report.Diff.RemovedRecords)
             {
                 var removedRecordNickname = logins.GetValueOrDefault(removedRecord.Login) ?? removedRecord.Login;
-                var score = report.Map.IsStunts()
+                var score = report.Map.IsStunts() || report.Map.IsPlatform()
                     ? removedRecord.Score.ToString()
                     : removedRecord.GetTime().ToString(useHundredths: true);
 
