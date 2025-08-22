@@ -47,6 +47,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             .ToDictionary(x => x.Login, x => x.Nickname);
         var playersByLogin = await loginService.PopulateAsync(nicknamesByLogin, cancellationToken);
         var records = await scoresSnapshotService.GetLatestRecordsAsync(mapsByUid.Values, cancellationToken);
+        //
 
         var diffs = new Dictionary<string, TMFCampaignScoreDiff>();
 
@@ -83,6 +84,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 }
 
                 // Compare by rank first, then by score if needed
+                // TODO: Should be opposite for Stunts
                 if (updated.Rank < old.Rank || updated.Score < old.Score)
                 {
                     diff.ImprovedRecords.Add((old, updated));
@@ -93,12 +95,25 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 }
             }
 
-            // Detect removed
-            foreach (var kv in oldByLogin)
+            // TODO: Opposite in Stunts again
+            var worstScore = leaderboard.HighScores.Max(x => x.Score);
+
+            // Detect removed or pushed off
+            foreach (var (login, old) in oldByLogin)
             {
-                if (!newByLogin.ContainsKey(kv.Key))
+                if (newByLogin.ContainsKey(login))
                 {
-                    diff.RemovedRecords.Add(kv.Value);
+                    continue;
+                }
+
+                // TODO: Opposite in Stunts again
+                if (old.Score >= worstScore)
+                {
+                    diff.PushedOffRecords.Add(old);
+                }
+                else
+                {
+                    diff.RemovedRecords.Add(old);
                 }
             }
 

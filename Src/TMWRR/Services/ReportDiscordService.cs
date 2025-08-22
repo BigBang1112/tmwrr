@@ -57,52 +57,52 @@ public class ReportDiscordService : IReportDiscordService
             {
                 var newRecordNickname = logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login;
 
-                sb.Append(report.Map.GetDeformattedName());
-                sb.Append(": `");
-                sb.Append(newRecord.Rank.ToString("00"));
-                sb.Append("` `");
-                sb.Append(newRecord.GetTime().ToString(useHundredths: true));
-                sb.Append("` by **");
-                sb.Append(TextFormatter.Deformat(newRecordNickname));
-                sb.Append("** (");
-                sb.Append(newRecord.Login);
-                sb.AppendLine(")");
+                sb.AppendFormat("**{0}**: `{1}` `{2}` by **{3}** ({4})",
+                    report.Map.GetDeformattedName(),
+                    newRecord.Rank.ToString("00"),
+                    newRecord.GetTime().ToString(useHundredths: true),
+                    TextFormatter.Deformat(newRecordNickname),
+                    newRecord.Login);
+                sb.AppendLine();
+            }
+
+            foreach (var pushedOffRecord in report.Diff.PushedOffRecords)
+            {
+                var pushedOffRecordNickname = logins.GetValueOrDefault(pushedOffRecord.Login) ?? pushedOffRecord.Login;
+                sb.AppendFormat("**{0}**: `{1}` `{2}` by **{3}** ({4}) was **pushed off**",
+                    report.Map.GetDeformattedName(),
+                    pushedOffRecord.Rank.ToString("00"),
+                    pushedOffRecord.GetTime().ToString(useHundredths: true),
+                    TextFormatter.Deformat(pushedOffRecordNickname),
+                    pushedOffRecord.Login);
+                sb.AppendLine();
             }
 
             foreach (var (oldRecord, newRecord) in report.Diff.ImprovedRecords)
             {
                 var newRecordNickname = logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login;
 
-                sb.Append(report.Map.GetDeformattedName());
-                sb.Append(": `");
-                sb.Append(newRecord.Rank.ToString("00"));
-                sb.Append("` `");
-                sb.Append(newRecord.GetTime().ToString(useHundredths: true));
-                sb.Append("` `");
-                sb.Append((newRecord.GetTime() - oldRecord.GetTime()).TotalMilliseconds.ToString("0.00"));
-                sb.Append("` from `");
-                sb.Append(oldRecord.Rank.ToString("0.00"));
-                sb.Append("` by **");
-                sb.Append(TextFormatter.Deformat(newRecordNickname));
-                sb.Append("** (");
-                sb.Append(newRecord.Login);
-                sb.AppendLine(")");
+                sb.AppendFormat("**{0}**: `{1}` `{2}` `{3}` from `{4}` by **{5}** ({6})",
+                    report.Map.GetDeformattedName(),
+                    newRecord.Rank.ToString("00"),
+                    newRecord.GetTime().ToString(useHundredths: true),
+                    (newRecord.GetTime() - oldRecord.GetTime()).TotalSeconds.ToString("0.00"),
+                    oldRecord.Rank.ToString("00"),
+                    TextFormatter.Deformat(newRecordNickname),
+                    newRecord.Login);
+                sb.AppendLine();
             }
 
             foreach (var removedRecord in report.Diff.RemovedRecords)
             {
                 var removedRecordNickname = logins.GetValueOrDefault(removedRecord.Login) ?? removedRecord.Login;
 
-                sb.Append(report.Map.GetDeformattedName());
-                sb.Append(": `");
-                sb.Append(removedRecord.Rank.ToString("00"));
-                sb.Append("` `");
-                sb.Append(removedRecord.GetTime().ToString(useHundredths: true));
-                sb.Append("` by **");
-                sb.Append(removedRecordNickname);
-                sb.Append("** (");
-                sb.Append(removedRecord.Login);
-                sb.AppendLine(") was **removed**");
+                sb.AppendFormat("**{0}**: `{1}` `{2}` by **{3}** ({4}) was **removed**",
+                    report.Map.GetDeformattedName(),
+                    removedRecord.Rank.ToString("00"),
+                    removedRecord.GetTime().ToString(useHundredths: true),
+                    TextFormatter.Deformat(removedRecordNickname),
+                    removedRecord.Login);
             }
         }
 
