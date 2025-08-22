@@ -38,5 +38,3 @@ await using (var scope = scopeFactory.CreateAsyncScope())
 }
 
 app.Run();
-
-public partial class Program;

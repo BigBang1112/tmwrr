@@ -7,6 +7,8 @@ namespace TMWRR.Services;
 public interface ILoginService
 {
     ValueTask<IDictionary<string, TMFLogin>> PopulateAsync(IDictionary<string, string> loginNicknameDict, CancellationToken cancellationToken);
+    Task<TMFLogin?> GetTMFAsync(string login, CancellationToken cancellationToken);
+    Task<TMFLogin?> GetTMFWithUsersAsync(string login, CancellationToken cancellationToken);
     ValueTask<IEnumerable<TMFLogin>> GetMultipleTMFAsync(IEnumerable<string> logins, CancellationToken cancellationToken);
     ValueTask<IReadOnlyDictionary<string, string?>> GetMultipleNicknamesAsync(IEnumerable<string> logins, CancellationToken cancellationToken);
 }
@@ -60,6 +62,22 @@ public sealed class LoginService : ILoginService
         }
 
         return logins;
+    }
+
+    public async Task<TMFLogin?> GetTMFAsync(string login, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(login, nameof(login));
+
+        return await db.TMFLogins.FirstOrDefaultAsync(x => x.Id == login, cancellationToken);
+    }
+
+    public async Task<TMFLogin?> GetTMFWithUsersAsync(string login, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(login, nameof(login));
+
+        return await db.TMFLogins
+            .Include(x => x.Users)
+            .FirstOrDefaultAsync(x => x.Id == login, cancellationToken);
     }
 
     public async ValueTask<IEnumerable<TMFLogin>> GetMultipleTMFAsync(IEnumerable<string> logins, CancellationToken cancellationToken)

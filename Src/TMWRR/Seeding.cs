@@ -6,7 +6,7 @@ using TMWRR.Entities;
 
 namespace TMWRR;
 
-public class Seeding
+public sealed class Seeding
 {
     private const string Resources = "Resources";
 

@@ -23,5 +23,7 @@ public static class MiddlewareConfiguration
         {
             options.Theme = ScalarTheme.DeepSpace;
         });
+
+        app.MapEndpoints();
     }
 }

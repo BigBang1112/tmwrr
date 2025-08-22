@@ -1,5 +1,7 @@
 ﻿using ManiaAPI.Xml.Extensions.Hosting;
+using Microsoft.AspNetCore.Http.Json;
 using Polly;
+using System.Text.Json.Serialization;
 using TMWRR.Exceptions;
 using TMWRR.Options;
 
@@ -32,6 +34,9 @@ public static class WebConfiguration
         {
             options.RejectionStatusCode = 429;
         });
+
+        services.Configure<JsonOptions>(options =>
+            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
 
         services.AddHealthChecks();
     }
