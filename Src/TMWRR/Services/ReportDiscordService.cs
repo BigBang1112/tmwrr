@@ -42,7 +42,8 @@ public class ReportDiscordService : IReportDiscordService
             .SelectMany(x =>
                 x.Diff.NewRecords.Select(x => x.Login)
                 .Concat(x.Diff.ImprovedRecords.Select(y => y.New.Login))
-                .Concat(x.Diff.RemovedRecords.Select(y => y.Login)))
+                .Concat(x.Diff.RemovedRecords.Select(y => y.Login))
+                .Concat(x.Diff.PushedOffRecords.Select(y => y.Login)))
             .ToHashSet();
 
         var logins = (await loginService.GetMultipleAsync(loginSet, cancellationToken))
