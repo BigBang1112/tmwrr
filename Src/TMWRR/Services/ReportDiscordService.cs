@@ -62,8 +62,9 @@ public class ReportDiscordService : IReportDiscordService
                     ? newRecord.Score.ToString()
                     : newRecord.GetTime().ToString(useHundredths: true);
 
-                sb.AppendFormat("**{0}**: `{1}` `{2}` by **{3}** ({4})",
+                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)**",
                     report.Map.GetDeformattedName(),
+                    report.Map.MapUid,
                     newRecord.Rank.ToString("00"),
                     score,
                     TextFormatter.Deformat(newRecordNickname),
@@ -78,8 +79,9 @@ public class ReportDiscordService : IReportDiscordService
                     ? pushedOffRecord.Score.ToString()
                     : pushedOffRecord.GetTime().ToString(useHundredths: true);
 
-                sb.AppendFormat("**{0}**: `{1}` `{2}` by **{3}** ({4}) was **pushed off**",
+                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** was **pushed off**",
                     report.Map.GetDeformattedName(),
+                    report.Map.MapUid,
                     pushedOffRecord.Rank.ToString("00"),
                     score,
                     TextFormatter.Deformat(pushedOffRecordNickname),
@@ -100,8 +102,9 @@ public class ReportDiscordService : IReportDiscordService
                     _ => (newRecord.GetTime() - oldRecord.GetTime()).TotalSeconds.ToString("0.00")
                 };
 
-                sb.AppendFormat("**{0}**: `{1}` `{2}` `{3}` from `{4}` by **{5}** ({6})",
+                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` `{4}` from `{5}` by **[{6}](<https://ul.unitedascenders.xyz/lookup?login={7}>)**",
                     report.Map.GetDeformattedName(),
+                    report.Map.MapUid,
                     newRecord.Rank.ToString("00"),
                     score,
                     delta,
@@ -118,8 +121,9 @@ public class ReportDiscordService : IReportDiscordService
                     ? removedRecord.Score.ToString()
                     : removedRecord.GetTime().ToString(useHundredths: true);
 
-                sb.AppendFormat("**{0}**: `{1}` `{2}` by **{3}** ({4}) was **removed**",
+                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** was **removed**",
                     report.Map.GetDeformattedName(),
+                    report.Map.MapUid,
                     removedRecord.Rank.ToString("00"),
                     score,
                     TextFormatter.Deformat(removedRecordNickname),
