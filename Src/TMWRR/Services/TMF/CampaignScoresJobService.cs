@@ -82,21 +82,22 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                     diff.NewRecords.Add(updated);
                     continue;
                 }
-
+                
                 // Compare by rank first, then by score if needed
-                // TODO: Should be opposite for Stunts
-                if (updated.Rank < old.Rank || updated.Score < old.Score)
+                if (updated.Rank < old.Rank || (map.IsStunts() ? updated.Score > old.Score : updated.Score < old.Score))
                 {
                     diff.ImprovedRecords.Add((old, updated));
                 }
-                else if (updated.Rank > old.Rank || updated.Score > old.Score)
+                else if (updated.Rank > old.Rank || (map.IsStunts() ? updated.Score < old.Score : updated.Score > old.Score))
                 {
                     diff.WorsenedRecords.Add((old, updated));
                 }
             }
 
-            // TODO: Opposite in Stunts again
-            var worstScore = leaderboard.HighScores.Max(x => x.Score);
+            // Maybe just checking last record is enough?
+            var worstScore = map.IsStunts()
+                ? leaderboard.HighScores.Min(x => x.Score)
+                : leaderboard.HighScores.Max(x => x.Score);
 
             // Detect removed or pushed off
             foreach (var (login, old) in oldByLogin)
@@ -106,8 +107,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                     continue;
                 }
 
-                // TODO: Opposite in Stunts again
-                if (old.Score >= worstScore)
+                if (map.IsStunts() ? old.Score <= worstScore : old.Score >= worstScore)
                 {
                     diff.PushedOffRecords.Add(old);
                 }

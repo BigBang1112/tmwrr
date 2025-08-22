@@ -62,4 +62,9 @@ public class Map
 
         return MapUid;
     }
+
+    public bool IsStunts()
+    {
+        return ModeId == "Stunts";
+    }
 }

@@ -46,7 +46,7 @@ public class ReportDiscordService : IReportDiscordService
                 .Concat(x.Diff.PushedOffRecords.Select(y => y.Login)))
             .ToHashSet();
 
-        var logins = (await loginService.GetMultipleAsync(loginSet, cancellationToken))
+        var logins = (await loginService.GetMultipleTMFAsync(loginSet, cancellationToken))
             .ToDictionary(x => x.Id, x => x.Nickname);
         //
 
@@ -57,11 +57,14 @@ public class ReportDiscordService : IReportDiscordService
             foreach (var newRecord in report.Diff.NewRecords)
             {
                 var newRecordNickname = logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login;
+                var score = report.Map.IsStunts()
+                    ? newRecord.Score.ToString()
+                    : newRecord.GetTime().ToString(useHundredths: true);
 
                 sb.AppendFormat("**{0}**: `{1}` `{2}` by **{3}** ({4})",
                     report.Map.GetDeformattedName(),
                     newRecord.Rank.ToString("00"),
-                    newRecord.GetTime().ToString(useHundredths: true),
+                    score,
                     TextFormatter.Deformat(newRecordNickname),
                     newRecord.Login);
                 sb.AppendLine();
@@ -70,10 +73,14 @@ public class ReportDiscordService : IReportDiscordService
             foreach (var pushedOffRecord in report.Diff.PushedOffRecords)
             {
                 var pushedOffRecordNickname = logins.GetValueOrDefault(pushedOffRecord.Login) ?? pushedOffRecord.Login;
+                var score = report.Map.IsStunts()
+                    ? pushedOffRecord.Score.ToString()
+                    : pushedOffRecord.GetTime().ToString(useHundredths: true);
+
                 sb.AppendFormat("**{0}**: `{1}` `{2}` by **{3}** ({4}) was **pushed off**",
                     report.Map.GetDeformattedName(),
                     pushedOffRecord.Rank.ToString("00"),
-                    pushedOffRecord.GetTime().ToString(useHundredths: true),
+                    score,
                     TextFormatter.Deformat(pushedOffRecordNickname),
                     pushedOffRecord.Login);
                 sb.AppendLine();
@@ -82,12 +89,18 @@ public class ReportDiscordService : IReportDiscordService
             foreach (var (oldRecord, newRecord) in report.Diff.ImprovedRecords)
             {
                 var newRecordNickname = logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login;
+                var score = report.Map.IsStunts()
+                    ? newRecord.Score.ToString()
+                    : newRecord.GetTime().ToString(useHundredths: true);
+                var delta = report.Map.IsStunts()
+                    ? $"+{newRecord.Score - oldRecord.Score}"
+                    : (newRecord.GetTime() - oldRecord.GetTime()).TotalSeconds.ToString("0.00");
 
                 sb.AppendFormat("**{0}**: `{1}` `{2}` `{3}` from `{4}` by **{5}** ({6})",
                     report.Map.GetDeformattedName(),
                     newRecord.Rank.ToString("00"),
-                    newRecord.GetTime().ToString(useHundredths: true),
-                    (newRecord.GetTime() - oldRecord.GetTime()).TotalSeconds.ToString("0.00"),
+                    score,
+                    delta,
                     oldRecord.Rank.ToString("00"),
                     TextFormatter.Deformat(newRecordNickname),
                     newRecord.Login);
@@ -97,11 +110,14 @@ public class ReportDiscordService : IReportDiscordService
             foreach (var removedRecord in report.Diff.RemovedRecords)
             {
                 var removedRecordNickname = logins.GetValueOrDefault(removedRecord.Login) ?? removedRecord.Login;
+                var score = report.Map.IsStunts()
+                    ? removedRecord.Score.ToString()
+                    : removedRecord.GetTime().ToString(useHundredths: true);
 
                 sb.AppendFormat("**{0}**: `{1}` `{2}` by **{3}** ({4}) was **removed**",
                     report.Map.GetDeformattedName(),
                     removedRecord.Rank.ToString("00"),
-                    removedRecord.GetTime().ToString(useHundredths: true),
+                    score,
                     TextFormatter.Deformat(removedRecordNickname),
                     removedRecord.Login);
             }
