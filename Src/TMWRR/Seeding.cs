@@ -70,6 +70,17 @@ public sealed class Seeding
                         environment.GameId = environmentResource.Game;
                     }
                 }
+
+                var existingEnvironmentIds = environments.Select(x => x.Id).ToHashSet();
+                var missingEnvironments = environmentDict
+                    .Where(kv => !existingEnvironmentIds.Contains(kv.Key))
+                    .Select(kv => new TMEnvironment
+                    {
+                        Id = kv.Key,
+                        Name = kv.Value.Name,
+                        GameId = kv.Value.Game
+                    });
+                await db.Environments.AddRangeAsync(missingEnvironments, cancellationToken);
             }
         }
 
@@ -95,12 +106,14 @@ public sealed class Seeding
             {
                 foreach (var campaign in campaignsTMF)
                 {
-                    if (campaignDict.TryGetValue(campaign.Id, out var campaignResource))
+                    if (!campaignDict.TryGetValue(campaign.Id, out var campaignResource))
                     {
-                        campaign.Name = campaignResource.Name;
-                        campaign.Section = campaignResource.Section;
-                        campaign.StartId = campaignResource.StartId;
+                        continue;
                     }
+
+                    campaign.Name = campaignResource.Name;
+                    campaign.Section = campaignResource.Section;
+                    campaign.StartId = campaignResource.StartId;
                 }
             }
         }

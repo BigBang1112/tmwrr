@@ -50,4 +50,8 @@
       <ProjectReference Include="..\TMWRR.DiscordReport\TMWRR.DiscordReport.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Mappings\" />
+    </ItemGroup>
+
 </Project>

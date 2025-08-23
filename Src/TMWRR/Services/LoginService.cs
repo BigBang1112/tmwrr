@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Collections.Immutable;
 using TMWRR.Data;
+using TMWRR.Dtos;
 using TMWRR.Entities;
 
 namespace TMWRR.Services;
@@ -7,10 +9,10 @@ namespace TMWRR.Services;
 public interface ILoginService
 {
     ValueTask<IDictionary<string, TMFLogin>> PopulateAsync(IDictionary<string, string> loginNicknameDict, CancellationToken cancellationToken);
-    Task<TMFLogin?> GetTMFAsync(string login, CancellationToken cancellationToken);
-    Task<TMFLogin?> GetTMFWithUsersAsync(string login, CancellationToken cancellationToken);
+    //Task<TMFLogin?> GetTMFAsync(string login, CancellationToken cancellationToken);
+    Task<TMFLoginDto?> GetTMFDtoAsync(string login, CancellationToken cancellationToken);
     ValueTask<IEnumerable<TMFLogin>> GetMultipleTMFAsync(IEnumerable<string> logins, CancellationToken cancellationToken);
-    ValueTask<IReadOnlyDictionary<string, string?>> GetMultipleNicknamesAsync(IEnumerable<string> logins, CancellationToken cancellationToken);
+    //ValueTask<IReadOnlyDictionary<string, string?>> GetMultipleNicknamesAsync(IEnumerable<string> logins, CancellationToken cancellationToken);
 }
 
 public sealed class LoginService : ILoginService
@@ -71,12 +73,21 @@ public sealed class LoginService : ILoginService
         return await db.TMFLogins.FirstOrDefaultAsync(x => x.Id == login, cancellationToken);
     }
 
-    public async Task<TMFLogin?> GetTMFWithUsersAsync(string login, CancellationToken cancellationToken)
+    public async Task<TMFLoginDto?> GetTMFDtoAsync(string login, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(login, nameof(login));
 
         return await db.TMFLogins
             .Include(x => x.Users)
+            .Select(x => new TMFLoginDto
+            {
+                Id = x.Id,
+                Nickname = x.Nickname,
+                Users = x.Users.Select(u => new UserDto
+                {
+                    Guid = u.Guid
+                }).ToImmutableList(),
+            })
             .FirstOrDefaultAsync(x => x.Id == login, cancellationToken);
     }
 
@@ -91,6 +102,7 @@ public sealed class LoginService : ILoginService
 
         return await db.TMFLogins
             .Where(x => logins.Contains(x.Id))
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 

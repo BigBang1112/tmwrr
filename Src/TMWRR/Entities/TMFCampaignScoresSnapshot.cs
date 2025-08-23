@@ -14,6 +14,7 @@ public class TMFCampaignScoresSnapshot
 
     public required DateTimeOffset CreatedAt { get; set; }
     public required DateTimeOffset PublishedAt { get; set; }
+    //public string? Etag { get; set; } not returned from ManiaAPI
 
     public bool NoChanges { get; set; }
 

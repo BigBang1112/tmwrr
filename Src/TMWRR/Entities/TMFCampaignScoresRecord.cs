@@ -5,19 +5,12 @@ namespace TMWRR.Entities;
 public class TMFCampaignScoresRecord
 {
     public int Id { get; set; }
-
     public required TMFCampaignScoresSnapshot Snapshot { get; set; }
-
     public required Map Map { get; set; }
-
     public required TMFLogin Player { get; set; }
-
     public required int Score { get; set; }
-
     public required int Rank { get; set; }
-
     public required byte Order { get; set; }
-
     public DateTimeOffset? DrivenAt { get; set; }
 
     public TimeInt32 GetTime()

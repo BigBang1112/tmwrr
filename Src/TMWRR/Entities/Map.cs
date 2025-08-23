@@ -44,6 +44,8 @@ public class Map
     [MaxLength(512_000)]
     public byte[]? Thumbnail { get; set; }
 
+    public ICollection<TMFCampaignScoresRecord> TMFRecords { get; set; } = [];
+
     public override string ToString()
     {
         if (string.IsNullOrEmpty(Name))

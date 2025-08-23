@@ -4,16 +4,16 @@ using TMWRR.Services;
 
 namespace TMWRR.Endpoints;
 
-public static class TMFLoginsEndpoint
+public static class UsersEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/{id}", GetLogin);
+        group.MapGet("/{guid}", GetUser);
     }
 
-    private static async Task<Results<Ok<TMFLoginDto>, NotFound>> GetLogin(string id, ILoginService loginService, CancellationToken cancellationToken)
+    private static async Task<Results<Ok<UserDto>, NotFound>> GetUser(Guid guid, IUserService userService, CancellationToken cancellationToken)
     {
-        var dto = await loginService.GetTMFDtoAsync(id, cancellationToken);
+        var dto = await userService.GetDtoAsync(guid, cancellationToken);
 
         if (dto is null)
         {

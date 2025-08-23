@@ -14,6 +14,11 @@ public static class EndpointConfiguration
             });
         });
 
-        TMFLoginsEndpoint.Map(app.MapGroup("/tmf-logins"));
+        TMFLoginsEndpoint.Map(app.MapGroup("tmf/logins"));
+        TMFCampaignsEndpoint.Map(app.MapGroup("tmf/campaigns"));
+        GamesEndpoint.Map(app.MapGroup("games"));
+        EnvironmentsEndpoint.Map(app.MapGroup("environments"));
+        UsersEndpoint.Map(app.MapGroup("users"));
+        MapsEndpoint.Map(app.MapGroup("maps"));
     }
 }

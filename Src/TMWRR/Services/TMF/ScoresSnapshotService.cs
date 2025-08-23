@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using TMWRR.Data;
+using TMWRR.Dtos;
 using TMWRR.Entities;
 
 namespace TMWRR.Services.TMF;
@@ -17,6 +18,10 @@ public interface IScoresSnapshotService
     /// <returns></returns>
     Task SaveSnapshotAsync(TMFCampaignScoresSnapshot snapshot, CancellationToken cancellationToken);
     ValueTask<IEnumerable<TMFCampaignScoresRecord>> GetLatestRecordsAsync(IEnumerable<Map> maps, CancellationToken cancellationToken);
+    Task<TMFCampaignScoresSnapshotDto?> GetLatestSnapshotDtoAsync(string campaignId, CancellationToken cancellationToken);
+    Task<IEnumerable<TMFCampaignScoresRecordDto>> GetLatestRecordDtosAsync(string campaignId, string mapUid, CancellationToken cancellationToken);
+    Task<IEnumerable<TMFCampaignScoresRecordDto>> GetSnapshotRecordDtosAsync(string campaignId, DateTimeOffset createdAt, string mapUid, CancellationToken cancellationToken);
+    Task<IEnumerable<TMFCampaignScoresSnapshotDto>> GetAllSnapshotDtosAsync(string mapUid, CancellationToken cancellationToken);
 }
 
 public sealed class ScoresSnapshotService : IScoresSnapshotService
@@ -58,5 +63,90 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
             .ToListAsync(cancellationToken);
 
         return records;
+    }
+
+    public async Task<TMFCampaignScoresSnapshotDto?> GetLatestSnapshotDtoAsync(string campaignId, CancellationToken cancellationToken)
+    {
+        return await db.TMFCampaignScoresSnapshots
+            .Select(x => new TMFCampaignScoresSnapshotDto
+            {
+                Campaign = new TMFCampaignDto
+                {
+                    Id = x.Campaign.Id,
+                    Name = x.Campaign.Name
+                },
+                CreatedAt = x.CreatedAt,
+                PublishedAt = x.PublishedAt,
+                NoChanges = x.NoChanges
+            })
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync(x => x.Campaign.Id == campaignId, cancellationToken);
+    }
+
+    public async Task<IEnumerable<TMFCampaignScoresRecordDto>> GetLatestRecordDtosAsync(string campaignId, string mapUid, CancellationToken cancellationToken)
+    {
+        var records = await db.TMFCampaignScoresRecords
+            .Include(x => x.Player)
+            .Where(x => x.Snapshot.Campaign.Id == campaignId && x.Map.MapUid == mapUid)
+            .GroupBy(x => x.Order)
+            .Select(g => g.OrderByDescending(x => x.Snapshot.CreatedAt).First())
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return records.Select(x => new TMFCampaignScoresRecordDto
+        {
+            Rank = x.Rank,
+            Score = x.Score,
+            Player = new TMFLoginDto
+            {
+                Id = x.Player.Id,
+                Nickname = x.Player.Nickname
+            },
+            DrivenAt = x.DrivenAt,
+            Order = x.Order,
+        });
+    }
+
+    public async Task<IEnumerable<TMFCampaignScoresRecordDto>> GetSnapshotRecordDtosAsync(string campaignId, DateTimeOffset createdAt, string mapUid, CancellationToken cancellationToken)
+    {
+        return await db.TMFCampaignScoresRecords
+            .Include(x => x.Player)
+            .Where(x => x.Snapshot.Campaign.Id == campaignId && x.Snapshot.CreatedAt == createdAt && x.Map.MapUid == mapUid)
+            .Select(x => new TMFCampaignScoresRecordDto
+            {
+                Rank = x.Rank,
+                Score = x.Score,
+                Player = new TMFLoginDto
+                {
+                    Id = x.Player.Id,
+                    Nickname = x.Player.Nickname
+                },
+                DrivenAt = x.DrivenAt,
+                Order = x.Order,
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<TMFCampaignScoresSnapshotDto>> GetAllSnapshotDtosAsync(string mapUid, CancellationToken cancellationToken)
+    {
+        var snapshots = await db.TMFCampaignScoresRecords
+            .Include(x => x.Snapshot.Campaign)
+            .Where(x => x.Map.MapUid == mapUid && !x.Snapshot.NoChanges)
+            .Select(x => x.Snapshot)
+            .Distinct()
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return snapshots.Select(x => new TMFCampaignScoresSnapshotDto
+        {
+            Campaign = new TMFCampaignDto
+            {
+                Id = x.Campaign.Id,
+                Name = x.Campaign.Name
+            },
+            CreatedAt = x.CreatedAt,
+            PublishedAt = x.PublishedAt,
+            NoChanges = x.NoChanges
+        });
     }
 }

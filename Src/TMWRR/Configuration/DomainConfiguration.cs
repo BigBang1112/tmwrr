@@ -16,9 +16,13 @@ public static class DomainConfiguration
         services.AddScoped<ICampaignScoresJobService, CampaignScoresJobService>();
         services.AddScoped<ILadderScoresJobService, LadderScoresJobService>();
         services.AddScoped<IScoresSnapshotService, ScoresSnapshotService>();
+        services.AddScoped<ICampaignService, CampaignService>();
 
         services.AddScoped<IMapService, MapService>();
         services.AddScoped<ILoginService, LoginService>();
+        services.AddScoped<IGameService, GameService>();
+        services.AddScoped<IEnvironmentService, EnvironmentService>();
+        services.AddScoped<IUserService, UserService>();
 
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IReportDiscordService, ReportDiscordService>();

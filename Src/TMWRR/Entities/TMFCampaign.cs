@@ -16,6 +16,7 @@ public class TMFCampaign
     public required int StartId { get; set; }
 
     public ICollection<TMFCampaignScoresSnapshot> ScoresSnapshots { get; set; } = [];
+    public ICollection<Map> Maps { get; set; } = [];
 
     public override string ToString()
     {
