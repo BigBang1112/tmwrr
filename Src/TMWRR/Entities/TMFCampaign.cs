@@ -10,6 +10,11 @@ public class TMFCampaign
     [StringLength(64)]
     public string? Name { get; set; }
 
+    [StringLength(13)]
+    public required string Section { get; set; }
+
+    public required int StartId { get; set; }
+
     public ICollection<TMFCampaignScoresSnapshot> ScoresSnapshots { get; set; } = [];
 
     public override string ToString()

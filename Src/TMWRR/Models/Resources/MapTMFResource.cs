@@ -8,5 +8,7 @@ public sealed record MapTMFResource(
     int? AuthorTime,
     int? AuthorScore,
     int NbLaps,
+    string? Campaign,
+    int? Order,
     string FileName,
     byte[]? Thumbnail);

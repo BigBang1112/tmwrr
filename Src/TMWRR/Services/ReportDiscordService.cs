@@ -30,7 +30,7 @@ public class ReportDiscordService : IReportDiscordService
     {
         ArgumentNullException.ThrowIfNull(campaignScoreDiffReports, nameof(campaignScoreDiffReports));
 
-        var webhook = webhookFactory.Create(tmufOptions.Value.ChangesDiscordWebhookUrl);
+        using var webhook = webhookFactory.Create(tmufOptions.Value.ChangesDiscordWebhookUrl);
 
         if (!campaignScoreDiffReports.Any())
         {

@@ -76,6 +76,12 @@ namespace TMWRR.Migrations
                     b.Property<int>("NbLaps")
                         .HasColumnType("int");
 
+                    b.Property<int?>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TMFCampaignId")
+                        .HasColumnType("varchar(32)");
+
                     b.Property<byte[]>("Thumbnail")
                         .HasMaxLength(512000)
                         .HasColumnType("longblob");
@@ -89,6 +95,8 @@ namespace TMWRR.Migrations
                     b.HasIndex("MapUid");
 
                     b.HasIndex("ModeId");
+
+                    b.HasIndex("TMFCampaignId");
 
                     b.ToTable("Maps");
                 });
@@ -134,6 +142,14 @@ namespace TMWRR.Migrations
                     b.Property<string>("Name")
                         .HasMaxLength(64)
                         .HasColumnType("varchar(64)");
+
+                    b.Property<string>("Section")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("varchar(13)");
+
+                    b.Property<int>("StartId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -264,17 +280,23 @@ namespace TMWRR.Migrations
                         .WithMany("Maps")
                         .HasForeignKey("ModeId");
 
+                    b.HasOne("TMWRR.Entities.TMFCampaign", "TMFCampaign")
+                        .WithMany()
+                        .HasForeignKey("TMFCampaignId");
+
                     b.Navigation("Author");
 
                     b.Navigation("Environment");
 
                     b.Navigation("Mode");
+
+                    b.Navigation("TMFCampaign");
                 });
 
             modelBuilder.Entity("TMWRR.Entities.TMEnvironment", b =>
                 {
                     b.HasOne("TMWRR.Entities.Game", "Game")
-                        .WithMany()
+                        .WithMany("Environments")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -325,6 +347,11 @@ namespace TMWRR.Migrations
                         .HasForeignKey("LoginTMFId");
 
                     b.Navigation("LoginTMF");
+                });
+
+            modelBuilder.Entity("TMWRR.Entities.Game", b =>
+                {
+                    b.Navigation("Environments");
                 });
 
             modelBuilder.Entity("TMWRR.Entities.Mode", b =>

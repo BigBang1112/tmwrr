@@ -1,20 +1,32 @@
 {
   "UnitedRace": {
-    "Name": "United Race"
+    "Name": "United Race",
+    "Section": "0-10000",
+    "StartId": 1
   },
   "UnitedPuzzle": {
-    "Name": "United Puzzle"
+    "Name": "United Puzzle",
+    "Section": "0-10000",
+    "StartId": 148
   },
   "UnitedPlatform": {
-    "Name": "United Platform"
+    "Name": "United Platform",
+    "Section": "0-10000",
+    "StartId": 169
   },
   "UnitedStunts": {
-    "Name": "United Stunts"
+    "Name": "United Stunts",
+    "Section": "100000-110000",
+    "StartId": 100000
   },
   "Nations": {
-    "Name": "Nations"
+    "Name": "Nations",
+    "Section": "100000-110000",
+    "StartId": 100100
   },
   "ManiaStar": {
-    "Name": "Star Track"
+    "Name": "Star Track",
+    "Section": "180000-190000",
+    "StartId": 183888
   }
 }

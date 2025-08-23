@@ -86,7 +86,9 @@ public sealed class Seeding
                 await db.TMFCampaigns.AddRangeAsync(campaignDict.Select(x => new TMFCampaign
                 {
                     Id = x.Key,
-                    Name = x.Value.Name
+                    Name = x.Value.Name,
+                    Section = x.Value.Section,
+                    StartId = x.Value.StartId,
                 }), cancellationToken);
             }
             else
@@ -96,6 +98,8 @@ public sealed class Seeding
                     if (campaignDict.TryGetValue(campaign.Id, out var campaignResource))
                     {
                         campaign.Name = campaignResource.Name;
+                        campaign.Section = campaignResource.Section;
+                        campaign.StartId = campaignResource.StartId;
                     }
                 }
             }
@@ -159,6 +163,8 @@ public sealed class Seeding
                     AuthorTime = x.Value.AuthorTime is null ? null : new TimeInt32(x.Value.AuthorTime.Value),
                     AuthorScore = x.Value.AuthorScore,
                     NbLaps = x.Value.NbLaps,
+                    TMFCampaignId = x.Value.Campaign,
+                    Order = x.Value.Order,
                     FileName = x.Value.FileName,
                     Thumbnail = x.Value.Thumbnail
                 }), cancellationToken);
@@ -184,6 +190,8 @@ public sealed class Seeding
                     map.AuthorTime = mapResource.AuthorTime is null ? null : new TimeInt32(mapResource.AuthorTime.Value);
                     map.AuthorScore = mapResource.AuthorScore;
                     map.NbLaps = mapResource.NbLaps;
+                    map.TMFCampaignId = mapResource.Campaign;
+                    map.Order = mapResource.Order;
                     map.FileName = mapResource.FileName;
                     map.Thumbnail = mapResource.Thumbnail;
                 }
@@ -202,6 +210,8 @@ public sealed class Seeding
                         AuthorTime = kv.Value.AuthorTime is null ? null : new TimeInt32(kv.Value.AuthorTime.Value),
                         AuthorScore = kv.Value.AuthorScore,
                         NbLaps = kv.Value.NbLaps,
+                        TMFCampaignId = kv.Value.Campaign,
+                        Order = kv.Value.Order,
                         FileName = kv.Value.FileName,
                         Thumbnail = kv.Value.Thumbnail
                     });

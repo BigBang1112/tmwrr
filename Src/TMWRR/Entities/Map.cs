@@ -33,6 +33,11 @@ public class Map
 
     public int NbLaps { get; set; } = 1;
 
+    public TMFCampaign? TMFCampaign { get; set; }
+    public string? TMFCampaignId { get; set; }
+
+    public int? Order { get; set; }
+
     [StringLength(byte.MaxValue)]
     public string? FileName { get; set; }
 
