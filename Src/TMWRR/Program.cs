@@ -2,6 +2,8 @@ using TMWRR.Options;
 using TMWRR.Configuration;
 using TMWRR;
 
+GBX.NET.Gbx.LZO = new GBX.NET.LZO.MiniLZO();
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseDefaultServiceProvider(options =>

@@ -37,7 +37,9 @@ public class ScoreCheckerServiceTests
         options.Value.Returns(new TMUFOptions
         {
             DiscordWebhookUrl = "",
-            ChangesDiscordWebhookUrl = ""
+            ChangesDiscordWebhookUrl = "",
+            ApiUsername = "",
+            ApiPassword = ""
         });
 
         var services = new ServiceCollection();

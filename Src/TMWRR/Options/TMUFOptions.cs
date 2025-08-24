@@ -13,4 +13,10 @@ public sealed class TMUFOptions
 
     [Required]
     public required string ChangesDiscordWebhookUrl { get; set; }
+
+    [Required]
+    public required string ApiUsername { get; set; }
+
+    [Required]
+    public required string ApiPassword { get; set; }
 }

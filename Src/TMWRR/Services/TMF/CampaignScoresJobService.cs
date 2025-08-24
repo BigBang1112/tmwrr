@@ -19,15 +19,21 @@ public class CampaignScoresJobService : ICampaignScoresJobService
     private readonly IMapService mapService;
     private readonly ILoginService loginService;
     private readonly IScoresSnapshotService scoresSnapshotService;
+    private readonly IReplayService replayService;
+    private readonly ILogger<CampaignScoresJobService> logger;
 
     public CampaignScoresJobService(
         IMapService mapService, 
         ILoginService loginService, 
-        IScoresSnapshotService scoresSnapshotService)
+        IScoresSnapshotService scoresSnapshotService,
+        IReplayService replayService,
+        ILogger<CampaignScoresJobService> logger)
     {
         this.mapService = mapService;
         this.loginService = loginService;
         this.scoresSnapshotService = scoresSnapshotService;
+        this.replayService = replayService;
+        this.logger = logger;
     }
 
     public async Task<IReadOnlyDictionary<string, TMFCampaignScoreDiff>> ProcessAsync(
@@ -63,7 +69,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             if (existingRecords.Count == 0)
             {
                 // Doesn't count towards the diff, but we still need to populate the snapshot
-                PopulateSnapshot(snapshot, playersByLogin, map, leaderboard);
+                await PopulateSnapshotAsync(snapshot, playersByLogin, map, leaderboard, cancellationToken);
                 continue;
             }
 
@@ -81,7 +87,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                     diff.NewRecords.Add(updated);
                     continue;
                 }
-                
+
                 // Compare by rank first, then by score if needed
                 if (updated.Rank < old.Rank || (map.IsStunts() ? updated.Score > old.Score : updated.Score < old.Score))
                 {
@@ -124,17 +130,32 @@ public class CampaignScoresJobService : ICampaignScoresJobService
 
             diffs[mapUid] = diff;
 
-            PopulateSnapshot(snapshot, playersByLogin, map, leaderboard);
+            await PopulateSnapshotAsync(snapshot, playersByLogin, map, leaderboard, cancellationToken);
         }
 
         return diffs;
     }
 
-    private static void PopulateSnapshot(TMFCampaignScoresSnapshot snapshot, IDictionary<string, TMFLogin> playersByLogin, Map map, Leaderboard leaderboard)
+    private async Task<TMFReplay?> DownloadReplayAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken)
+    {
+        var existingRecord = await scoresSnapshotService.GetRecordAsync(map, login, score, cancellationToken);
+        var replay = existingRecord?.Replay;
+
+        if (replay is null)
+        {
+            return await replayService.CreateReplayAsync(map, login, cancellationToken);
+        }
+
+        return replay;
+    }
+
+    private async Task PopulateSnapshotAsync(TMFCampaignScoresSnapshot snapshot, IDictionary<string, TMFLogin> playersByLogin, Map map, Leaderboard leaderboard, CancellationToken cancellationToken)
     {
         foreach (var (i, score) in leaderboard.HighScores.Index())
         {
             var player = playersByLogin[score.Login];
+
+            var replay = await DownloadReplayAsync(map, player, score.Score, cancellationToken);
 
             var record = new TMFCampaignScoresRecord
             {
@@ -143,7 +164,8 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 Player = player,
                 Score = score.Score,
                 Rank = score.Rank,
-                Order = (byte)i
+                Order = (byte)i,
+                Replay = replay,
             };
 
             snapshot.Records.Add(record);

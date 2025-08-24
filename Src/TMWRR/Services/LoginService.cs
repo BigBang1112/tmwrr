@@ -1,5 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using ManiaAPI.TrackmaniaWS;
+using ManiaAPI.UnitedLadder;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Immutable;
+using System.Net;
 using TMWRR.Data;
 using TMWRR.Dtos;
 using TMWRR.Entities;
@@ -18,10 +21,16 @@ public interface ILoginService
 public sealed class LoginService : ILoginService
 {
     private readonly AppDbContext db;
+    private readonly TrackmaniaWS ws;
+    private readonly UnitedLadder ul;
+    private readonly ILogger<LoginService> logger;
 
-    public LoginService(AppDbContext db)
+    public LoginService(AppDbContext db, TrackmaniaWS ws, UnitedLadder ul, ILogger<LoginService> logger)
     {
         this.db = db;
+        this.ws = ws;
+        this.ul = ul;
+        this.logger = logger;
     }
 
     public async ValueTask<IDictionary<string, TMFLogin>> PopulateAsync(IDictionary<string, string> loginNicknameDict, CancellationToken cancellationToken)
@@ -37,10 +46,48 @@ public sealed class LoginService : ILoginService
             .Where(e => loginNicknameDict.Keys.Contains(e.Id))
             .ToDictionaryAsync(x => x.Id, cancellationToken);
 
+        var rateLimited = false;
+        var deadend = false;
+
         foreach (var login in logins.Values)
         {
             // TODO: NicknameHistory
             login.Nickname = loginNicknameDict[login.Id];
+
+            if (deadend || login.RegistrationId is not null)
+            {
+                continue;
+            }
+
+            RateLimitWhenUpdating:
+
+            if (rateLimited)
+            {
+                try
+                {
+                    var player = await ul.GetPlayerAsync(login.Id, cancellationToken);
+                    login.RegistrationId = player.Id;
+                }
+                catch (Exception ex)
+                {
+                    deadend = true;
+                    logger.LogWarning(ex, "UnitedLadder lookup failed while updating TMF login {Login}, will not try again...", login.Id);
+                }
+            }
+            else
+            {
+                try
+                {
+                    var player = await ws.GetPlayerAsync(login.Id, cancellationToken);
+                    login.RegistrationId = player.Id;
+                }
+                catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+                {
+                    rateLimited = true;
+                    logger.LogWarning("Rate limited reached while updating TMF login {Login}, falling back to UnitedLadder API...", login.Id);
+                    goto RateLimitWhenUpdating;
+                }
+            }
         }
 
         var missingLogins = loginNicknameDict.Keys.Except(logins.Keys).Select(x => new TMFLogin
@@ -53,6 +100,43 @@ public sealed class LoginService : ILoginService
         {
             await db.SaveChangesAsync(cancellationToken);
             return logins;
+        }
+
+        if (!deadend)
+        {
+            foreach (var login in missingLogins)
+            {
+                RateLimitWhenCreating:
+
+                if (rateLimited)
+                {
+                    try
+                    {
+                        var player = await ul.GetPlayerAsync(login.Id, cancellationToken);
+                        login.RegistrationId = player.Id;
+                    }
+                    catch (Exception ex)
+                    {
+                        deadend = true;
+                        logger.LogWarning(ex, "UnitedLadder lookup failed while creating TMF login {Login}, will not try again...", login.Id);
+                        break;
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        var player = await ws.GetPlayerAsync(login.Id, cancellationToken);
+                        login.RegistrationId = player.Id;
+                    }
+                    catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+                    {
+                        rateLimited = true;
+                        logger.LogWarning("Rate limited reached while creating TMF login {Login}, falling back to UnitedLadder API...", login.Id);
+                        goto RateLimitWhenCreating;
+                    }
+                }
+            }
         }
 
         await db.TMFLogins.AddRangeAsync(missingLogins, cancellationToken);

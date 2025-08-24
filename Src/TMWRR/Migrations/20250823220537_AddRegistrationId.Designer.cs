@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TMWRR.Data;
 
@@ -11,9 +12,11 @@ using TMWRR.Data;
 namespace TMWRR.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250823220537_AddRegistrationId")]
+    partial class AddRegistrationId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -164,6 +167,9 @@ namespace TMWRR.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTimeOffset?>("DrivenAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<int>("MapId")
                         .HasColumnType("int");
 
@@ -174,9 +180,6 @@ namespace TMWRR.Migrations
                         .HasColumnType("varchar(32)");
 
                     b.Property<int>("Rank")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ReplayId")
                         .HasColumnType("int");
 
                     b.Property<int>("Score")
@@ -190,8 +193,6 @@ namespace TMWRR.Migrations
                     b.HasIndex("MapId");
 
                     b.HasIndex("PlayerId");
-
-                    b.HasIndex("ReplayId");
 
                     b.HasIndex("SnapshotId");
 
@@ -245,38 +246,6 @@ namespace TMWRR.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("TMFLogins");
-                });
-
-            modelBuilder.Entity("TMWRR.Entities.TMFReplay", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<byte[]>("Data")
-                        .IsRequired()
-                        .HasMaxLength(2000000)
-                        .HasColumnType("longblob");
-
-                    b.Property<string>("Etag")
-                        .HasMaxLength(64)
-                        .HasColumnType("varchar(64)");
-
-                    b.Property<Guid>("Guid")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTimeOffset?>("LastModifiedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("Url")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TMFReplays");
                 });
 
             modelBuilder.Entity("TMWRR.Entities.User", b =>
@@ -353,10 +322,6 @@ namespace TMWRR.Migrations
                         .WithMany("Records")
                         .HasForeignKey("PlayerId");
 
-                    b.HasOne("TMWRR.Entities.TMFReplay", "Replay")
-                        .WithMany("Records")
-                        .HasForeignKey("ReplayId");
-
                     b.HasOne("TMWRR.Entities.TMFCampaignScoresSnapshot", "Snapshot")
                         .WithMany("Records")
                         .HasForeignKey("SnapshotId")
@@ -366,8 +331,6 @@ namespace TMWRR.Migrations
                     b.Navigation("Map");
 
                     b.Navigation("Player");
-
-                    b.Navigation("Replay");
 
                     b.Navigation("Snapshot");
                 });
@@ -429,11 +392,6 @@ namespace TMWRR.Migrations
                     b.Navigation("Records");
 
                     b.Navigation("Users");
-                });
-
-            modelBuilder.Entity("TMWRR.Entities.TMFReplay", b =>
-                {
-                    b.Navigation("Records");
                 });
 
             modelBuilder.Entity("TMWRR.Entities.User", b =>

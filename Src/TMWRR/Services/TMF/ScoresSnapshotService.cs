@@ -22,6 +22,7 @@ public interface IScoresSnapshotService
     Task<IEnumerable<TMFCampaignScoresRecordDto>> GetLatestRecordDtosAsync(string campaignId, string mapUid, CancellationToken cancellationToken);
     Task<IEnumerable<TMFCampaignScoresRecordDto>> GetSnapshotRecordDtosAsync(string campaignId, DateTimeOffset createdAt, string mapUid, CancellationToken cancellationToken);
     Task<IEnumerable<TMFCampaignScoresSnapshotDto>> GetAllSnapshotDtosAsync(string mapUid, CancellationToken cancellationToken);
+    Task<TMFCampaignScoresRecord?> GetRecordAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken);
 }
 
 public sealed class ScoresSnapshotService : IScoresSnapshotService
@@ -87,6 +88,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
     {
         var records = await db.TMFCampaignScoresRecords
             .Include(x => x.Player)
+            .Include(x => x.Replay)
             .Where(x => x.Snapshot.Campaign.Id == campaignId && x.Map.MapUid == mapUid)
             .GroupBy(x => x.Order)
             .Select(g => g.OrderByDescending(x => x.Snapshot.CreatedAt).First())
@@ -102,8 +104,12 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                 Id = x.Player.Id,
                 Nickname = x.Player.Nickname
             },
-            DrivenAt = x.DrivenAt,
             Order = x.Order,
+            Replay = x.Replay is null ? null : new TMFReplayDto
+            {
+                Guid = x.Replay.Guid,
+                Timestamp = x.Replay.LastModifiedAt
+            }
         });
     }
 
@@ -111,6 +117,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
     {
         return await db.TMFCampaignScoresRecords
             .Include(x => x.Player)
+            .Include(x => x.Replay)
             .Where(x => x.Snapshot.Campaign.Id == campaignId && x.Snapshot.CreatedAt == createdAt && x.Map.MapUid == mapUid)
             .Select(x => new TMFCampaignScoresRecordDto
             {
@@ -121,8 +128,12 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                     Id = x.Player.Id,
                     Nickname = x.Player.Nickname
                 },
-                DrivenAt = x.DrivenAt,
                 Order = x.Order,
+                Replay = x.Replay == null ? null : new TMFReplayDto
+                {
+                    Guid = x.Replay.Guid,
+                    Timestamp = x.Replay.LastModifiedAt
+                }
             })
             .ToListAsync(cancellationToken);
     }
@@ -148,5 +159,12 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
             PublishedAt = x.PublishedAt,
             NoChanges = x.NoChanges
         });
+    }
+
+    public async Task<TMFCampaignScoresRecord?> GetRecordAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken)
+    {
+        return await db.TMFCampaignScoresRecords
+            .Include(x => x.Replay)
+            .FirstOrDefaultAsync(x => x.Map == map && x.Player == login && x.Score == score, cancellationToken);
     }
 }

@@ -33,6 +33,7 @@ public sealed class MapService : IMapService
         // MapUid is not an unique index, so the duplicates need to be handled manually.
 
         var maps = await db.Maps
+            .Include(x => x.TMFCampaign) // needed for the CampaignScoresJobService
             .Where(e => mapUids.Contains(e.MapUid))
             .ToDictionaryAsync(x => x.MapUid, cancellationToken);
 

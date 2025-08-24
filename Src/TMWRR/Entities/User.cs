@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace TMWRR.Entities;
 
@@ -6,7 +7,10 @@ namespace TMWRR.Entities;
 public sealed class User
 {
     public int Id { get; set; }
+
+    [Required]
     public Guid Guid { get; set; } = Guid.CreateVersion7();
+
     public TMFLogin? LoginTMF { get; set; }
 
     public ICollection<Map> Maps { get; set; } = [];

@@ -11,7 +11,7 @@ public class TMFCampaignScoresRecord
     public required int Score { get; set; }
     public required int Rank { get; set; }
     public required byte Order { get; set; }
-    public DateTimeOffset? DrivenAt { get; set; }
+    public TMFReplay? Replay { get; set; }
 
     public TimeInt32 GetTime()
     {

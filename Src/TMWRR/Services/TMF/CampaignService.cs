@@ -42,7 +42,8 @@ public sealed class CampaignService : ICampaignService
                 Maps = x.Maps.OrderBy(m => m.Order).Select(m => new MapDto
                 {
                     MapUid = m.MapUid,
-                    Name = m.Name
+                    Name = m.Name,
+                    DeformattedName = m.DeformattedName
                 }).ToImmutableList()
             })
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
