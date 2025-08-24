@@ -28,6 +28,7 @@ public sealed class UserService : IUserService
                 {
                     Id = x.LoginTMF.Id,
                     Nickname = x.LoginTMF.Nickname,
+                    NicknameDeformatted = x.LoginTMF.NicknameDeformatted,
                 },
             })
             .FirstOrDefaultAsync(x => x.Guid == guid, cancellationToken);

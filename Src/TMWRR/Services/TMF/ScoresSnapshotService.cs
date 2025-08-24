@@ -102,7 +102,8 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
             Player = new TMFLoginDto
             {
                 Id = x.Player.Id,
-                Nickname = x.Player.Nickname
+                Nickname = x.Player.Nickname,
+                NicknameDeformatted = x.Player.NicknameDeformatted
             },
             Order = x.Order,
             Replay = x.Replay is null ? null : new TMFReplayDto
@@ -126,7 +127,8 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                 Player = new TMFLoginDto
                 {
                     Id = x.Player.Id,
-                    Nickname = x.Player.Nickname
+                    Nickname = x.Player.Nickname,
+                    NicknameDeformatted = x.Player.NicknameDeformatted
                 },
                 Order = x.Order,
                 Replay = x.Replay == null ? null : new TMFReplayDto

@@ -3,6 +3,7 @@ using ManiaAPI.UnitedLadder;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Immutable;
 using System.Net;
+using TmEssentials;
 using TMWRR.Data;
 using TMWRR.Dtos;
 using TMWRR.Entities;
@@ -52,7 +53,9 @@ public sealed class LoginService : ILoginService
         foreach (var login in logins.Values)
         {
             // TODO: NicknameHistory
-            login.Nickname = loginNicknameDict[login.Id];
+            var nickname = loginNicknameDict[login.Id];
+            login.Nickname = nickname;
+            login.NicknameDeformatted = TextFormatter.Deformat(nickname);
 
             if (deadend || login.RegistrationId is not null)
             {
@@ -94,6 +97,7 @@ public sealed class LoginService : ILoginService
         {
             Id = x,
             Nickname = loginNicknameDict[x],
+            NicknameDeformatted = TextFormatter.Deformat(loginNicknameDict[x])
         }).ToList();
 
         if (missingLogins.Count == 0)
@@ -167,6 +171,7 @@ public sealed class LoginService : ILoginService
             {
                 Id = x.Id,
                 Nickname = x.Nickname,
+                NicknameDeformatted = x.NicknameDeformatted,
                 Users = x.Users.Select(u => new UserDto
                 {
                     Guid = u.Guid

@@ -10,6 +10,9 @@ public class TMFLogin
     [StringLength(byte.MaxValue)]
     public string? Nickname { get; set; }
 
+    [StringLength(byte.MaxValue)]
+    public string? NicknameDeformatted { get; set; }
+
     public int? RegistrationId { get; set; }
 
     public ICollection<TMFCampaignScoresRecord> Records { get; set; } = [];

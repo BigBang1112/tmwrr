@@ -90,7 +90,8 @@ public sealed class MapService : IMapService
                     LoginTMF = x.Author.LoginTMF == null ? null : new TMFLoginDto
                     {
                         Id = x.Author.LoginTMF.Id,
-                        Nickname = x.Author.LoginTMF.Nickname
+                        Nickname = x.Author.LoginTMF.Nickname,
+                        NicknameDeformatted = x.Author.LoginTMF.NicknameDeformatted
                     }
                 },
                 Environment = x.Environment == null ? null : new TMEnvironmentDto
