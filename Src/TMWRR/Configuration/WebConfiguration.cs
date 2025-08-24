@@ -47,5 +47,7 @@ public static class WebConfiguration
             options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
 
         services.AddHealthChecks();
+
+        services.AddProblemDetails();
     }
 }

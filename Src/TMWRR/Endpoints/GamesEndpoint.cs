@@ -19,8 +19,17 @@ public static class GamesEndpoint
         return TypedResults.Ok(dtos);
     }
 
-    private static async Task<Results<Ok<GameDto>, NotFound>> GetGame(string id, IGameService gameService, CancellationToken cancellationToken)
+    private static async Task<Results<Ok<GameDto>, ValidationProblem, NotFound>> GetGame(string id, IGameService gameService, CancellationToken cancellationToken)
     {
+        if (id.Length > 12)
+        {
+            var errors = new Dictionary<string, string[]>
+            {
+                [nameof(id)] = ["The game ID length must not exceed 12 characters."]
+            };
+            return TypedResults.ValidationProblem(errors);
+        }
+
         var dto = await gameService.GetDtoAsync(id, cancellationToken);
 
         if (dto is null)

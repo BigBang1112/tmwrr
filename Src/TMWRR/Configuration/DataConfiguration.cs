@@ -1,8 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using TMWRR.Data;
-using TMWRR.Entities;
-using TMWRR.Services.TMF;
 
 namespace TMWRR.Configuration;
 

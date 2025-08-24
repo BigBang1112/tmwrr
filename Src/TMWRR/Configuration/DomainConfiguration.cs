@@ -1,4 +1,5 @@
-﻿using TMWRR.DiscordReport;
+﻿using FluentValidation;
+using TMWRR.DiscordReport;
 using TMWRR.Services;
 using TMWRR.Services.TMF;
 
@@ -32,5 +33,7 @@ public static class DomainConfiguration
         services.AddSingleton<IDelayService, DelayService>();
 
         services.AddSingleton(TimeProvider.System);
+
+        services.AddValidatorsFromAssembly(typeof(DomainConfiguration).Assembly, includeInternalTypes: true);
     }
 }

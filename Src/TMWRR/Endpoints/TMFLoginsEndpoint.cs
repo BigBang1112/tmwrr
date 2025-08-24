@@ -11,8 +11,17 @@ public static class TMFLoginsEndpoint
         group.MapGet("/{id}", GetLogin);
     }
 
-    private static async Task<Results<Ok<TMFLoginDto>, NotFound>> GetLogin(string id, ILoginService loginService, CancellationToken cancellationToken)
+    private static async Task<Results<Ok<TMFLoginDto>, ValidationProblem, NotFound>> GetLogin(string id, ILoginService loginService, CancellationToken cancellationToken)
     {
+        if (id.Length > 32)
+        {
+            var errors = new Dictionary<string, string[]>
+            {
+                [nameof(id)] = ["The login ID length must not exceed 32 characters."]
+            };
+            return TypedResults.ValidationProblem(errors);
+        }
+
         var dto = await loginService.GetTMFDtoAsync(id, cancellationToken);
 
         if (dto is null)
