@@ -69,7 +69,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             if (existingRecords.Count == 0)
             {
                 // Doesn't count towards the diff, but we still need to populate the snapshot
-                await PopulateSnapshotAsync(snapshot, playersByLogin, map, leaderboard, cancellationToken);
+                await PopulateSnapshotAsync(snapshot, playersByLogin, map, leaderboard, diff: null, cancellationToken);
                 continue;
             }
 
@@ -130,7 +130,9 @@ public class CampaignScoresJobService : ICampaignScoresJobService
 
             diffs[mapUid] = diff;
 
-            await PopulateSnapshotAsync(snapshot, playersByLogin, map, leaderboard, cancellationToken);
+            // be aware this wont populate existing records with replays, only new snapshot records
+            // for existing records, either demand-based (request=download) or maintenance job solution needed 
+            await PopulateSnapshotAsync(snapshot, playersByLogin, map, leaderboard, diff, cancellationToken);
         }
 
         return diffs;
@@ -143,14 +145,34 @@ public class CampaignScoresJobService : ICampaignScoresJobService
 
         if (replay is null)
         {
-            return await replayService.CreateReplayAsync(map, login, cancellationToken);
+            try
+            {
+                return await replayService.CreateReplayAsync(map, login, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                // in case download resilience fails, just skip this replay and dont kill the whole job
+                logger.LogError(ex, "Failed to create a replay entity for map {MapUid} and login {Login}", map.MapUid, login.Id);
+                return null;
+            }
         }
 
         return replay;
     }
 
-    private async Task PopulateSnapshotAsync(TMFCampaignScoresSnapshot snapshot, IDictionary<string, TMFLogin> playersByLogin, Map map, Leaderboard leaderboard, CancellationToken cancellationToken)
+    private async Task PopulateSnapshotAsync(
+        TMFCampaignScoresSnapshot snapshot, 
+        IDictionary<string, TMFLogin> playersByLogin, 
+        Map map,
+        Leaderboard leaderboard, 
+        TMFCampaignScoreDiff? diff,
+        CancellationToken cancellationToken)
     {
+        // Prepare a dictionary of logins to timestamps for new/improved records
+        var timestampDict = diff?.NewRecords
+            .Concat(diff.ImprovedRecords.Select(x => x.New))
+            .ToDictionary(x => x.Login);
+
         foreach (var (i, score) in leaderboard.HighScores.Index())
         {
             var player = playersByLogin[score.Login];
@@ -169,6 +191,12 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             };
 
             snapshot.Records.Add(record);
+
+            // Set the timestamp for new/improved records
+            if (timestampDict?.TryGetValue(score.Login, out var diffScore) == true)
+            {
+                diffScore.Timestamp = replay?.LastModifiedAt;
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Discord;
+using Microsoft.Extensions.Options;
 using System.Text;
 using TmEssentials;
 using TMWRR.DiscordReport;
@@ -61,14 +62,21 @@ public class ReportDiscordService : IReportDiscordService
                 var score = report.Map.IsStunts() || report.Map.IsPlatform()
                     ? newRecord.Score.ToString()
                     : newRecord.GetTime().ToString(useHundredths: true);
+                var timestampStyle = DateTimeOffset.UtcNow - newRecord.Timestamp > TimeSpan.FromDays(1)
+                    ? TimestampTagStyles.ShortDateTime
+                    : TimestampTagStyles.ShortTime;
+                var timestamp = newRecord.Timestamp.HasValue
+                    ? TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)
+                    : string.Empty;
 
-                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)**",
+                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** {6}",
                     report.Map.GetDeformattedName(),
                     report.Map.MapUid,
                     newRecord.Rank.ToString("00"),
                     score,
                     TextFormatter.Deformat(newRecordNickname),
-                    newRecord.Login);
+                    newRecord.Login,
+                    timestamp);
                 sb.AppendLine();
             }
 
@@ -101,8 +109,14 @@ public class ReportDiscordService : IReportDiscordService
                     EMode.Platform => (newRecord.Score - oldRecord.Score).ToString(),
                     _ => (newRecord.GetTime() - oldRecord.GetTime()).TotalSeconds.ToString("0.00")
                 };
+                var timestampStyle = DateTimeOffset.UtcNow - newRecord.Timestamp > TimeSpan.FromDays(1)
+                    ? TimestampTagStyles.ShortDateTime
+                    : TimestampTagStyles.ShortTime;
+                var timestamp = newRecord.Timestamp.HasValue
+                    ? TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)
+                    : string.Empty;
 
-                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` `{4}` from `{5}` by **[{6}](<https://ul.unitedascenders.xyz/lookup?login={7}>)**",
+                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` `{4}` from `{5}` by **[{6}](<https://ul.unitedascenders.xyz/lookup?login={7}>)** {8}",
                     report.Map.GetDeformattedName(),
                     report.Map.MapUid,
                     newRecord.Rank.ToString("00"),
@@ -110,7 +124,8 @@ public class ReportDiscordService : IReportDiscordService
                     delta,
                     oldRecord.Rank.ToString("00"),
                     TextFormatter.Deformat(newRecordNickname),
-                    newRecord.Login);
+                    newRecord.Login,
+                    timestamp);
                 sb.AppendLine();
             }
 

@@ -1,6 +1,5 @@
 ﻿using TMWRR.Data;
 using TMWRR.Entities;
-using static System.Net.WebRequestMethods;
 
 namespace TMWRR.Services.TMF;
 
