@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using TmEssentials;
 using TMWRR.Enums;
 
@@ -41,7 +42,7 @@ public class Map
     [StringLength(byte.MaxValue)]
     public string? FileName { get; set; }
 
-    [MaxLength(512_000)]
+    [Column(TypeName = "mediumblob")]
     public byte[]? Thumbnail { get; set; }
 
     public ICollection<TMFCampaignScoresRecord> TMFRecords { get; set; } = [];

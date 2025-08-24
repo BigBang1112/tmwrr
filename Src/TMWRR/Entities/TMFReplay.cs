@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TMWRR.Entities;
 
@@ -9,7 +10,7 @@ public class TMFReplay
     [Required]
     public Guid Guid { get; set; } = Guid.NewGuid();
 
-    [MaxLength(2_000_000)]
+    [Column(TypeName = "mediumblob")]
     public required byte[] Data { get; set; }
 
     public DateTimeOffset? LastModifiedAt { get; set; }
