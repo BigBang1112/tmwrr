@@ -49,5 +49,7 @@ public static class WebConfiguration
         services.AddHealthChecks();
 
         services.AddProblemDetails();
+
+        services.AddCors();
     }
 }
