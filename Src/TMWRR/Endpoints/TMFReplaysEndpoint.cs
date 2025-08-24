@@ -8,7 +8,13 @@ public static class TMFReplaysEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/{guid}", GetReplay);
+        group.MapGet("/{guid}", GetReplay)
+            .RequireCors(builder =>
+            {
+                builder.WithOrigins("https://3d.gbx.tools/view/replay")
+                    .AllowAnyHeader()
+                    .WithMethods("GET", "HEAD", "OPTIONS");
+            });
     }
 
     private static async Task<Results<FileContentHttpResult, NotFound>> GetReplay(Guid guid, IReplayService replayService, CancellationToken cancellationToken)
