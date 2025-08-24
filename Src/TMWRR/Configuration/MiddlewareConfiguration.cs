@@ -18,6 +18,8 @@ public static class MiddlewareConfiguration
             app.UseHttpsRedirection();
         }
 
+        app.UseCors();
+
         app.UseRateLimiter();
 
         app.UseOutputCache();
