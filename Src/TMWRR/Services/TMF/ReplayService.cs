@@ -1,4 +1,6 @@
-﻿using TMWRR.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using TMWRR.Data;
+using TMWRR.Dtos;
 using TMWRR.Entities;
 
 namespace TMWRR.Services.TMF;
@@ -6,6 +8,7 @@ namespace TMWRR.Services.TMF;
 public interface IReplayService
 {
     Task<TMFReplay?> CreateReplayAsync(Map map, TMFLogin login, CancellationToken cancellationToken);
+    Task<TMFReplayDataDto?> GetReplayDataAsync(Guid guid, CancellationToken cancellationToken);
 }
 
 public sealed class ReplayService : IReplayService
@@ -46,5 +49,18 @@ public sealed class ReplayService : IReplayService
             Etag = response.Headers.ETag?.Tag,
             Url = url,
         };
+    }
+
+    public async Task<TMFReplayDataDto?> GetReplayDataAsync(Guid guid, CancellationToken cancellationToken)
+    {
+        return await db.TMFReplays
+            .Where(x => x.Guid == guid)
+            .Select(x => new TMFReplayDataDto
+            {
+                Data = x.Data,
+                LastModifiedAt = x.LastModifiedAt,
+                Etag = x.Etag
+            })
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

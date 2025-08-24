@@ -1,8 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TMWRR.Entities;
 
+[Index(nameof(Guid), IsUnique = true)]
 public class TMFReplay
 {
     public int Id { get; set; }
