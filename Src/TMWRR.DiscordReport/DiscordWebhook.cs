@@ -1,10 +1,11 @@
-﻿using Discord.Webhook;
+﻿using Discord;
+using Discord.Webhook;
 
 namespace TMWRR.DiscordReport;
 
 public interface IDiscordWebhook : IDisposable
 {
-    Task SendMessageAsync(string text, CancellationToken cancellationToken);
+    Task SendMessageAsync(Embed embed, CancellationToken cancellationToken);
 }
 
 internal sealed class DiscordWebhook : IDiscordWebhook
@@ -16,16 +17,8 @@ internal sealed class DiscordWebhook : IDiscordWebhook
         this.client = client;
     }
 
-    public async Task SendMessageAsync(string text, CancellationToken cancellationToken)
+    public async Task SendMessageAsync(Embed embed, CancellationToken cancellationToken)
     {
-        var embed = new Discord.EmbedBuilder()
-            .WithDescription(text)
-            .WithColor(Discord.Color.Blue)
-            .WithFooter("TMWRR (TMUF Solo Changes) Experimental")
-            .WithTitle("TMWRR")
-            .WithUrl("https://github.com/BigBang1112/tmwrr")
-            .Build();
-
         await client.SendMessageAsync(embeds: [embed], options: new() { CancelToken = cancellationToken });
     }
 

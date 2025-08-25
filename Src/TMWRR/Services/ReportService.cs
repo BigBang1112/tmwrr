@@ -11,16 +11,20 @@ public sealed class ReportService : IReportService
 {
     private readonly IMapService mapService;
     private readonly IReportDiscordService reportDiscordService;
+    private readonly TimeProvider timeProvider;
 
-    public ReportService(IMapService mapService, IReportDiscordService reportDiscordService)
+    public ReportService(IMapService mapService, IReportDiscordService reportDiscordService, TimeProvider timeProvider)
     {
         this.mapService = mapService;
         this.reportDiscordService = reportDiscordService;
+        this.timeProvider = timeProvider;
     }
 
     public async Task ReportAsync(IReadOnlyDictionary<string, TMFCampaignScoreDiff> mapUidCampaignScoreDiffs, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(mapUidCampaignScoreDiffs, nameof(mapUidCampaignScoreDiffs));
+
+        var reportedAt = timeProvider.GetUtcNow();
 
         var campaignScoreDiffReports = new List<TMFCampaignScoreDiffReport>();
 
@@ -38,6 +42,6 @@ public sealed class ReportService : IReportService
             campaignScoreDiffReports.Add(report);
         }
 
-        await reportDiscordService.ReportAsync(campaignScoreDiffReports, cancellationToken);
+        await reportDiscordService.ReportAsync(reportedAt, campaignScoreDiffReports, cancellationToken);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Microsoft.Extensions.Options;
+using System.Globalization;
 using System.Text;
 using TmEssentials;
 using TMWRR.DiscordReport;
@@ -11,7 +12,7 @@ namespace TMWRR.Services;
 
 public interface IReportDiscordService
 {
-    Task ReportAsync(IEnumerable<TMFCampaignScoreDiffReport> campaignScoreDiffReports, CancellationToken cancellationToken);
+    Task ReportAsync(DateTimeOffset reportedAt, IEnumerable<TMFCampaignScoreDiffReport> campaignScoreDiffReports, CancellationToken cancellationToken);
 }
 
 public class ReportDiscordService : IReportDiscordService
@@ -27,7 +28,7 @@ public class ReportDiscordService : IReportDiscordService
         this.tmufOptions = tmufOptions;
     }
 
-    public async Task ReportAsync(IEnumerable<TMFCampaignScoreDiffReport> campaignScoreDiffReports, CancellationToken cancellationToken)
+    public async Task ReportAsync(DateTimeOffset reportedAt, IEnumerable<TMFCampaignScoreDiffReport> campaignScoreDiffReports, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(campaignScoreDiffReports, nameof(campaignScoreDiffReports));
 
@@ -35,7 +36,7 @@ public class ReportDiscordService : IReportDiscordService
 
         if (!campaignScoreDiffReports.Any())
         {
-            await webhook.SendMessageAsync("No changes in TMF campaigns!", cancellationToken);
+            await SendReportAsync(webhook, reportedAt, "No changes in TMF campaigns!", [], cancellationToken);
             return;
         }
 
@@ -52,10 +53,27 @@ public class ReportDiscordService : IReportDiscordService
             .ToDictionary(x => x.Id, x => x.Nickname);
         //
 
-        var sb = new StringBuilder();
+        var fields = new List<EmbedFieldBuilder>();
 
         foreach (var report in campaignScoreDiffReports)
         {
+            var sb = new StringBuilder();
+
+            foreach (var removedRecord in report.Diff.RemovedRecords)
+            {
+                var removedRecordNickname = logins.GetValueOrDefault(removedRecord.Login) ?? removedRecord.Login;
+                var score = report.Map.IsStunts() || report.Map.IsPlatform()
+                    ? removedRecord.Score.ToString()
+                    : removedRecord.GetTime().ToString(useHundredths: true);
+
+                sb.AppendFormat("`{0}` `{1}` by **[{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>)** was **removed**",
+                    removedRecord.Rank.ToString("00"),
+                    score,
+                    TextFormatter.Deformat(removedRecordNickname),
+                    removedRecord.Login);
+                sb.AppendLine();
+            }
+
             foreach (var newRecord in report.Diff.NewRecords)
             {
                 var newRecordNickname = logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login;
@@ -69,9 +87,7 @@ public class ReportDiscordService : IReportDiscordService
                     ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
                     : string.Empty;
 
-                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** {6}",
-                    report.Map.GetDeformattedName(),
-                    report.Map.MapUid,
+                sb.AppendFormat("`{0}` **`{1}`** by **[{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>)** {4}",
                     newRecord.Rank.ToString("00"),
                     score,
                     TextFormatter.Deformat(newRecordNickname),
@@ -87,9 +103,7 @@ public class ReportDiscordService : IReportDiscordService
                     ? pushedOffRecord.Score.ToString()
                     : pushedOffRecord.GetTime().ToString(useHundredths: true);
 
-                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** was **pushed off**",
-                    report.Map.GetDeformattedName(),
-                    report.Map.MapUid,
+                sb.AppendFormat("-# `{0}` `{1}` by [{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>) was pushed off",
                     pushedOffRecord.Rank.ToString("00"),
                     score,
                     TextFormatter.Deformat(pushedOffRecordNickname),
@@ -107,7 +121,7 @@ public class ReportDiscordService : IReportDiscordService
                 {
                     EMode.Stunts => $"+{newRecord.Score - oldRecord.Score}",
                     EMode.Platform => (newRecord.Score - oldRecord.Score).ToString(),
-                    _ => (newRecord.GetTime() - oldRecord.GetTime()).TotalSeconds.ToString("0.00")
+                    _ => (newRecord.GetTime() - oldRecord.GetTime()).TotalSeconds.ToString("0.00", CultureInfo.InvariantCulture)
                 };
                 var timestampStyle = DateTimeOffset.UtcNow - newRecord.Timestamp > TimeSpan.FromDays(1)
                     ? TimestampTagStyles.ShortDateTime
@@ -116,9 +130,7 @@ public class ReportDiscordService : IReportDiscordService
                     ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
                     : string.Empty;
 
-                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` `{4}` from `{5}` by **[{6}](<https://ul.unitedascenders.xyz/lookup?login={7}>)** {8}",
-                    report.Map.GetDeformattedName(),
-                    report.Map.MapUid,
+                sb.AppendFormat("`{0}` **`{1}`** `{2}` from `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** {6}",
                     newRecord.Rank.ToString("00"),
                     score,
                     delta,
@@ -129,23 +141,31 @@ public class ReportDiscordService : IReportDiscordService
                 sb.AppendLine();
             }
 
-            foreach (var removedRecord in report.Diff.RemovedRecords)
+            fields.Add(new EmbedFieldBuilder
             {
-                var removedRecordNickname = logins.GetValueOrDefault(removedRecord.Login) ?? removedRecord.Login;
-                var score = report.Map.IsStunts() || report.Map.IsPlatform()
-                    ? removedRecord.Score.ToString()
-                    : removedRecord.GetTime().ToString(useHundredths: true);
-
-                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** was **removed**",
-                    report.Map.GetDeformattedName(),
-                    report.Map.MapUid,
-                    removedRecord.Rank.ToString("00"),
-                    score,
-                    TextFormatter.Deformat(removedRecordNickname),
-                    removedRecord.Login);
-            }
+                Name = report.Map.GetDeformattedName(),
+                Value = sb.ToString()
+            });
         }
 
-        await webhook.SendMessageAsync(sb.ToString(), cancellationToken);
+        var maps = campaignScoreDiffReports.Select(x =>
+            string.Format("[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)", x.Map.GetDeformattedName(), x.Map.MapUid));
+
+        await SendReportAsync(webhook, reportedAt, $"Leaderboards have changed for {string.Join(", ", maps)}.", fields, cancellationToken);
+    }
+
+    private static async Task SendReportAsync(IDiscordWebhook webhook, DateTimeOffset reportedAt, string text, IEnumerable<EmbedFieldBuilder> fields, CancellationToken cancellationToken)
+    {
+        var embed = new EmbedBuilder()
+            .WithDescription(text)
+            .WithFields(fields)
+            .WithColor(Color.Blue)
+            .WithFooter("TMWRR (TMUF Solo Changes) Experimental")
+            .WithTitle("TMWRR")
+            .WithUrl("https://github.com/BigBang1112/tmwrr")
+            .WithTimestamp(reportedAt)
+            .Build();
+
+        await webhook.SendMessageAsync(embed, cancellationToken);
     }
 }
