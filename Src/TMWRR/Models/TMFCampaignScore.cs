@@ -5,6 +5,7 @@ namespace TMWRR.Models;
 public record TMFCampaignScore(int Rank, int Score, string Login)
 {
     public DateTimeOffset? Timestamp { get; set; }
+    public Guid? ReplayGuid { get; set; }
 
     public TimeInt32 GetTime()
     {

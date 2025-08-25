@@ -168,8 +168,8 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         TMFCampaignScoreDiff? diff,
         CancellationToken cancellationToken)
     {
-        // Prepare a dictionary of logins to timestamps for new/improved records
-        var timestampDict = diff?.NewRecords
+        // Prepare a dictionary of logins to replays for new/improved records
+        var scoreDict = diff?.NewRecords
             .Concat(diff.ImprovedRecords.Select(x => x.New))
             .ToDictionary(x => x.Login);
 
@@ -193,9 +193,10 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             snapshot.Records.Add(record);
 
             // Set the timestamp for new/improved records
-            if (timestampDict?.TryGetValue(score.Login, out var diffScore) == true)
+            if (replay is not null && scoreDict?.TryGetValue(score.Login, out var diffScore) == true)
             {
-                diffScore.Timestamp = replay?.LastModifiedAt;
+                diffScore.Timestamp = replay.LastModifiedAt;
+                diffScore.ReplayGuid = replay.Guid;
             }
         }
     }
