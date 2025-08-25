@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace TMWRR.Entities;
 
 [Index(nameof(Guid), IsUnique = true)]
-public class TMFReplay
+public class Ghost
 {
     public int Id { get; set; }
 

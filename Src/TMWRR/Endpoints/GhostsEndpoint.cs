@@ -1,20 +1,20 @@
 ﻿using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Net.Http.Headers;
-using TMWRR.Services.TMF;
+using TMWRR.Services;
 
 namespace TMWRR.Endpoints;
 
-public static class TMFReplaysEndpoint
+public static class GhostsEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/{guid}", GetReplay);
+        group.MapGet("/{guid}", GetGhost);
     }
 
-    private static async Task<Results<FileContentHttpResult, NotFound>> GetReplay(Guid guid, IReplayService replayService, HttpContext context, CancellationToken cancellationToken)
+    private static async Task<Results<FileContentHttpResult, NotFound>> GetGhost(Guid guid, IGhostService ghostService, HttpContext context, CancellationToken cancellationToken)
     {
-        var data = await replayService.GetReplayDataAsync(guid, cancellationToken);
+        var data = await ghostService.GetGhostDataAsync(guid, cancellationToken);
 
         if (data is null)
         {
@@ -29,6 +29,6 @@ public static class TMFReplaysEndpoint
             context.Response.Headers.AccessControlAllowHeaders = "*";
         }
 
-        return TypedResults.File(data.Data, "application/gbx", $"{guid}.Replay.Gbx", lastModified: data.LastModifiedAt, entityTag: new EntityTagHeaderValue(data.Etag));
+        return TypedResults.File(data.Data, "application/gbx", $"{guid}.Ghost.Gbx", lastModified: data.LastModifiedAt, entityTag: new EntityTagHeaderValue(data.Etag));
     }
 }

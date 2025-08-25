@@ -16,7 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Game> Games { get; set; }
     public DbSet<Mode> Modes { get; set; }
     public DbSet<TMEnvironment> Environments { get; set; }
-    public DbSet<TMFReplay> TMFReplays { get; set; }
+    public DbSet<Ghost> Ghosts { get; set; }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

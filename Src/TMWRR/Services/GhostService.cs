@@ -3,32 +3,32 @@ using TMWRR.Data;
 using TMWRR.Dtos;
 using TMWRR.Entities;
 
-namespace TMWRR.Services.TMF;
+namespace TMWRR.Services;
 
-public interface IReplayService
+public interface IGhostService
 {
-    Task<TMFReplay?> CreateReplayAsync(Map map, TMFLogin login, CancellationToken cancellationToken);
-    Task<TMFReplayDataDto?> GetReplayDataAsync(Guid guid, CancellationToken cancellationToken);
+    Task<Ghost?> CreateGhostAsync(Map map, TMFLogin login, CancellationToken cancellationToken);
+    Task<GhostDataDto?> GetGhostDataAsync(Guid guid, CancellationToken cancellationToken);
 }
 
-public sealed class ReplayService : IReplayService
+public sealed class GhostService : IGhostService
 {
     private readonly AppDbContext db;
     private readonly HttpClient http;
-    private readonly ILogger<ReplayService> logger;
+    private readonly ILogger<GhostService> logger;
 
-    public ReplayService(AppDbContext db, HttpClient http, ILogger<ReplayService> logger)
+    public GhostService(AppDbContext db, HttpClient http, ILogger<GhostService> logger)
     {
         this.db = db;
         this.http = http;
         this.logger = logger;
     }
 
-    public async Task<TMFReplay?> CreateReplayAsync(Map map, TMFLogin login, CancellationToken cancellationToken)
+    public async Task<Ghost?> CreateGhostAsync(Map map, TMFLogin login, CancellationToken cancellationToken)
     {
         if (map.TMFCampaign is null || login.RegistrationId is null)
         {
-            logger.LogWarning("Cannot download replay for map {MapUid} and login {Login}, probably missing registration ID", map.MapUid, login.Id);
+            logger.LogWarning("Cannot download ghost for map {MapUid} and login {Login}, probably missing registration ID", map.MapUid, login.Id);
             return null;
         }
 
@@ -38,11 +38,11 @@ public sealed class ReplayService : IReplayService
 
         if (!response.IsSuccessStatusCode)
         {
-            logger.LogWarning("Failed to download replay for map {MapUid} and login {Login}, status code {StatusCode}", map.MapUid, login.Id, response.StatusCode);
+            logger.LogWarning("Failed to download ghost for map {MapUid} and login {Login}, status code {StatusCode}", map.MapUid, login.Id, response.StatusCode);
             return null;
         }
 
-        return new TMFReplay
+        return new Ghost
         {
             Data = await response.Content.ReadAsByteArrayAsync(cancellationToken),
             LastModifiedAt = response.Content.Headers.LastModified,
@@ -51,11 +51,11 @@ public sealed class ReplayService : IReplayService
         };
     }
 
-    public async Task<TMFReplayDataDto?> GetReplayDataAsync(Guid guid, CancellationToken cancellationToken)
+    public async Task<GhostDataDto?> GetGhostDataAsync(Guid guid, CancellationToken cancellationToken)
     {
-        return await db.TMFReplays
+        return await db.Ghosts
             .Where(x => x.Guid == guid)
-            .Select(x => new TMFReplayDataDto
+            .Select(x => new GhostDataDto
             {
                 Data = x.Data,
                 LastModifiedAt = x.LastModifiedAt,

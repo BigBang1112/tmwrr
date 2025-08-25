@@ -19,20 +19,20 @@ public class CampaignScoresJobService : ICampaignScoresJobService
     private readonly IMapService mapService;
     private readonly ILoginService loginService;
     private readonly IScoresSnapshotService scoresSnapshotService;
-    private readonly IReplayService replayService;
+    private readonly IGhostService ghostService;
     private readonly ILogger<CampaignScoresJobService> logger;
 
     public CampaignScoresJobService(
         IMapService mapService, 
         ILoginService loginService, 
         IScoresSnapshotService scoresSnapshotService,
-        IReplayService replayService,
+        IGhostService ghostService,
         ILogger<CampaignScoresJobService> logger)
     {
         this.mapService = mapService;
         this.loginService = loginService;
         this.scoresSnapshotService = scoresSnapshotService;
-        this.replayService = replayService;
+        this.ghostService = ghostService;
         this.logger = logger;
     }
 
@@ -130,7 +130,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
 
             diffs[mapUid] = diff;
 
-            // be aware this wont populate existing records with replays, only new snapshot records
+            // be aware this wont populate existing records with ghosts, only new snapshot records
             // for existing records, either demand-based (request=download) or maintenance job solution needed 
             await PopulateSnapshotAsync(snapshot, playersByLogin, map, leaderboard, diff, cancellationToken);
         }
@@ -138,26 +138,26 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         return diffs;
     }
 
-    private async Task<TMFReplay?> DownloadReplayAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken)
+    private async Task<Ghost?> DownloadGhostAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken)
     {
         var existingRecord = await scoresSnapshotService.GetRecordAsync(map, login, score, cancellationToken);
-        var replay = existingRecord?.Replay;
+        var ghost = existingRecord?.Ghost;
 
-        if (replay is null)
+        if (ghost is null)
         {
             try
             {
-                return await replayService.CreateReplayAsync(map, login, cancellationToken);
+                return await ghostService.CreateGhostAsync(map, login, cancellationToken);
             }
             catch (Exception ex)
             {
-                // in case download resilience fails, just skip this replay and dont kill the whole job
-                logger.LogError(ex, "Failed to create a replay entity for map {MapUid} and login {Login}", map.MapUid, login.Id);
+                // in case download resilience fails, just skip this ghost and dont kill the whole job
+                logger.LogError(ex, "Failed to create a ghost entity for map {MapUid} and login {Login}", map.MapUid, login.Id);
                 return null;
             }
         }
 
-        return replay;
+        return ghost;
     }
 
     private async Task PopulateSnapshotAsync(
@@ -168,7 +168,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         TMFCampaignScoreDiff? diff,
         CancellationToken cancellationToken)
     {
-        // Prepare a dictionary of logins to replays for new/improved records
+        // Prepare a dictionary of logins to ghosts for new/improved records
         var scoreDict = diff?.NewRecords
             .Concat(diff.ImprovedRecords.Select(x => x.New))
             .ToDictionary(x => x.Login);
@@ -177,7 +177,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         {
             var player = playersByLogin[score.Login];
 
-            var replay = await DownloadReplayAsync(map, player, score.Score, cancellationToken);
+            var ghost = await DownloadGhostAsync(map, player, score.Score, cancellationToken);
 
             var record = new TMFCampaignScoresRecord
             {
@@ -187,16 +187,16 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 Score = score.Score,
                 Rank = score.Rank,
                 Order = (byte)i,
-                Replay = replay,
+                Ghost = ghost,
             };
 
             snapshot.Records.Add(record);
 
             // Set the timestamp for new/improved records
-            if (replay is not null && scoreDict?.TryGetValue(score.Login, out var diffScore) == true)
+            if (ghost is not null && scoreDict?.TryGetValue(score.Login, out var diffScore) == true)
             {
-                diffScore.Timestamp = replay.LastModifiedAt;
-                diffScore.ReplayGuid = replay.Guid;
+                diffScore.Timestamp = ghost.LastModifiedAt;
+                diffScore.GhostGuid = ghost.Guid;
             }
         }
     }

@@ -88,7 +88,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
     {
         var records = await db.TMFCampaignScoresRecords
             .Include(x => x.Player)
-            .Include(x => x.Replay)
+            .Include(x => x.Ghost)
             .Where(x => x.Snapshot.Campaign.Id == campaignId && x.Map.MapUid == mapUid)
             .GroupBy(x => x.Order)
             .Select(g => g.OrderByDescending(x => x.Snapshot.CreatedAt).First())
@@ -106,10 +106,10 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                 NicknameDeformatted = x.Player.NicknameDeformatted
             },
             Order = x.Order,
-            Replay = x.Replay is null ? null : new TMFReplayDto
+            Ghost = x.Ghost is null ? null : new GhostDto
             {
-                Guid = x.Replay.Guid,
-                Timestamp = x.Replay.LastModifiedAt
+                Guid = x.Ghost.Guid,
+                Timestamp = x.Ghost.LastModifiedAt
             }
         });
     }
@@ -118,7 +118,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
     {
         return await db.TMFCampaignScoresRecords
             .Include(x => x.Player)
-            .Include(x => x.Replay)
+            .Include(x => x.Ghost)
             .Where(x => x.Snapshot.Campaign.Id == campaignId && x.Snapshot.CreatedAt == createdAt && x.Map.MapUid == mapUid)
             .Select(x => new TMFCampaignScoresRecordDto
             {
@@ -131,10 +131,10 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                     NicknameDeformatted = x.Player.NicknameDeformatted
                 },
                 Order = x.Order,
-                Replay = x.Replay == null ? null : new TMFReplayDto
+                Ghost = x.Ghost == null ? null : new GhostDto
                 {
-                    Guid = x.Replay.Guid,
-                    Timestamp = x.Replay.LastModifiedAt
+                    Guid = x.Ghost.Guid,
+                    Timestamp = x.Ghost.LastModifiedAt
                 }
             })
             .ToListAsync(cancellationToken);
@@ -166,7 +166,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
     public async Task<TMFCampaignScoresRecord?> GetRecordAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken)
     {
         return await db.TMFCampaignScoresRecords
-            .Include(x => x.Replay)
+            .Include(x => x.Ghost)
             .FirstOrDefaultAsync(x => x.Map == map && x.Player == login && x.Score == score, cancellationToken);
     }
 }

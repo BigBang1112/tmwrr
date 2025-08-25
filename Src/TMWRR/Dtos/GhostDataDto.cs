@@ -1,6 +1,6 @@
 ﻿namespace TMWRR.Dtos;
 
-public sealed class TMFReplayDataDto
+public sealed class GhostDataDto
 {
     public required byte[] Data { get; set; }
     public DateTimeOffset? LastModifiedAt { get; set; }
