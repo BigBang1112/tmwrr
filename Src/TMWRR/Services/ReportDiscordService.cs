@@ -66,7 +66,7 @@ public class ReportDiscordService : IReportDiscordService
                     ? TimestampTagStyles.ShortDateTime
                     : TimestampTagStyles.ShortTime;
                 var timestamp = newRecord.Timestamp.HasValue
-                    ? TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)
+                    ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
                     : string.Empty;
 
                 sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** {6}",
@@ -113,7 +113,7 @@ public class ReportDiscordService : IReportDiscordService
                     ? TimestampTagStyles.ShortDateTime
                     : TimestampTagStyles.ShortTime;
                 var timestamp = newRecord.Timestamp.HasValue
-                    ? TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)
+                    ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
                     : string.Empty;
 
                 sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` `{4}` from `{5}` by **[{6}](<https://ul.unitedascenders.xyz/lookup?login={7}>)** {8}",
