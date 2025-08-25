@@ -16,8 +16,6 @@ public static class WebConfiguration
     {
         var tmufOptions = config.GetSection("TMUF").Get<TMUFOptions>() ?? throw new InvalidOperationException("TMUF options not found");
 
-        services.AddCors();
-
         services.AddMasterServerTMUF().AddStandardResilienceHandler();
         services.AddTrackmaniaWS(new TrackmaniaWSOptions
         {

@@ -20,9 +20,6 @@ public static class MiddlewareConfiguration
 
         app.UseRateLimiter();
 
-        app.UseRouting();
-        app.UseCors();
-
         app.UseOutputCache();
 
         app.MapHealthChecks("/_health", new()
