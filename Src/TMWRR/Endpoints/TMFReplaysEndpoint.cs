@@ -24,7 +24,7 @@ public static class TMFReplaysEndpoint
         // CORS middleware is ???
         if (context.Request.Headers.ContainsKey(CorsConstants.Origin))
         {
-            context.Response.Headers.AccessControlAllowOrigin = "https://3d.gbx.tools/view/replay";
+            context.Response.Headers.AccessControlAllowOrigin = "https://3d.gbx.tools";
             context.Response.Headers.AccessControlAllowMethods = "GET, OPTIONS";
             context.Response.Headers.AccessControlAllowHeaders = "*";
         }
