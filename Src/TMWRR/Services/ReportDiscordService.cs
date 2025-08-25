@@ -69,12 +69,11 @@ public class ReportDiscordService : IReportDiscordService
                     ? TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)
                     : string.Empty;
 
-                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` [`{3}`](<https://3d.gbx.tools/view/replay?url=https://api.tmwrr.bigbang1112.cz/tmf/replays/{4}>) by **[{5}](<https://ul.unitedascenders.xyz/lookup?login={6}>)** {7}",
+                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** {6}",
                     report.Map.GetDeformattedName(),
                     report.Map.MapUid,
                     newRecord.Rank.ToString("00"),
                     score,
-                    newRecord.ReplayGuid,
                     TextFormatter.Deformat(newRecordNickname),
                     newRecord.Login,
                     timestamp);
@@ -88,12 +87,11 @@ public class ReportDiscordService : IReportDiscordService
                     ? pushedOffRecord.Score.ToString()
                     : pushedOffRecord.GetTime().ToString(useHundredths: true);
 
-                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` [`{3}`](<https://3d.gbx.tools/view/replay?url=https://api.tmwrr.bigbang1112.cz/tmf/replays/{4}>) by **[{5}](<https://ul.unitedascenders.xyz/lookup?login={6}>)** was **pushed off**",
+                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** was **pushed off**",
                     report.Map.GetDeformattedName(),
                     report.Map.MapUid,
                     pushedOffRecord.Rank.ToString("00"),
                     score,
-                    pushedOffRecord.ReplayGuid,
                     TextFormatter.Deformat(pushedOffRecordNickname),
                     pushedOffRecord.Login);
                 sb.AppendLine();
@@ -118,12 +116,11 @@ public class ReportDiscordService : IReportDiscordService
                     ? TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)
                     : string.Empty;
 
-                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` [`{3}`](<https://3d.gbx.tools/view/replay?url=https://api.tmwrr.bigbang1112.cz/tmf/replays/{4}>) `{5}` from `{6}` by **[{7}](<https://ul.unitedascenders.xyz/lookup?login={8}>)** {9}",
+                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` `{4}` from `{5}` by **[{6}](<https://ul.unitedascenders.xyz/lookup?login={7}>)** {8}",
                     report.Map.GetDeformattedName(),
                     report.Map.MapUid,
                     newRecord.Rank.ToString("00"),
                     score,
-                    newRecord.ReplayGuid,
                     delta,
                     oldRecord.Rank.ToString("00"),
                     TextFormatter.Deformat(newRecordNickname),
@@ -139,12 +136,11 @@ public class ReportDiscordService : IReportDiscordService
                     ? removedRecord.Score.ToString()
                     : removedRecord.GetTime().ToString(useHundredths: true);
 
-                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` [`{3}`](<https://3d.gbx.tools/view/replay?url=https://api.tmwrr.bigbang1112.cz/tmf/replays/{4}>) by **[{5}](<https://ul.unitedascenders.xyz/lookup?login={6}>)** was **removed**",
+                sb.AppendFormat("**[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)**: `{2}` `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** was **removed**",
                     report.Map.GetDeformattedName(),
                     report.Map.MapUid,
                     removedRecord.Rank.ToString("00"),
                     score,
-                    removedRecord.ReplayGuid,
                     TextFormatter.Deformat(removedRecordNickname),
                     removedRecord.Login);
             }
