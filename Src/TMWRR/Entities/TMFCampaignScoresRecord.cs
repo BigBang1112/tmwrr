@@ -8,6 +8,7 @@ public class TMFCampaignScoresRecord
     public required TMFCampaignScoresSnapshot Snapshot { get; set; }
     public required Map Map { get; set; }
     public required TMFLogin Player { get; set; }
+    public string PlayerId { get; set; } = string.Empty;
     public required int Score { get; set; }
     public required int Rank { get; set; }
     public required byte Order { get; set; }

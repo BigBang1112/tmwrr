@@ -73,7 +73,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 continue;
             }
 
-            var oldByLogin = existingRecords.ToDictionary(r => r.Player.Id, r => new TMFCampaignScore(r.Rank, r.Score, r.Player.Id));
+            var oldByLogin = existingRecords.ToDictionary(r => r.PlayerId, r => new TMFCampaignScore(r.Rank, r.Score, r.PlayerId));
             var newByLogin = leaderboard.HighScores.ToDictionary(r => r.Login, r => new TMFCampaignScore(r.Rank, r.Score, r.Login));
 
             var diff = new TMFCampaignScoreDiff();
