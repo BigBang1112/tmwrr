@@ -19,7 +19,7 @@ public static class GamesEndpoint
         // group.MapGet("/{gameId}/campaigns/{campaignId}/maps")
         group.MapGet("/{gameId}/campaigns/{campaignId}/maps/{mapUid}/records", GetGameCampaignRecordsByMapUid);
         group.MapGet("/{gameId}/campaigns/{campaignId}/snapshots/latest", GetLatestGameCampaignSnapshot);
-        group.MapGet("/{gameId}/campaigns/{campaignId}/snapshots/{createdAt}/records/{mapUid}", GetGameCampaignSnapshotRecordsByMapUid);
+        group.MapGet("/{gameId}/campaigns/{campaignId}/snapshots/{createdAt}/{mapUid}/records", GetGameCampaignSnapshotRecordsByMapUid);
 
         group.MapGet("/{gameId}/logins/{loginId}", GetGameLogin);
     }
