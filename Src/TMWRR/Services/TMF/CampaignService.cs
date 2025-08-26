@@ -10,14 +10,18 @@ public interface ICampaignService
 {
     Task<IEnumerable<TMFCampaignDto>> GetAllDtosAsync(CancellationToken cancellationToken);
     Task<TMFCampaignDto?> GetDtoAsync(string id, CancellationToken cancellationToken);
+    Task<TMFCampaignMapDto?> GetMapDtoAsync(string campaignId, string mapUid, CancellationToken cancellationToken);
+    Task<IEnumerable<TMFCampaignMapDto>> GetMapDtosAsync(string campaignId, CancellationToken cancellationToken);
 }
 
 public sealed class CampaignService : ICampaignService
 {
+    private readonly IScoresSnapshotService scoresSnapshotService;
     private readonly AppDbContext db;
 
-    public CampaignService(AppDbContext db)
+    public CampaignService(IScoresSnapshotService scoresSnapshotService, AppDbContext db)
     {
+        this.scoresSnapshotService = scoresSnapshotService;
         this.db = db;
     }
 
@@ -48,5 +52,58 @@ public sealed class CampaignService : ICampaignService
                 }).ToImmutableList()
             })
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
+    public async Task<TMFCampaignMapDto?> GetMapDtoAsync(string campaignId, string mapUid, CancellationToken cancellationToken)
+    {
+        var map = await db.Maps
+            .Where(x => x.TMFCampaignId == campaignId && x.MapUid == mapUid)
+            .Select(m => new MapDto
+            {
+                MapUid = m.MapUid,
+                Name = m.Name,
+                DeformattedName = m.DeformattedName
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (map is null)
+        {
+            return null;
+        }
+
+        var recordCount = await scoresSnapshotService.GetLatestPlayerCountAsync(mapUid, cancellationToken);
+
+        return new TMFCampaignMapDto
+        {
+            Map = map,
+            RecordCount = recordCount
+        };
+    }
+
+    public async Task<IEnumerable<TMFCampaignMapDto>> GetMapDtosAsync(string campaignId, CancellationToken cancellationToken)
+    {
+        var maps = await db.Maps
+            .Where(x => x.TMFCampaignId == campaignId)
+            .OrderBy(x => x.Order)
+            .Select(m => new MapDto
+            {
+                MapUid = m.MapUid,
+                Name = m.Name,
+                DeformattedName = m.DeformattedName
+            })
+            .ToListAsync(cancellationToken);
+
+        if (maps.Count == 0)
+        {
+            return [];
+        }
+
+        var recordCount = await scoresSnapshotService.GetLatestPlayerCountsAsync(campaignId, cancellationToken);
+
+        return maps.Select(m => new TMFCampaignMapDto
+        {
+            Map = m,
+            RecordCount = recordCount.TryGetValue(m.MapUid, out var count) ? count : 0
+        });
     }
 }

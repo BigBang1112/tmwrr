@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi;
 using TMWRR.Data;
 using TMWRR.Dtos;
 using TMWRR.Dtos.TMF;
@@ -26,6 +25,8 @@ public interface IScoresSnapshotService
     Task<IEnumerable<TMFCampaignScoresSnapshotDto>> GetAllSnapshotDtosAsync(string mapUid, CancellationToken cancellationToken);
     Task<TMFCampaignScoresRecord?> GetRecordAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken);
     ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(IEnumerable<Map> values, CancellationToken cancellationToken);
+    ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(string campaignId, CancellationToken cancellationToken);
+    Task<int?> GetLatestPlayerCountAsync(string mapUid, CancellationToken cancellationToken);
 }
 
 public sealed class ScoresSnapshotService : IScoresSnapshotService
@@ -187,5 +188,25 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
             .GroupBy(x => x.Map.MapUid)
             .Select(g => g.OrderByDescending(x => x.Snapshot.CreatedAt).First())
             .ToDictionaryAsync(x => x.Map.MapUid, x => x.Count, cancellationToken);
+    }
+
+    public async ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(string campaignId, CancellationToken cancellationToken)
+    {
+        return await db.TMFCampaignScoresPlayerCounts
+            .Include(x => x.Map)
+            .Where(x => x.Map.TMFCampaignId == campaignId)
+            .GroupBy(x => x.Map.MapUid)
+            .Select(g => g.OrderByDescending(x => x.Snapshot.CreatedAt).First())
+            .ToDictionaryAsync(x => x.Map.MapUid, x => x.Count, cancellationToken);
+    }
+
+    public async Task<int?> GetLatestPlayerCountAsync(string mapUid, CancellationToken cancellationToken)
+    {
+        return await db.TMFCampaignScoresPlayerCounts
+            .Include(x => x.Map)
+            .Where(x => x.Map.MapUid == mapUid)
+            .OrderByDescending(x => x.Snapshot.CreatedAt)
+            .Select(x => x.Count)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

@@ -16,7 +16,8 @@ public static class GamesEndpoint
 
         group.MapGet("/{gameId}/campaigns", GetGameCampaigns);
         group.MapGet("/{gameId}/campaigns/{campaignId}", GetGameCampaign);
-        // group.MapGet("/{gameId}/campaigns/{campaignId}/maps")
+        group.MapGet("/{gameId}/campaigns/{campaignId}/maps", GetGameCampaignMaps);
+        group.MapGet("/{gameId}/campaigns/{campaignId}/maps/{mapUid}", GetGameCampaignMap);
         group.MapGet("/{gameId}/campaigns/{campaignId}/maps/{mapUid}/records", GetGameCampaignRecordsByMapUid);
         group.MapGet("/{gameId}/campaigns/{campaignId}/snapshots/latest", GetLatestGameCampaignSnapshot);
         group.MapGet("/{gameId}/campaigns/{campaignId}/snapshots/{createdAt}/{mapUid}/records", GetGameCampaignSnapshotRecordsByMapUid);
@@ -86,6 +87,66 @@ public static class GamesEndpoint
         }
 
         var dto = await campaignService.GetDtoAsync(campaignId, cancellationToken);
+
+        if (dto is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        return TypedResults.Ok(dto);
+    }
+
+    private static async Task<Results<Ok<IEnumerable<TMFCampaignMapDto>>, ValidationProblem>> GetGameCampaignMaps(
+        EGame gameId, 
+        string campaignId, 
+        ICampaignService campaignService, 
+        CancellationToken cancellationToken)
+    {
+        var errors = new Dictionary<string, string[]>();
+        if (gameId != EGame.TMF)
+        {
+            errors[nameof(gameId)] = ["Only 'TMF' is supported as game ID."];
+        }
+        if (campaignId.Length > 32)
+        {
+            errors[nameof(campaignId)] = ["The campaign ID length must not exceed 32 characters."];
+        }
+        if (errors.Count > 0)
+        {
+            return TypedResults.ValidationProblem(errors);
+        }
+
+        var dtos = await campaignService.GetMapDtosAsync(campaignId, cancellationToken);
+
+        return TypedResults.Ok(dtos);
+    }
+
+    private static async Task<Results<Ok<TMFCampaignMapDto>, ValidationProblem, NotFound>> GetGameCampaignMap(
+        EGame gameId, 
+        string campaignId, 
+        string mapUid, 
+        ICampaignService campaignService, 
+        CancellationToken cancellationToken)
+    {
+        var errors = new Dictionary<string, string[]>();
+        if (gameId != EGame.TMF)
+        {
+            errors[nameof(gameId)] = ["Only 'TMF' is supported as game ID."];
+        }
+        if (campaignId.Length > 32)
+        {
+            errors[nameof(campaignId)] = ["The campaign ID length must not exceed 32 characters."];
+        }
+        if (mapUid.Length > 32)
+        {
+            errors[nameof(mapUid)] = ["The MapUid length must not exceed 32 characters."];
+        }
+        if (errors.Count > 0)
+        {
+            return TypedResults.ValidationProblem(errors);
+        }
+
+        var dto = await campaignService.GetMapDtoAsync(campaignId, mapUid, cancellationToken);
 
         if (dto is null)
         {
