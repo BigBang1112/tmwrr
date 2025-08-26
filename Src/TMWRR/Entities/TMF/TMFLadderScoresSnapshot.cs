@@ -1,19 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 
 namespace TMWRR.Entities.TMF;
 
 [Index(nameof(Guid), IsUnique = true)]
 [Index(nameof(CreatedAt), IsUnique = true)]
-public class TMFCampaignScoresSnapshot
+public class TMFLadderScoresSnapshot
 {
     public int Id { get; set; }
 
     public Guid? Guid { get; set; } = System.Guid.CreateVersion7();
 
-    [Required]
-    public TMFCampaign Campaign { get; set; } = null!;
-    public string CampaignId { get; set; } = string.Empty;
+    public int PlayerCount { get; set; }
 
     public required DateTimeOffset CreatedAt { get; set; }
     public required DateTimeOffset PublishedAt { get; set; }
@@ -21,11 +18,10 @@ public class TMFCampaignScoresSnapshot
 
     public bool NoChanges { get; set; }
 
-    public ICollection<TMFCampaignScoresRecord> Records { get; set; } = [];
-    public ICollection<TMFCampaignScoresPlayerCount> PlayerCounts { get; set; } = [];
+    public ICollection<TMFLadderScoresXY> XYs { get; set; } = [];
 
     public override string ToString()
     {
-        return $"{CampaignId} - {CreatedAt:yyyy-MM-dd HH:mm:ss} ({Records.Count} records)";
+        return $"{CreatedAt:yyyy-MM-dd HH:mm:ss} ({XYs.Count} graph points)";
     }
 }

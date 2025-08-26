@@ -19,6 +19,6 @@ public class GeneralScoresJobService : IGeneralScoresJobService
 
     public async Task ProcessAsync(Leaderboard leaderboard, CancellationToken cancellationToken)
     {
-
+        var playerCount = leaderboard.Skillpoints.Sum(x => x.Count);
     }
 }

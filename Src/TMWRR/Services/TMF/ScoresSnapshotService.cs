@@ -25,6 +25,7 @@ public interface IScoresSnapshotService
     Task<IEnumerable<TMFCampaignScoresRecordDto>> GetSnapshotRecordDtosAsync(string campaignId, DateTimeOffset createdAt, string mapUid, CancellationToken cancellationToken);
     Task<IEnumerable<TMFCampaignScoresSnapshotDto>> GetAllSnapshotDtosAsync(string mapUid, CancellationToken cancellationToken);
     Task<TMFCampaignScoresRecord?> GetRecordAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken);
+    ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(IEnumerable<Map> values, CancellationToken cancellationToken);
 }
 
 public sealed class ScoresSnapshotService : IScoresSnapshotService
@@ -170,5 +171,21 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         return await db.TMFCampaignScoresRecords
             .Include(x => x.Ghost)
             .FirstOrDefaultAsync(x => x.Map == map && x.Player == login && x.Score == score, cancellationToken);
+    }
+
+    public async ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(IEnumerable<Map> values, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(values, nameof(values));
+
+        if (!values.Any())
+        {
+            return new Dictionary<string, int>();
+        }
+
+        return await db.TMFCampaignScoresPlayerCounts
+            .Where(x => values.Contains(x.Map))
+            .GroupBy(x => x.Map.MapUid)
+            .Select(g => g.OrderByDescending(x => x.Snapshot.CreatedAt).First())
+            .ToDictionaryAsync(x => x.Map.MapUid, x => x.Count, cancellationToken);
     }
 }

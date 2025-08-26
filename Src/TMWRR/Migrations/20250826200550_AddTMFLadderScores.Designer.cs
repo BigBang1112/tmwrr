@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TMWRR.Data;
 
@@ -11,9 +12,11 @@ using TMWRR.Data;
 namespace TMWRR.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250826200550_AddTMFLadderScores")]
+    partial class AddTMFLadderScores
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -189,32 +192,6 @@ namespace TMWRR.Migrations
                     b.ToTable("TMFCampaigns");
                 });
 
-            modelBuilder.Entity("TMWRR.Entities.TMF.TMFCampaignScoresPlayerCount", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Count")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MapId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SnapshotId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MapId");
-
-                    b.HasIndex("SnapshotId");
-
-                    b.ToTable("TMFCampaignScoresPlayerCounts");
-                });
-
             modelBuilder.Entity("TMWRR.Entities.TMF.TMFCampaignScoresRecord", b =>
                 {
                     b.Property<int>("Id")
@@ -273,9 +250,6 @@ namespace TMWRR.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<Guid?>("Guid")
-                        .HasColumnType("char(36)");
-
                     b.Property<bool>("NoChanges")
                         .HasColumnType("tinyint(1)");
 
@@ -287,9 +261,6 @@ namespace TMWRR.Migrations
                     b.HasIndex("CampaignId");
 
                     b.HasIndex("CreatedAt")
-                        .IsUnique();
-
-                    b.HasIndex("Guid")
                         .IsUnique();
 
                     b.ToTable("TMFCampaignScoresSnapshots");
@@ -306,9 +277,6 @@ namespace TMWRR.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<Guid?>("Guid")
-                        .HasColumnType("char(36)");
-
                     b.Property<bool>("NoChanges")
                         .HasColumnType("tinyint(1)");
 
@@ -321,9 +289,6 @@ namespace TMWRR.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedAt")
-                        .IsUnique();
-
-                    b.HasIndex("Guid")
                         .IsUnique();
 
                     b.ToTable("TMFLadderScoresSnapshots");
@@ -440,25 +405,6 @@ namespace TMWRR.Migrations
                     b.Navigation("Game");
                 });
 
-            modelBuilder.Entity("TMWRR.Entities.TMF.TMFCampaignScoresPlayerCount", b =>
-                {
-                    b.HasOne("TMWRR.Entities.Map", "Map")
-                        .WithMany()
-                        .HasForeignKey("MapId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("TMWRR.Entities.TMF.TMFCampaignScoresSnapshot", "Snapshot")
-                        .WithMany("PlayerCounts")
-                        .HasForeignKey("SnapshotId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Map");
-
-                    b.Navigation("Snapshot");
-                });
-
             modelBuilder.Entity("TMWRR.Entities.TMF.TMFCampaignScoresRecord", b =>
                 {
                     b.HasOne("TMWRR.Entities.Ghost", "Ghost")
@@ -557,8 +503,6 @@ namespace TMWRR.Migrations
 
             modelBuilder.Entity("TMWRR.Entities.TMF.TMFCampaignScoresSnapshot", b =>
                 {
-                    b.Navigation("PlayerCounts");
-
                     b.Navigation("Records");
                 });
 

@@ -200,7 +200,8 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                         }
 
                         // DO NOT USE DIFFS IN THIS COMPARISON because then fresh maps won't be saved in the snapshot
-                        if (snapshot.Records.Count == 0)
+                        // this will rarely hit though cuz player count changes basically everyday
+                        if (snapshot.Records.Count == 0 && snapshot.PlayerCounts.Count == 0)
                         {
                             snapshot.NoChanges = true;
                             logger.LogInformation("No score changes for {ScoreType}.", scoreType);

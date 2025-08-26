@@ -53,6 +53,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             .ToDictionary(x => x.Login, x => x.Nickname);
         var playersByLogin = await loginService.PopulateAsync(nicknamesByLogin, cancellationToken);
         var records = await scoresSnapshotService.GetLatestRecordsAsync(mapsByUid.Values, cancellationToken);
+        var playerCounts = await scoresSnapshotService.GetLatestPlayerCountsAsync(mapsByUid.Values, cancellationToken);
         //
 
         var diffs = new Dictionary<string, TMFCampaignScoreDiff>();
@@ -136,6 +137,30 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             await PopulateSnapshotAsync(snapshot, playersByLogin, map, leaderboard, diff, cancellationToken);
         }
 
+        // Populate snapshot with player counts if they are different
+        foreach (var (mapUid, leaderboardZones) in maps)
+        { 
+            var map = mapsByUid[mapUid];
+            var leaderboard = leaderboardZones.ChallengeScores[Constants.World];
+
+            playerCounts.TryGetValue(mapUid, out var existingCount);
+
+            var currentCount = leaderboard.Skillpoints.Sum(x => x.Count);
+
+            if (existingCount == currentCount)
+            {
+                logger.LogInformation("Skipping player count for map {MapUid} as it is unchanged ({Count})", mapUid, currentCount);
+                continue;
+            }
+
+            snapshot.PlayerCounts.Add(new TMFCampaignScoresPlayerCount
+            {
+                Snapshot = snapshot,
+                Map = map,
+                Count = currentCount,
+            });
+        }
+
         return diffs;
     }
 
@@ -200,5 +225,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 diffScore.GhostGuid = ghost.Guid;
             }
         }
+
+        //snapshot.PlayerCounts = leaderboard.Skillpoints.Sum(x => x.Count);
     }
 }
