@@ -10,6 +10,7 @@ namespace TMWRR.Services.TMF;
 public interface IScoresSnapshotService
 {
     Task<bool> CampaignSnapshotExistsAsync(string campaignId, DateTimeOffset createdAt, CancellationToken cancellationToken);
+    Task<bool> LadderSnapshotExistsAsync(DateTimeOffset createdAt, CancellationToken cancellationToken);
 
     /// <summary>
     /// Saves a new snapshot of the TMF campaign scores. Expects that the snapshot is populated with records.
@@ -18,6 +19,13 @@ public interface IScoresSnapshotService
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task SaveSnapshotAsync(TMFCampaignScoresSnapshot snapshot, CancellationToken cancellationToken);
+    /// <summary>
+    /// Saves a new snapshot of the TMF ladder scores. Expects that the snapshot is populated with a graph.
+    /// </summary>
+    /// <param name="snapshot"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task SaveSnapshotAsync(TMFLadderScoresSnapshot snapshot, CancellationToken cancellationToken);
     ValueTask<IEnumerable<TMFCampaignScoresRecord>> GetLatestRecordsAsync(IEnumerable<Map> maps, CancellationToken cancellationToken);
     Task<TMFCampaignScoresSnapshotDto?> GetLatestSnapshotDtoAsync(string campaignId, CancellationToken cancellationToken);
     Task<IEnumerable<TMFCampaignScoresRecordDto>> GetLatestRecordDtosAsync(string campaignId, string mapUid, CancellationToken cancellationToken);
@@ -27,6 +35,7 @@ public interface IScoresSnapshotService
     ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(IEnumerable<Map> values, CancellationToken cancellationToken);
     ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(string campaignId, CancellationToken cancellationToken);
     Task<int?> GetLatestPlayerCountAsync(string mapUid, CancellationToken cancellationToken);
+    Task<TMFLadderScoresSnapshot?> GetLatestLadderSnapshotAsync(CancellationToken cancellationToken);
 }
 
 public sealed class ScoresSnapshotService : IScoresSnapshotService
@@ -44,11 +53,25 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
             .AnyAsync(x => x.CampaignId == campaignId && x.CreatedAt == createdAt, cancellationToken);
     }
 
+    public async Task<bool> LadderSnapshotExistsAsync(DateTimeOffset createdAt, CancellationToken cancellationToken)
+    {
+        return await db.TMFLadderScoresSnapshots
+            .AnyAsync(x => x.CreatedAt == createdAt, cancellationToken);
+    }
+
     public async Task SaveSnapshotAsync(TMFCampaignScoresSnapshot snapshot, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(snapshot, nameof(snapshot));
 
         await db.TMFCampaignScoresSnapshots.AddAsync(snapshot, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SaveSnapshotAsync(TMFLadderScoresSnapshot snapshot, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot, nameof(snapshot));
+
+        await db.TMFLadderScoresSnapshots.AddAsync(snapshot, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
     }
 
@@ -207,6 +230,14 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
             .Where(x => x.Map.MapUid == mapUid)
             .OrderByDescending(x => x.Snapshot.CreatedAt)
             .Select(x => x.Count)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<TMFLadderScoresSnapshot?> GetLatestLadderSnapshotAsync(CancellationToken cancellationToken)
+    {
+        return await db.TMFLadderScoresSnapshots
+            .Include(x => x.XYs)
+            .OrderByDescending(x => x.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
     }
 }
