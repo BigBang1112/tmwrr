@@ -6,7 +6,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using TMWRR.DiscordReport;
-using TMWRR.Entities;
+using TMWRR.Entities.TMF;
 using TMWRR.Exceptions;
 using TMWRR.Extensions;
 using TMWRR.Models;

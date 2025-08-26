@@ -2,7 +2,9 @@
 using Microsoft.OpenApi;
 using TMWRR.Data;
 using TMWRR.Dtos;
+using TMWRR.Dtos.TMF;
 using TMWRR.Entities;
+using TMWRR.Entities.TMF;
 
 namespace TMWRR.Services.TMF;
 

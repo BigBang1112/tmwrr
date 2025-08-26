@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using TMWRR.Entities.TMF;
 
 namespace TMWRR.Entities;
 

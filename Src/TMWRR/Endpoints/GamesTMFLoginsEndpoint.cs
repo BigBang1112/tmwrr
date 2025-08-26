@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
-using TMWRR.Dtos;
+using TMWRR.Dtos.TMF;
 using TMWRR.Services;
 
 namespace TMWRR.Endpoints;
 
-public static class TMFLoginsEndpoint
+public static class GamesTMFLoginsEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {

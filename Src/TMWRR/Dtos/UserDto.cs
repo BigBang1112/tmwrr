@@ -1,4 +1,6 @@
-﻿namespace TMWRR.Dtos;
+﻿using TMWRR.Dtos.TMF;
+
+namespace TMWRR.Dtos;
 
 public sealed class UserDto
 {

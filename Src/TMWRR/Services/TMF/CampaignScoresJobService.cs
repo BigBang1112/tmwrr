@@ -1,5 +1,6 @@
 ﻿using ManiaAPI.Xml.TMUF;
 using TMWRR.Entities;
+using TMWRR.Entities.TMF;
 using TMWRR.Models;
 
 namespace TMWRR.Services.TMF;

@@ -10,6 +10,9 @@ public static class GamesEndpoint
     {
         group.MapGet("/", GetGames);
         group.MapGet("/{id}", GetGame);
+
+        GamesTMFLoginsEndpoint.Map(group.MapGroup("tmf/logins"));
+        GamesTMFCampaignsEndpoint.Map(group.MapGroup("tmf/campaigns"));
     }
 
     private static async Task<Ok<IEnumerable<GameDto>>> GetGames(IGameService gameService, CancellationToken cancellationToken)

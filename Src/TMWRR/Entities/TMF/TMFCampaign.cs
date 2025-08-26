@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace TMWRR.Entities;
+namespace TMWRR.Entities.TMF;
 
 public class TMFCampaign
 {

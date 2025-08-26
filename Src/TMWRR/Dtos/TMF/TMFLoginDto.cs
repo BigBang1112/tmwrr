@@ -1,6 +1,6 @@
 ﻿using System.Collections.Immutable;
 
-namespace TMWRR.Dtos;
+namespace TMWRR.Dtos.TMF;
 
 public sealed class TMFLoginDto
 {

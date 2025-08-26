@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
-namespace TMWRR.Entities;
+namespace TMWRR.Entities.TMF;
 
 [Index(nameof(CreatedAt), IsUnique = true)]
 public class TMFCampaignScoresSnapshot
