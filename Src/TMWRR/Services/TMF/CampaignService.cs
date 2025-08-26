@@ -103,7 +103,7 @@ public sealed class CampaignService : ICampaignService
         return maps.Select(m => new TMFCampaignMapDto
         {
             Map = m,
-            RecordCount = recordCount.TryGetValue(m.MapUid, out var count) ? count : 0
+            RecordCount = recordCount.TryGetValue(m.MapUid, out var count) ? count : null
         });
     }
 }
