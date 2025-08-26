@@ -43,8 +43,11 @@ public static class WebConfiguration
             options.RejectionStatusCode = 429;
         });
 
-        services.Configure<JsonOptions>(options =>
-            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
+        services.ConfigureHttpJsonOptions(options =>
+        {
+            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        });
 
         services.AddHealthChecks();
 

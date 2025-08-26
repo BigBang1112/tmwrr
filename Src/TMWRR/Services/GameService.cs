@@ -2,13 +2,14 @@
 using System.Collections.Immutable;
 using TMWRR.Data;
 using TMWRR.Dtos;
+using TMWRR.Enums;
 
 namespace TMWRR.Services;
 
 public interface IGameService
 {
     Task<IEnumerable<GameDto>> GetAllDtosAsync(CancellationToken cancellationToken);
-    Task<GameDto?> GetDtoAsync(string id, CancellationToken cancellationToken);
+    Task<GameDto?> GetDtoAsync(EGame id, CancellationToken cancellationToken);
 }
 
 public sealed class GameService : IGameService
@@ -36,7 +37,7 @@ public sealed class GameService : IGameService
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<GameDto?> GetDtoAsync(string id, CancellationToken cancellationToken)
+    public async Task<GameDto?> GetDtoAsync(EGame id, CancellationToken cancellationToken)
     {
         return await db.Games
             .Include(x => x.Environments)
@@ -49,6 +50,6 @@ public sealed class GameService : IGameService
                     Name = e.Name ?? e.Id
                 }).ToImmutableList()
             })
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == id.ToString(), cancellationToken);
     }
 }

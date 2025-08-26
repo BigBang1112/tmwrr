@@ -32,19 +32,10 @@ public static class GamesEndpoint
     }
 
     private static async Task<Results<Ok<GameDto>, ValidationProblem, NotFound>> GetGame(
-        string gameId, 
+        EGame gameId, 
         IGameService gameService, 
         CancellationToken cancellationToken)
     {
-        if (gameId.Length > 12)
-        {
-            var errors = new Dictionary<string, string[]>
-            {
-                [nameof(gameId)] = ["The game ID length must not exceed 12 characters."]
-            };
-            return TypedResults.ValidationProblem(errors);
-        }
-
         var dto = await gameService.GetDtoAsync(gameId, cancellationToken);
 
         if (dto is null)
@@ -56,11 +47,11 @@ public static class GamesEndpoint
     }
 
     private static async Task<Results<Ok<IEnumerable<TMFCampaignDto>>, ValidationProblem>> GetGameCampaigns(
-        string gameId, 
+        EGame gameId, 
         ICampaignService campaignService, 
         CancellationToken cancellationToken)
     {
-        if (!gameId.Equals(nameof(EGame.TMF), StringComparison.InvariantCultureIgnoreCase))
+        if (gameId != EGame.TMF)
         {
             var errors = new Dictionary<string, string[]>
             {
@@ -75,13 +66,13 @@ public static class GamesEndpoint
     }
 
     private static async Task<Results<Ok<TMFCampaignDto>, ValidationProblem, NotFound>> GetGameCampaign(
-        string gameId, 
+        EGame gameId, 
         string campaignId,
         ICampaignService campaignService, 
         CancellationToken cancellationToken)
     {
         var errors = new Dictionary<string, string[]>();
-        if (!gameId.Equals(nameof(EGame.TMF), StringComparison.InvariantCultureIgnoreCase))
+        if (gameId != EGame.TMF)
         {
             errors[nameof(gameId)] = ["Only 'TMF' is supported as game ID."];
         }
@@ -105,14 +96,14 @@ public static class GamesEndpoint
     }
 
     private static async Task<Results<Ok<IEnumerable<TMFCampaignScoresRecordDto>>, ValidationProblem>> GetGameCampaignRecordsByMapUid(
-        string gameId,
+        EGame gameId,
         string campaignId, 
         string mapUid,
         IScoresSnapshotService scoresSnapshotService,
         CancellationToken cancellationToken)
     {
         var errors = new Dictionary<string, string[]>();
-        if (!gameId.Equals(nameof(EGame.TMF), StringComparison.InvariantCultureIgnoreCase))
+        if (gameId != EGame.TMF)
         {
             errors[nameof(gameId)] = ["Only 'TMF' is supported as game ID."];
         }
@@ -135,13 +126,13 @@ public static class GamesEndpoint
     }
 
     private static async Task<Results<Ok<TMFCampaignScoresSnapshotDto>, ValidationProblem, NotFound>> GetLatestGameCampaignSnapshot(
-        string gameId, 
+        EGame gameId, 
         string campaignId, 
         IScoresSnapshotService scoresSnapshotService,
         CancellationToken cancellationToken)
     {
         var errors = new Dictionary<string, string[]>();
-        if (!gameId.Equals(nameof(EGame.TMF), StringComparison.InvariantCultureIgnoreCase))
+        if (gameId != EGame.TMF)
         {
             errors[nameof(gameId)] = ["Only 'TMF' is supported as game ID."];
         }
@@ -165,7 +156,7 @@ public static class GamesEndpoint
     }
 
     private static async Task<Results<Ok<IEnumerable<TMFCampaignScoresRecordDto>>, ValidationProblem>> GetGameCampaignSnapshotRecordsByMapUid(
-        string gameId,
+        EGame gameId,
         string campaignId, 
         DateTimeOffset createdAt, 
         string mapUid, 
@@ -173,7 +164,7 @@ public static class GamesEndpoint
         CancellationToken cancellationToken)
     {
         var errors = new Dictionary<string, string[]>();
-        if (!gameId.Equals(nameof(EGame.TMF), StringComparison.InvariantCultureIgnoreCase))
+        if (gameId != EGame.TMF)
         {
             errors[nameof(gameId)] = ["Only 'TMF' is supported as game ID."];
         }
