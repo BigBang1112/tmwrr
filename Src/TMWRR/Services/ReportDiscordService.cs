@@ -66,9 +66,11 @@ public class ReportDiscordService : IReportDiscordService
                     ? removedRecord.Score.ToString()
                     : removedRecord.GetTime().ToString(useHundredths: true);
 
-                sb.AppendFormat("`{0}` `{1}` by **[{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>)** was **removed**",
+                sb.AppendFormat("`{0}` [`{1}`](<https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{2}&mapuid={3}>) by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** was **removed**",
                     removedRecord.Rank.ToString("00"),
                     score,
+                    removedRecord.GhostGuid, // can be null sometimes (if something breaks), be careful
+                    report.Map.MapUid,
                     TextFormatter.Deformat(removedRecordNickname),
                     removedRecord.Login);
                 sb.AppendLine();
@@ -87,9 +89,11 @@ public class ReportDiscordService : IReportDiscordService
                     ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
                     : string.Empty;
 
-                sb.AppendFormat("`{0}` **`{1}`** by **[{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>)** {4}",
+                sb.AppendFormat("`{0}` **[`{1}`](<https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{2}&mapuid={3}>)** by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** {6}",
                     newRecord.Rank.ToString("00"),
                     score,
+                    newRecord.GhostGuid, // can be null sometimes (if something breaks), be careful
+                    report.Map.MapUid,
                     TextFormatter.Deformat(newRecordNickname),
                     newRecord.Login,
                     timestamp);
@@ -130,9 +134,11 @@ public class ReportDiscordService : IReportDiscordService
                     ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
                     : string.Empty;
 
-                sb.AppendFormat("`{0}` **`{1}`** `{2}` from `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** {6}",
+                sb.AppendFormat("`{0}` **[`{1}`](<https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{2}&mapuid={3}>)** `{4}` from `{5}` by **[{6}](<https://ul.unitedascenders.xyz/lookup?login={7}>)** {8}",
                     newRecord.Rank.ToString("00"),
                     score,
+                    newRecord.GhostGuid, // can be null sometimes (if something breaks), be careful
+                    report.Map.MapUid,
                     delta,
                     oldRecord.Rank.ToString("00"),
                     TextFormatter.Deformat(newRecordNickname),
@@ -151,7 +157,7 @@ public class ReportDiscordService : IReportDiscordService
         var maps = campaignScoreDiffReports.Select(x =>
             string.Format("[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)", x.Map.GetDeformattedName(), x.Map.MapUid));
 
-        await SendReportAsync(webhook, reportedAt, $"Leaderboards have changed for {string.Join(", ", maps)}.", fields, cancellationToken);
+        await SendReportAsync(webhook, reportedAt, $"Solo leaderboards have changed for {string.Join(", ", maps)}.", fields, cancellationToken);
     }
 
     private static async Task SendReportAsync(IDiscordWebhook webhook, DateTimeOffset reportedAt, string text, IEnumerable<EmbedFieldBuilder> fields, CancellationToken cancellationToken)
