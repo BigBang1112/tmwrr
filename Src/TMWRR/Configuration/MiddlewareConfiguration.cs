@@ -1,5 +1,4 @@
 ﻿using HealthChecks.UI.Client;
-using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
 
 namespace TMWRR.Configuration;
@@ -8,10 +7,7 @@ public static class MiddlewareConfiguration
 {
     public static void UseMiddleware(this WebApplication app)
     {
-        app.UseForwardedHeaders(new ForwardedHeadersOptions
-        {
-            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-        });
+        app.UseForwardedHeaders();
 
         if (app.Environment.IsDevelopment())
         {

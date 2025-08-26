@@ -2,7 +2,7 @@
 using ManiaAPI.TrackmaniaWS.Extensions.Hosting;
 using ManiaAPI.UnitedLadder;
 using ManiaAPI.Xml.Extensions.Hosting;
-using Microsoft.AspNetCore.Http.Json;
+using Microsoft.AspNetCore.HttpOverrides;
 using Polly;
 using System.Text.Json.Serialization;
 using TMWRR.Exceptions;
@@ -52,5 +52,14 @@ public static class WebConfiguration
         services.AddHealthChecks();
 
         services.AddProblemDetails();
+
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders =
+                ForwardedHeaders.XForwardedFor |
+                ForwardedHeaders.XForwardedProto;
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
     }
 }
