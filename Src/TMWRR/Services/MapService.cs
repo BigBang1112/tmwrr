@@ -116,6 +116,10 @@ public sealed class MapService : IMapService
                     Id = x.TMFCampaign.Id,
                     Name = x.TMFCampaign.Name ?? x.TMFCampaign.Name
                 },
+                RecordCountTMF = x.TMFPlayerCounts
+                    .OrderByDescending(x => x.Snapshot.CreatedAt)
+                    .Select(x => x.Count)
+                    .FirstOrDefault(),
                 Order = x.Order,
                 FileName = x.FileName
             })

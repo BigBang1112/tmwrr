@@ -47,6 +47,7 @@ public class Map
     public byte[]? Thumbnail { get; set; }
 
     public ICollection<TMFCampaignScoresRecord> TMFRecords { get; set; } = [];
+    public ICollection<TMFCampaignScoresPlayerCount> TMFPlayerCounts { get; set; } = [];
 
     public override string ToString()
     {

@@ -15,6 +15,7 @@ public sealed class MapDto
     public int? AuthorScore { get; set; }
     public int? NbLaps { get; set; }
     public TMFCampaignDto? CampaignTMF { get; set; }
+    public int? RecordCountTMF { get; set; }
     public int? Order { get; set; }
     public string? FileName { get; set; }
 }
