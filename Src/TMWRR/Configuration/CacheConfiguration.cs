@@ -14,6 +14,9 @@ public static class CacheConfiguration
 
             options.AddPolicy(CachePolicy.Campaigns, x =>
                 x.Tag("campaign").Expire(TimeSpan.FromDays(1)));
+
+            options.AddPolicy(CachePolicy.SnapshotsCampaignTMF, x =>
+                x.Tag("snapshot-campaign-tmf").Expire(TimeSpan.FromDays(1)));
         });
 
         services.AddHybridCache();

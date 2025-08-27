@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
 using System.Collections.Immutable;
 using TMWRR.Data;
 using TMWRR.Dtos;
@@ -18,11 +19,13 @@ public sealed class CampaignService : ICampaignService
 {
     private readonly IScoresSnapshotService scoresSnapshotService;
     private readonly AppDbContext db;
+    private readonly HybridCache cache;
 
-    public CampaignService(IScoresSnapshotService scoresSnapshotService, AppDbContext db)
+    public CampaignService(IScoresSnapshotService scoresSnapshotService, AppDbContext db, HybridCache cache)
     {
         this.scoresSnapshotService = scoresSnapshotService;
         this.db = db;
+        this.cache = cache;
     }
 
     public async Task<IEnumerable<TMFCampaignDto>> GetAllDtosAsync(CancellationToken cancellationToken)
@@ -82,28 +85,31 @@ public sealed class CampaignService : ICampaignService
 
     public async Task<IEnumerable<TMFCampaignMapDto>> GetMapDtosAsync(string campaignId, CancellationToken cancellationToken)
     {
-        var maps = await db.Maps
-            .Where(x => x.TMFCampaignId == campaignId)
-            .OrderBy(x => x.Order)
-            .Select(m => new MapDto
+        return await cache.GetOrCreateAsync($"campaign-maps-{campaignId}", async token =>
+        {
+            var maps = await db.Maps
+                .Where(x => x.TMFCampaignId == campaignId)
+                .OrderBy(x => x.Order)
+                .Select(m => new MapDto
+                {
+                    MapUid = m.MapUid,
+                    Name = m.Name,
+                    DeformattedName = m.DeformattedName
+                })
+                .ToListAsync(token);
+
+            if (maps.Count == 0)
             {
-                MapUid = m.MapUid,
-                Name = m.Name,
-                DeformattedName = m.DeformattedName
-            })
-            .ToListAsync(cancellationToken);
+                return [];
+            }
 
-        if (maps.Count == 0)
-        {
-            return [];
-        }
+            var recordCount = await scoresSnapshotService.GetLatestPlayerCountsAsync(campaignId, token);
 
-        var recordCount = await scoresSnapshotService.GetLatestPlayerCountsAsync(campaignId, cancellationToken);
-
-        return maps.Select(m => new TMFCampaignMapDto
-        {
-            Map = m,
-            RecordCount = recordCount.TryGetValue(m.MapUid, out var count) ? count : null
-        });
+            return maps.Select(m => new TMFCampaignMapDto
+            {
+                Map = m,
+                RecordCount = recordCount.TryGetValue(m.MapUid, out var count) ? count : null
+            });
+        }, new() { Expiration = TimeSpan.FromDays(1) }, ["snapshot-campaign-tmf", "map"], cancellationToken);
     }
 }

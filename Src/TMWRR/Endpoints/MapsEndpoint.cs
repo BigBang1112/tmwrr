@@ -11,7 +11,8 @@ public static class MapsEndpoint
     public static void Map(RouteGroupBuilder group)
     {
         group.MapGet("/{mapUid}", GetMap);
-        group.MapGet("/{mapUid}/tmf/snapshots", GetTMFSnapshots);
+        group.MapGet("/{mapUid}/tmf/snapshots", GetTMFSnapshots)
+            .CacheOutput(CachePolicy.SnapshotsCampaignTMF);
     }
 
     private static async Task<Results<Ok<MapDto>, ValidationProblem, NotFound>> GetMap(
@@ -51,7 +52,7 @@ public static class MapsEndpoint
 
         // TODO bad request when not a tmuf map
 
-        var dtos = await scoresSnapshotService.GetAllSnapshotDtosAsync(mapUid, cancellationToken);
+        var dtos = await scoresSnapshotService.GetMapSnapshotDtosAsync(mapUid, cancellationToken);
 
         return TypedResults.Ok(dtos);
     }
