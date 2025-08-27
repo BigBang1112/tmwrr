@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
 using System.Text.Json;
 using TmEssentials;
 using TMWRR.Data;
@@ -12,11 +14,15 @@ public sealed class Seeding
     private const string Resources = "Resources";
 
     private readonly AppDbContext db;
+    private readonly HybridCache hybridCache;
+    private readonly IOutputCacheStore outputCache;
     private readonly ILogger<Seeding> logger;
 
-    public Seeding(AppDbContext db, ILogger<Seeding> logger)
+    public Seeding(AppDbContext db, HybridCache hybridCache, IOutputCacheStore outputCache, ILogger<Seeding> logger)
     {
         this.db = db;
+        this.hybridCache = hybridCache;
+        this.outputCache = outputCache;
         this.logger = logger;
     }
 
@@ -237,6 +243,13 @@ public sealed class Seeding
         logger.LogInformation("Saving seeding...");
 
         await db.SaveChangesAsync(cancellationToken);
+
+        await hybridCache.RemoveByTagAsync("map", cancellationToken);
+        await outputCache.EvictByTagAsync("game", cancellationToken);
+        await outputCache.EvictByTagAsync("environment", cancellationToken);
+        await outputCache.EvictByTagAsync("mode", cancellationToken);
+        await outputCache.EvictByTagAsync("campaign", cancellationToken);
+        await outputCache.EvictByTagAsync("map", cancellationToken);
 
         logger.LogInformation("Seeding completed successfully.");
     }

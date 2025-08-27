@@ -2,6 +2,7 @@
 using TMWRR.Dtos;
 using TMWRR.Dtos.TMF;
 using TMWRR.Enums;
+using TMWRR.Extensions;
 using TMWRR.Services;
 using TMWRR.Services.TMF;
 
@@ -11,23 +12,40 @@ public static class GamesEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/", GetGames);
-        group.MapGet("/{gameId}", GetGame);
+        group.MapGet("/", GetGames)
+            .CacheOutput(CachePolicy.Games);
 
-        group.MapGet("/{gameId}/campaigns", GetGameCampaigns);
-        group.MapGet("/{gameId}/campaigns/{campaignId}", GetGameCampaign);
+        group.MapGet("/{gameId}", GetGame)
+            .CacheOutput(CachePolicy.Games);
+
+
+        group.MapGet("/{gameId}/campaigns", GetGameCampaigns)
+            .CacheOutput(CachePolicy.Campaigns);
+
+        group.MapGet("/{gameId}/campaigns/{campaignId}", GetGameCampaign)
+            .CacheOutput();
+
         group.MapGet("/{gameId}/campaigns/{campaignId}/maps", GetGameCampaignMaps);
+
         group.MapGet("/{gameId}/campaigns/{campaignId}/maps/{mapUid}", GetGameCampaignMap);
+
         group.MapGet("/{gameId}/campaigns/{campaignId}/maps/{mapUid}/records", GetGameCampaignRecordsByMapUid);
+
         group.MapGet("/{gameId}/campaigns/{campaignId}/snapshots/latest", GetLatestGameCampaignSnapshot);
+
         group.MapGet("/{gameId}/campaigns/{campaignId}/snapshots/{createdAt}/{mapUid}/records", GetGameCampaignSnapshotRecordsByMapUid);
 
         group.MapGet("/{gameId}/logins/{loginId}", GetGameLogin);
     }
 
-    private static async Task<Ok<IEnumerable<GameDto>>> GetGames(IGameService gameService, CancellationToken cancellationToken)
+    private static async Task<Ok<IEnumerable<GameDto>>> GetGames(
+        IGameService gameService,
+        HttpResponse response, 
+        CancellationToken cancellationToken)
     {
         var dtos = await gameService.GetAllDtosAsync(cancellationToken);
+
+        response.ClientCache();
 
         return TypedResults.Ok(dtos);
     }
@@ -35,6 +53,7 @@ public static class GamesEndpoint
     private static async Task<Results<Ok<GameDto>, ValidationProblem, NotFound>> GetGame(
         EGame gameId, 
         IGameService gameService, 
+        HttpResponse response,
         CancellationToken cancellationToken)
     {
         var dto = await gameService.GetDtoAsync(gameId, cancellationToken);
@@ -44,12 +63,15 @@ public static class GamesEndpoint
             return TypedResults.NotFound();
         }
 
+        response.ClientCache();
+
         return TypedResults.Ok(dto);
     }
 
     private static async Task<Results<Ok<IEnumerable<TMFCampaignDto>>, ValidationProblem>> GetGameCampaigns(
         EGame gameId, 
-        ICampaignService campaignService, 
+        ICampaignService campaignService,
+        HttpResponse response,
         CancellationToken cancellationToken)
     {
         if (gameId != EGame.TMF)
@@ -63,13 +85,16 @@ public static class GamesEndpoint
 
         var dtos = await campaignService.GetAllDtosAsync(cancellationToken);
 
+        response.ClientCache();
+
         return TypedResults.Ok(dtos);
     }
 
     private static async Task<Results<Ok<TMFCampaignDto>, ValidationProblem, NotFound>> GetGameCampaign(
         EGame gameId, 
         string campaignId,
-        ICampaignService campaignService, 
+        ICampaignService campaignService,
+        HttpResponse response,
         CancellationToken cancellationToken)
     {
         var errors = new Dictionary<string, string[]>();
@@ -92,6 +117,8 @@ public static class GamesEndpoint
         {
             return TypedResults.NotFound();
         }
+
+        response.ClientCache();
 
         return TypedResults.Ok(dto);
     }

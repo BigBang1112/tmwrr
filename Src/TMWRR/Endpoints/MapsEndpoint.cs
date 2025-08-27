@@ -14,7 +14,10 @@ public static class MapsEndpoint
         group.MapGet("/{mapUid}/tmf/snapshots", GetTMFSnapshots);
     }
 
-    private static async Task<Results<Ok<MapDto>, ValidationProblem, NotFound>> GetMap(string mapUid, IMapService mapService, CancellationToken cancellationToken)
+    private static async Task<Results<Ok<MapDto>, ValidationProblem, NotFound>> GetMap(
+        string mapUid, 
+        IMapService mapService, 
+        CancellationToken cancellationToken)
     {
         if (mapUid.Length > 32)
         {

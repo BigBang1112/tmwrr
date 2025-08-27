@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
 using TMWRR.Data;
 using TMWRR.Dtos;
 using TMWRR.Dtos.TMF;
@@ -41,10 +42,12 @@ public interface IScoresSnapshotService
 public sealed class ScoresSnapshotService : IScoresSnapshotService
 {
     private readonly AppDbContext db;
+    private readonly HybridCache cache;
 
-    public ScoresSnapshotService(AppDbContext db)
+    public ScoresSnapshotService(AppDbContext db, HybridCache cache)
     {
         this.db = db;
+        this.cache = cache;
     }
 
     public async Task<bool> CampaignSnapshotExistsAsync(string campaignId, DateTimeOffset createdAt, CancellationToken cancellationToken)
@@ -65,6 +68,12 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
 
         await db.TMFCampaignScoresSnapshots.AddAsync(snapshot, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+
+        // uncache map DTOs where recordCountTMF is stored
+        foreach (var mapUid in snapshot.PlayerCounts.Select(x => x.Map.MapUid))
+        {
+            await cache.RemoveAsync($"map-{mapUid}", CancellationToken.None);
+        }
     }
 
     public async Task SaveSnapshotAsync(TMFLadderScoresSnapshot snapshot, CancellationToken cancellationToken)
