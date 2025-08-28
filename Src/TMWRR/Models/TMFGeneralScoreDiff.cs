@@ -10,6 +10,8 @@ public sealed class TMFGeneralScoreDiff
     public List<(TMFGeneralScore Old, TMFGeneralScore New)> WorsenedPlayers { get; } = [];
     public List<TMFGeneralScore> PushedOffPlayers { get; } = [];
 
+    public int PlayerCountDelta { get; set; }
+
     public bool IsEmpty => 
         NewPlayers.Count == 0 && 
         ImprovedPlayers.Count == 0 && 

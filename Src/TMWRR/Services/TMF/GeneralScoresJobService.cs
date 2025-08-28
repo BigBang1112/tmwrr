@@ -46,10 +46,11 @@ public class GeneralScoresJobService : IGeneralScoresJobService
         var newByLogin = leaderboard.HighScores.ToDictionary(r => r.Login, r => new TMFGeneralScore(r.Rank, r.Score, r.Login));
 
         var diff = TMFGeneralScoreDiff.Calculate(leaderboard, oldByLogin, newByLogin);
+        diff.PlayerCountDelta = snapshot.PlayerCount - prevSnapshot.PlayerCount; // this is weird mutation but idk how else to do it
 
         if (diff.IsEmpty)
         {
-            // No changes, skip snapshot creation
+            // No changes, skip snapshot data creation (inside the snapshot, snapshot is still created but empty)
             return diff;
         }
 
