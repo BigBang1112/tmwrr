@@ -97,7 +97,7 @@ public class ReportDiscordService : IReportDiscordService
                     TextFormatter.Deformat(newRecordNickname),
                     newRecord.Login,
                     timestamp,
-                    newRecord.Skillpoints?.ToString("N0"));
+                    newRecord.Skillpoints?.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' '));
                 sb.AppendLine();
             }
 
@@ -135,7 +135,8 @@ public class ReportDiscordService : IReportDiscordService
                     ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
                     : string.Empty;
                 var skillpointDiff = newRecord.Skillpoints.GetValueOrDefault() - oldRecord.Skillpoints.GetValueOrDefault();
-                var skillpointDiffStr = skillpointDiff >= 0 ? $"+{skillpointDiff:N0}" : skillpointDiff.ToString("N0");
+                var skillpointDiffStr = skillpointDiff.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' ');
+                var skillpointDiffPlusStr = skillpointDiff >= 0 ? $"+{skillpointDiffStr}" : skillpointDiffStr;
 
                 sb.AppendFormat("`{0}` **[`{1}`](<https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{2}&mapuid={3}>)** `{4}` from `{5}` by **[{6}](<https://ul.unitedascenders.xyz/lookup?login={7}>)** {8} [`{10} SP`]",
                     newRecord.Rank.ToString("00"),
@@ -148,7 +149,7 @@ public class ReportDiscordService : IReportDiscordService
                     newRecord.Login,
                     timestamp,
                     newRecord.Skillpoints?.ToString("N0"),
-                    skillpointDiffStr);
+                    skillpointDiffPlusStr);
                 sb.AppendLine();
             }
 
