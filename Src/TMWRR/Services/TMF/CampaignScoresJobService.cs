@@ -52,9 +52,38 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             .DistinctBy(x => x.Login)
             .ToDictionary(x => x.Login, x => x.Nickname);
         var playersByLogin = await loginService.PopulateAsync(nicknamesByLogin, cancellationToken);
-        var records = await scoresSnapshotService.GetLatestRecordsAsync(mapsByUid.Values, cancellationToken);
-        var playerCounts = await scoresSnapshotService.GetLatestPlayerCountsAsync(mapsByUid.Values, cancellationToken);
+        var prevRecords = await scoresSnapshotService.GetLatestRecordsAsync(mapsByUid.Values, cancellationToken);
+        var prevPlayerCounts = await scoresSnapshotService.GetLatestPlayerCountsAsync(mapsByUid.Values, cancellationToken);
         //
+
+        // map record counts used to calculate skillpoints
+        var playerCounts = new Dictionary<string, int>();
+
+        // Populate snapshot with player counts if they are different
+        foreach (var (mapUid, leaderboardZones) in maps)
+        {
+            var map = mapsByUid[mapUid];
+            var leaderboard = leaderboardZones.ChallengeScores[Constants.World];
+
+            prevPlayerCounts.TryGetValue(mapUid, out var existingCount);
+
+            var currentCount = leaderboard.Skillpoints.Sum(x => x.Count);
+
+            playerCounts[mapUid] = currentCount;
+
+            if (existingCount == currentCount)
+            {
+                logger.LogInformation("Skipping player count for map {MapUid} as it is unchanged ({Count})", mapUid, currentCount);
+                continue;
+            }
+
+            snapshot.PlayerCounts.Add(new TMFCampaignScoresPlayerCount
+            {
+                Snapshot = snapshot,
+                Map = map,
+                Count = currentCount,
+            });
+        }
 
         var diffs = new Dictionary<string, TMFCampaignScoreDiff>();
 
@@ -63,7 +92,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             var map = mapsByUid[mapUid];
             var leaderboard = leaderboardZones.ChallengeScores[Constants.World];
 
-            var existingRecords = records
+            var existingRecords = prevRecords
                 .Where(x => x.Map.MapUid == mapUid)
                 .OrderBy(x => x.Order)
                 .ToList();
@@ -75,8 +104,18 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 continue;
             }
 
-            var oldByLogin = existingRecords.ToDictionary(r => r.PlayerId, r => new TMFCampaignScore(r.Rank, r.Score, r.PlayerId));
-            var newByLogin = leaderboard.HighScores.ToDictionary(r => r.Login, r => new TMFCampaignScore(r.Rank, r.Score, r.Login));
+            var prevPlayerCount = prevPlayerCounts.TryGetValue(mapUid, out var count) ? count : default(int?);
+            var prevSkillpointRanks = SkillpointCalculator.GetRanksForSkillpoints(existingRecords.Select(x => x.Rank).ToArray());
+
+            var newPlayerCount = playerCounts[mapUid];
+            var newSkillpointRanks = SkillpointCalculator.GetRanksForSkillpoints(leaderboard.HighScores.Select(x => x.Rank).ToArray());
+
+            var oldByLogin = existingRecords.Index().ToDictionary(
+                r => r.Item.PlayerId, 
+                r => new TMFCampaignScore(r.Item.Rank, r.Item.Score, r.Item.PlayerId, prevPlayerCount.HasValue ? SkillpointCalculator.CalculateSkillpoints(prevPlayerCount.Value, prevSkillpointRanks[r.Index]) : null));
+            var newByLogin = leaderboard.HighScores.Index().ToDictionary(
+                r => r.Item.Login, 
+                r => new TMFCampaignScore(r.Item.Rank, r.Item.Score, r.Item.Login, SkillpointCalculator.CalculateSkillpoints(newPlayerCount, newSkillpointRanks[r.Index])));
 
             var diff = new TMFCampaignScoreDiff();
 
@@ -135,30 +174,6 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             // be aware this wont populate existing records with ghosts, only new snapshot records
             // for existing records, either demand-based (request=download) or maintenance job solution needed 
             await PopulateSnapshotAsync(snapshot, playersByLogin, map, leaderboard, diff, cancellationToken);
-        }
-
-        // Populate snapshot with player counts if they are different
-        foreach (var (mapUid, leaderboardZones) in maps)
-        { 
-            var map = mapsByUid[mapUid];
-            var leaderboard = leaderboardZones.ChallengeScores[Constants.World];
-
-            playerCounts.TryGetValue(mapUid, out var existingCount);
-
-            var currentCount = leaderboard.Skillpoints.Sum(x => x.Count);
-
-            if (existingCount == currentCount)
-            {
-                logger.LogInformation("Skipping player count for map {MapUid} as it is unchanged ({Count})", mapUid, currentCount);
-                continue;
-            }
-
-            snapshot.PlayerCounts.Add(new TMFCampaignScoresPlayerCount
-            {
-                Snapshot = snapshot,
-                Map = map,
-                Count = currentCount,
-            });
         }
 
         return diffs;

@@ -144,7 +144,12 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                 .AsNoTracking()
                 .ToListAsync(token);
 
-            return records.Select(x => new TMFCampaignScoresRecordDto
+            var playerCount = await GetLatestPlayerCountAsync(mapUid, token);
+            var skillpointRanks = playerCount > 0
+                ? SkillpointCalculator.GetRanksForSkillpoints(records.Select(x => x.Rank).ToArray())
+                : [];
+
+            return records.Select((x, i) => new TMFCampaignScoresRecordDto
             {
                 Rank = x.Rank,
                 Score = x.Score,
@@ -154,12 +159,13 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                     Nickname = x.Player.Nickname,
                     NicknameDeformatted = x.Player.NicknameDeformatted
                 },
-                Order = x.Order,
+                Skillpoints = playerCount > 0 ? SkillpointCalculator.CalculateSkillpoints(playerCount.Value, skillpointRanks[i]) : null,
                 Ghost = x.Ghost is null ? null : new GhostDto
                 {
                     Guid = x.Ghost.Guid,
                     Timestamp = x.Ghost.LastModifiedAt
-                }
+                },
+                Order = x.Order,
             });
         }, new() { Expiration = TimeSpan.FromDays(1) }, ["snapshot-campaign-tmf"], cancellationToken);
     }
@@ -168,7 +174,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
     {
         return await hybridCache.GetOrCreateAsync($"snapshot-tmf-latest-{campaignId}-{createdAt}-{mapUid}", async token =>
         {
-            return await db.TMFCampaignScoresRecords
+            var records = await db.TMFCampaignScoresRecords
                 .Include(x => x.Player)
                 .Include(x => x.Ghost)
                 .Where(x => x.Snapshot.Campaign.Id == campaignId && x.Snapshot.CreatedAt == createdAt && x.Map.MapUid == mapUid)
@@ -182,14 +188,25 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                         Nickname = x.Player.Nickname,
                         NicknameDeformatted = x.Player.NicknameDeformatted
                     },
-                    Order = x.Order,
                     Ghost = x.Ghost == null ? null : new GhostDto
                     {
                         Guid = x.Ghost.Guid,
                         Timestamp = x.Ghost.LastModifiedAt
-                    }
+                    },
+                    Order = x.Order
                 })
                 .ToListAsync(token);
+
+            var playerCount = await GetPlayerCountAsync(mapUid, createdAt, token);
+            var skillpointRanks = playerCount > 0
+                ? SkillpointCalculator.GetRanksForSkillpoints(records.Select(x => x.Rank).ToArray())
+                : [];
+
+            return records.Select((x, i) =>
+            {
+                x.Skillpoints = playerCount > 0 ? SkillpointCalculator.CalculateSkillpoints(playerCount.Value, skillpointRanks[i]) : null;
+                return x;
+            });
         }, new() { Expiration = TimeSpan.FromMinutes(10) }, ["snapshot-campaign-tmf"], cancellationToken);
     }
 
@@ -242,7 +259,6 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
     public async ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(string campaignId, CancellationToken cancellationToken)
     {
         return await db.TMFCampaignScoresPlayerCounts
-            .Include(x => x.Map)
             .Where(x => x.Map.TMFCampaignId == campaignId)
             .GroupBy(x => x.Map.MapUid)
             .Select(g => g.OrderByDescending(x => x.Snapshot.CreatedAt).First())
@@ -252,9 +268,16 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
     public async Task<int?> GetLatestPlayerCountAsync(string mapUid, CancellationToken cancellationToken)
     {
         return await db.TMFCampaignScoresPlayerCounts
-            .Include(x => x.Map)
             .Where(x => x.Map.MapUid == mapUid)
             .OrderByDescending(x => x.Snapshot.CreatedAt)
+            .Select(x => x.Count)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<int?> GetPlayerCountAsync(string mapUid, DateTimeOffset createdAt, CancellationToken cancellationToken)
+    {
+        return await db.TMFCampaignScoresPlayerCounts
+            .Where(x => x.Map.MapUid == mapUid && x.Snapshot.CreatedAt == createdAt)
             .Select(x => x.Count)
             .FirstOrDefaultAsync(cancellationToken);
     }

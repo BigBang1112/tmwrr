@@ -2,7 +2,7 @@
 
 namespace TMWRR.Models;
 
-public record TMFCampaignScore(int Rank, int Score, string Login)
+public record TMFCampaignScore(int Rank, int Score, string Login, int? Skillpoints)
 {
     public DateTimeOffset? Timestamp { get; set; }
     public Guid? GhostGuid { get; set; }

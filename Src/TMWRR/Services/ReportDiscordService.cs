@@ -89,14 +89,15 @@ public class ReportDiscordService : IReportDiscordService
                     ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
                     : string.Empty;
 
-                sb.AppendFormat("`{0}` **[`{1}`](<https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{2}&mapuid={3}>)** by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** {6}",
+                sb.AppendFormat("`{0}` **[`{1}`](<https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{2}&mapuid={3}>)** by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** {6} [`{7} SP`]",
                     newRecord.Rank.ToString("00"),
                     score,
                     newRecord.GhostGuid, // can be null sometimes (if something breaks), be careful
                     report.Map.MapUid,
                     TextFormatter.Deformat(newRecordNickname),
                     newRecord.Login,
-                    timestamp);
+                    timestamp,
+                    newRecord.Skillpoints?.ToString("N0"));
                 sb.AppendLine();
             }
 
@@ -133,8 +134,10 @@ public class ReportDiscordService : IReportDiscordService
                 var timestamp = newRecord.Timestamp.HasValue
                     ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
                     : string.Empty;
+                var skillpointDiff = newRecord.Skillpoints.GetValueOrDefault() - oldRecord.Skillpoints.GetValueOrDefault();
+                var skillpointDiffStr = skillpointDiff >= 0 ? $"+{skillpointDiff:N0}" : skillpointDiff.ToString("N0");
 
-                sb.AppendFormat("`{0}` **[`{1}`](<https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{2}&mapuid={3}>)** `{4}` from `{5}` by **[{6}](<https://ul.unitedascenders.xyz/lookup?login={7}>)** {8}",
+                sb.AppendFormat("`{0}` **[`{1}`](<https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{2}&mapuid={3}>)** `{4}` from `{5}` by **[{6}](<https://ul.unitedascenders.xyz/lookup?login={7}>)** {8} [`{10} SP`]",
                     newRecord.Rank.ToString("00"),
                     score,
                     newRecord.GhostGuid, // can be null sometimes (if something breaks), be careful
@@ -143,7 +146,9 @@ public class ReportDiscordService : IReportDiscordService
                     oldRecord.Rank.ToString("00"),
                     TextFormatter.Deformat(newRecordNickname),
                     newRecord.Login,
-                    timestamp);
+                    timestamp,
+                    newRecord.Skillpoints?.ToString("N0"),
+                    skillpointDiffStr);
                 sb.AppendLine();
             }
 
