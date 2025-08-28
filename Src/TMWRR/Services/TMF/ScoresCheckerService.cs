@@ -106,6 +106,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
         var hasNewCampaignSnapshots = false;
         var allCampaignDiffs = new Dictionary<string, TMFCampaignScoreDiff>();
+        var generalDiff = default(TMFGeneralScoreDiff?);
 
         // This zip stores full score snapshots for debugging purposes and uploads them via webhook
         // It is not stored in the database for now, as the content is very low level and includes unused zones
@@ -128,6 +129,8 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                     continue;
                 }
 
+                scoresDate = lastModifiedAt.Date;
+
                 var entry = zip.CreateEntry($"{scoreType}.json");
                 await using var entryStream = entry.Open();
 
@@ -136,14 +139,44 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                 switch (scoreType)
                 {
                     case Constants.General:
-                        logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
+                        {
+                            var snapshotExists = await scoresSnapshotService.GeneralSnapshotExistsAsync(lastModifiedAt, cancellationToken);
 
-                        var generalScores = await masterServer.DownloadGeneralScoresAsync(usedNumber, LatestZoneId, cancellationToken);
-                        await Task.WhenAll(
-                            JsonSerializer.SerializeAsync(entryStream, generalScores, AppJsonContext.Default.GeneralScores, cancellationToken),
-                            generalScoresJobService.ProcessAsync(generalScores.Zones[Constants.World], cancellationToken)
-                        );
-                        break;
+                            if (snapshotExists)
+                            {
+                                logger.LogInformation("General scores are up to date.");
+                                continue; // MUST BE CONTINUE not break, to skip the debug webhook part
+                            }
+
+                            logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
+
+                            var snapshot = new TMFGeneralScoresSnapshot
+                            {
+                                CreatedAt = lastModifiedAt,
+                                PublishedAt = publishedAt
+                            };
+
+                            var generalScores = await masterServer.DownloadGeneralScoresAsync(usedNumber, LatestZoneId, cancellationToken);
+                            
+                            var generalDiffTask = generalScoresJobService.ProcessAsync(generalScores.Zones[Constants.World], snapshot, cancellationToken);
+
+                            await Task.WhenAll(
+                                generalDiffTask,
+                                JsonSerializer.SerializeAsync(entryStream, generalScores, AppJsonContext.Default.GeneralScores, cancellationToken)
+                            );
+
+                            generalDiff = await generalDiffTask;
+
+                            if (snapshot.Players.Count == 0)
+                            {
+                                snapshot.NoChanges = true;
+                                logger.LogInformation("No score changes for {ScoreType}.", scoreType);
+                            }
+
+                            await scoresSnapshotService.SaveSnapshotAsync(snapshot, cancellationToken);
+
+                            break;
+                        }
                     case Constants.Multi:
                         {
                             var snapshotExists = await scoresSnapshotService.LadderSnapshotExistsAsync(lastModifiedAt, cancellationToken);
@@ -244,8 +277,6 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                 }
 
                 sbWebhookMessage.AppendLine($"{scoreType}: {Discord.TimestampTag.FromDateTimeOffset(lastModifiedAt)} (available {Discord.TimestampTag.FromDateTimeOffset(publishedAt)})");
-
-                scoresDate = lastModifiedAt.Date;
             }
         }
 

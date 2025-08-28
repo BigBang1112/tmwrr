@@ -46,11 +46,12 @@ public class CampaignScoresJobService : ICampaignScoresJobService
     {
         var mapsByUid = await mapService.PopulateAsync(maps.Keys, cancellationToken);
 
-        // these could run in parallel
         var nicknamesByLogin = maps.Values
             .SelectMany(x => x.ChallengeScores[Constants.World].HighScores)
             .DistinctBy(x => x.Login)
             .ToDictionary(x => x.Login, x => x.Nickname);
+
+        // these could run in parallel
         var playersByLogin = await loginService.PopulateAsync(nicknamesByLogin, cancellationToken);
         var prevRecords = await scoresSnapshotService.GetLatestRecordsAsync(mapsByUid.Values, cancellationToken);
         var prevPlayerCounts = await scoresSnapshotService.GetLatestPlayerCountsAsync(mapsByUid.Values, cancellationToken);
@@ -100,6 +101,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             if (existingRecords.Count == 0)
             {
                 // Doesn't count towards the diff, but we still need to populate the snapshot
+                // This ensures that a full leaderboard isn't imported when seeding
                 await PopulateSnapshotAsync(snapshot, playersByLogin, map, leaderboard, diff: null, cancellationToken);
                 continue;
             }
@@ -111,57 +113,13 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             var newSkillpointRanks = SkillpointCalculator.GetRanksForSkillpoints(leaderboard.HighScores.Select(x => x.Rank).ToArray());
 
             var oldByLogin = existingRecords.Index().ToDictionary(
-                r => r.Item.PlayerId, 
+                r => r.Item.PlayerId,
                 r => new TMFCampaignScore(r.Item.Rank, r.Item.Score, r.Item.PlayerId, prevPlayerCount.HasValue ? SkillpointCalculator.CalculateSkillpoints(prevPlayerCount.Value, prevSkillpointRanks[r.Index]) : null));
             var newByLogin = leaderboard.HighScores.Index().ToDictionary(
-                r => r.Item.Login, 
+                r => r.Item.Login,
                 r => new TMFCampaignScore(r.Item.Rank, r.Item.Score, r.Item.Login, SkillpointCalculator.CalculateSkillpoints(newPlayerCount, newSkillpointRanks[r.Index])));
 
-            var diff = new TMFCampaignScoreDiff();
-
-            // Detect new and improved/worsened
-            foreach (var (login, updated) in newByLogin)
-            {
-                if (!oldByLogin.TryGetValue(login, out var old))
-                {
-                    // New record
-                    diff.NewRecords.Add(updated);
-                    continue;
-                }
-
-                // Compare by rank first, then by score if needed
-                if (updated.Rank < old.Rank || (map.IsStunts() ? updated.Score > old.Score : updated.Score < old.Score))
-                {
-                    diff.ImprovedRecords.Add((old, updated));
-                }
-                else if (updated.Rank > old.Rank || (map.IsStunts() ? updated.Score < old.Score : updated.Score > old.Score))
-                {
-                    diff.WorsenedRecords.Add((old, updated));
-                }
-            }
-
-            // Maybe just checking last record is enough?
-            var worstScore = map.IsStunts()
-                ? leaderboard.HighScores.Min(x => x.Score)
-                : leaderboard.HighScores.Max(x => x.Score);
-
-            // Detect removed or pushed off
-            foreach (var (login, old) in oldByLogin)
-            {
-                if (newByLogin.ContainsKey(login))
-                {
-                    continue;
-                }
-
-                if (map.IsStunts() ? old.Score <= worstScore : old.Score >= worstScore)
-                {
-                    diff.PushedOffRecords.Add(old);
-                }
-                else
-                {
-                    diff.RemovedRecords.Add(old);
-                }
-            }
+            var diff = TMFCampaignScoreDiff.Calculate(leaderboard, oldByLogin, newByLogin, map.IsStunts());
 
             if (diff.IsEmpty)
             {

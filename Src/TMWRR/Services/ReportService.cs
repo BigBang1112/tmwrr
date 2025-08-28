@@ -22,7 +22,7 @@ public sealed class ReportService : IReportService
 
     public async Task ReportAsync(IReadOnlyDictionary<string, TMFCampaignScoreDiff> mapUidCampaignScoreDiffs, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(mapUidCampaignScoreDiffs, nameof(mapUidCampaignScoreDiffs));
+        ArgumentNullException.ThrowIfNull(mapUidCampaignScoreDiffs);
 
         var reportedAt = timeProvider.GetUtcNow();
 

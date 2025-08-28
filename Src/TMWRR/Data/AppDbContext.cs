@@ -14,6 +14,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<TMFCampaignScoresPlayerCount> TMFCampaignScoresPlayerCounts { get; set; }
     public DbSet<TMFLadderScoresSnapshot> TMFLadderScoresSnapshots { get; set; }
     public DbSet<TMFLadderScoresXY> TMFLadderScoresXYs { get; set; }
+    public DbSet<TMFGeneralScoresSnapshot> TMFGeneralScoresSnapshots { get; set; }
+    public DbSet<TMFGeneralScoresPlayer> TMFGeneralScoresPlayers { get; set; }
     public DbSet<Map> Maps { get; set; }
     public DbSet<TMFLogin> TMFLogins { get; set; }
     public DbSet<User> Users { get; set; }

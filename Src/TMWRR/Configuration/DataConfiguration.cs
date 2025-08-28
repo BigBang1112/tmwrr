@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.IO.Abstractions;
 using TMWRR.Data;
 
 namespace TMWRR.Configuration;
@@ -15,6 +16,8 @@ public static class DataConfiguration
                 //.ConfigureWarnings(w => w.Ignore(RelationalEventId.CommandExecuted)); // should be configurable
             //options.UseInMemoryDatabase("TMWRR");
         });
+
+        services.AddTransient<IFileSystem, FileSystem>();
     }
 
     public static void MigrateDatabase(this WebApplication app)

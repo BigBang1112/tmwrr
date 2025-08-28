@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
+using System.IO.Abstractions;
 using System.Text.Json;
 using TmEssentials;
 using TMWRR.Data;
@@ -16,13 +17,15 @@ public sealed class Seeding
     private readonly AppDbContext db;
     private readonly HybridCache hybridCache;
     private readonly IOutputCacheStore outputCache;
+    private readonly IFileSystem fileSystem;
     private readonly ILogger<Seeding> logger;
 
-    public Seeding(AppDbContext db, HybridCache hybridCache, IOutputCacheStore outputCache, ILogger<Seeding> logger)
+    public Seeding(AppDbContext db, HybridCache hybridCache, IOutputCacheStore outputCache, IFileSystem fileSystem, ILogger<Seeding> logger)
     {
         this.db = db;
         this.hybridCache = hybridCache;
         this.outputCache = outputCache;
+        this.fileSystem = fileSystem;
         this.logger = logger;
     }
 
@@ -34,7 +37,7 @@ public sealed class Seeding
 
         if (noGames)
         {
-            await using var fs = File.OpenRead(Path.Combine(Resources, "Games.json"));
+            await using var fs = fileSystem.File.OpenRead(Path.Combine(Resources, "Games.json"));
             var games = (await JsonSerializer.DeserializeAsync(fs, AppJsonContext.Default.DictionaryStringGameResource, cancellationToken)) ?? [];
             await db.Games.AddRangeAsync(games.Select(x => new Game { Id = x.Key }), cancellationToken);
         }
@@ -45,7 +48,7 @@ public sealed class Seeding
 
         if (noModes)
         {
-            await using var fs = File.OpenRead(Path.Combine(Resources, "Modes.json"));
+            await using var fs = fileSystem.File.OpenRead(Path.Combine(Resources, "Modes.json"));
             var modes = (await JsonSerializer.DeserializeAsync(fs, AppJsonContext.Default.DictionaryStringModeResource, cancellationToken)) ?? [];
             await db.Modes.AddRangeAsync(modes.Select(x => new Mode { Id = x.Key }), cancellationToken);
         }
@@ -54,7 +57,7 @@ public sealed class Seeding
 
         var environments = await db.Environments.ToListAsync(cancellationToken);
 
-        await using (var fs = File.OpenRead(Path.Combine(Resources, "Environments.json")))
+        await using (var fs = fileSystem.File.OpenRead(Path.Combine(Resources, "Environments.json")))
         {
             var environmentDict = (await JsonSerializer.DeserializeAsync(fs, AppJsonContext.Default.DictionaryStringEnvironmentResource, cancellationToken)) ?? [];
 
@@ -95,7 +98,7 @@ public sealed class Seeding
 
         var campaignsTMF = await db.TMFCampaigns.ToListAsync(cancellationToken);
 
-        await using (var fs = File.OpenRead(Path.Combine(Resources, "CampaignsTMF.json")))
+        await using (var fs = fileSystem.File.OpenRead(Path.Combine(Resources, "CampaignsTMF.json")))
         {
             var campaignDict = (await JsonSerializer.DeserializeAsync(fs, AppJsonContext.Default.DictionaryStringCampaignTMFResource, cancellationToken)) ?? [];
 
@@ -129,7 +132,7 @@ public sealed class Seeding
 
         var noMaps = !await db.Maps.AnyAsync(cancellationToken);
 
-        await using (var fs = File.OpenRead(Path.Combine(Resources, "MapsTMF.json")))
+        await using (var fs = fileSystem.File.OpenRead(Path.Combine(Resources, "MapsTMF.json")))
         {
             var mapDict = (await JsonSerializer.DeserializeAsync(fs, AppJsonContext.Default.DictionaryStringMapTMFResource, cancellationToken)) ?? [];
 

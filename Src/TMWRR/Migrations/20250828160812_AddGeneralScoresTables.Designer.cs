@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TMWRR.Data;
 
@@ -11,9 +12,11 @@ using TMWRR.Data;
 namespace TMWRR.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250828160812_AddGeneralScoresTables")]
+    partial class AddGeneralScoresTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -339,7 +342,7 @@ namespace TMWRR.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<Guid>("Guid")
+                    b.Property<Guid?>("Guid")
                         .HasColumnType("char(36)");
 
                     b.Property<bool>("NoChanges")
@@ -373,7 +376,7 @@ namespace TMWRR.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<Guid>("Guid")
+                    b.Property<Guid?>("Guid")
                         .HasColumnType("char(36)");
 
                     b.Property<bool>("NoChanges")

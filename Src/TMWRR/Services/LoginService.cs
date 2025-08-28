@@ -37,7 +37,7 @@ public sealed class LoginService : ILoginService
 
     public async ValueTask<IDictionary<string, TMFLogin>> PopulateAsync(IDictionary<string, string> loginNicknameDict, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(loginNicknameDict, nameof(loginNicknameDict));
+        ArgumentNullException.ThrowIfNull(loginNicknameDict);
 
         if (loginNicknameDict.Count == 0)
         {
@@ -157,14 +157,14 @@ public sealed class LoginService : ILoginService
 
     public async Task<TMFLogin?> GetTMFAsync(string login, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(login, nameof(login));
+        ArgumentNullException.ThrowIfNull(login);
 
         return await db.TMFLogins.FirstOrDefaultAsync(x => x.Id == login, cancellationToken);
     }
 
     public async Task<TMFLoginDto?> GetTMFDtoAsync(string login, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(login, nameof(login));
+        ArgumentNullException.ThrowIfNull(login);
 
         return await db.TMFLogins
             .Include(x => x.Users)
@@ -183,7 +183,7 @@ public sealed class LoginService : ILoginService
 
     public async ValueTask<IEnumerable<TMFLogin>> GetMultipleTMFAsync(IEnumerable<string> logins, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(logins, nameof(logins));
+        ArgumentNullException.ThrowIfNull(logins);
 
         if (!logins.Any())
         {
@@ -198,7 +198,7 @@ public sealed class LoginService : ILoginService
 
     public async ValueTask<IReadOnlyDictionary<string, string?>> GetMultipleNicknamesAsync(IEnumerable<string> logins, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(logins, nameof(logins));
+        ArgumentNullException.ThrowIfNull(logins);
 
         if (!logins.Any())
         {

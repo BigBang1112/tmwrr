@@ -2,4 +2,4 @@
 
 namespace TMWRR.Models;
 
-public record TMFCampaignScoreDiffReport(Map Map, TMFCampaignScoreDiff Diff);
+public sealed record TMFCampaignScoreDiffReport(Map Map, TMFCampaignScoreDiff Diff);

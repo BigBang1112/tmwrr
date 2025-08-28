@@ -27,7 +27,7 @@ public sealed class MapService : IMapService
 
     public async ValueTask<IDictionary<string, Map>> PopulateAsync(IEnumerable<string> mapUids, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(mapUids, nameof(mapUids));
+        ArgumentNullException.ThrowIfNull(mapUids);
 
         if (!mapUids.Any())
         {

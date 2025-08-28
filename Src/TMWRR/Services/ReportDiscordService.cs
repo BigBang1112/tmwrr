@@ -30,7 +30,7 @@ public class ReportDiscordService : IReportDiscordService
 
     public async Task ReportAsync(DateTimeOffset reportedAt, IEnumerable<TMFCampaignScoreDiffReport> campaignScoreDiffReports, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(campaignScoreDiffReports, nameof(campaignScoreDiffReports));
+        ArgumentNullException.ThrowIfNull(campaignScoreDiffReports);
 
         using var webhook = webhookFactory.Create(tmufOptions.Value.ChangesDiscordWebhookUrl);
 

@@ -4,7 +4,7 @@ namespace TMWRR.Entities.TMF;
 
 [Index(nameof(Guid), IsUnique = true)]
 [Index(nameof(CreatedAt), IsUnique = true)]
-public class TMFLadderScoresSnapshot
+public class TMFGeneralScoresSnapshot
 {
     public int Id { get; set; }
 
@@ -18,10 +18,10 @@ public class TMFLadderScoresSnapshot
 
     public bool NoChanges { get; set; }
 
-    public ICollection<TMFLadderScoresXY> XYs { get; set; } = [];
+    public ICollection<TMFGeneralScoresPlayer> Players { get; set; } = [];
 
     public override string ToString()
     {
-        return $"{CreatedAt:yyyy-MM-dd HH:mm:ss} ({XYs.Count} graph points)";
+        return $"{CreatedAt:yyyy-MM-dd HH:mm:ss}";
     }
 }
