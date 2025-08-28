@@ -78,7 +78,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         }
         else
         {
-            var scoresInfo = await masterServer.FetchLatestGeneralScoresInfoAsync(LatestZoneId, cancellationToken: cancellationToken);
+            var scoresInfo = await masterServer.FetchLatestGeneralScoresInfoAsync(EarliestZoneId, cancellationToken: cancellationToken);
             usedNumber = scoresInfo.Number;
         }
 
@@ -87,17 +87,17 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         var dateTimeTasks = new Dictionary<Task<DateTimeOffset>, string>
         {
             { pipeline.ExecuteAsync(
-                async token => ThrowIfOlderThanDay(await masterServer.FetchGeneralScoresDateTimeAsync(usedNumber, LatestZoneId, cancellationToken: token)),
+                async token => ThrowIfOlderThanDay(await masterServer.FetchGeneralScoresDateTimeAsync(usedNumber, EarliestZoneId, cancellationToken: token)),
                 cancellationToken).AsTask(), Constants.General },
             { pipeline.ExecuteAsync(
-                async token => ThrowIfOlderThanDay(await masterServer.FetchLadderScoresDateTimeAsync(usedNumber, LatestZoneId, cancellationToken: token)),
+                async token => ThrowIfOlderThanDay(await masterServer.FetchLadderScoresDateTimeAsync(usedNumber, EarliestZoneId, cancellationToken: token)),
                 cancellationToken).AsTask(), Constants.Multi }
         };
 
         foreach (var campaign in Campaigns)
         {
             dateTimeTasks.Add(pipeline.ExecuteAsync(
-                async token => ThrowIfOlderThanDay(await masterServer.FetchCampaignScoresDateTimeAsync(campaign, usedNumber, LatestZoneId, cancellationToken: token)),
+                async token => ThrowIfOlderThanDay(await masterServer.FetchCampaignScoresDateTimeAsync(campaign, usedNumber, EarliestZoneId, cancellationToken: token)),
                 cancellationToken).AsTask(), campaign);
         }
 
@@ -156,7 +156,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                                 PublishedAt = publishedAt
                             };
 
-                            var generalScores = await masterServer.DownloadGeneralScoresAsync(usedNumber, LatestZoneId, cancellationToken);
+                            var generalScores = await masterServer.DownloadGeneralScoresAsync(usedNumber, EarliestZoneId, cancellationToken);
                             
                             var generalDiffTask = generalScoresJobService.ProcessAsync(generalScores.Zones[Constants.World], snapshot, cancellationToken);
 
@@ -195,7 +195,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                                 PublishedAt = publishedAt
                             };
 
-                            var ladderScores = await masterServer.DownloadLadderScoresAsync(usedNumber, LatestZoneId, cancellationToken);
+                            var ladderScores = await masterServer.DownloadLadderScoresAsync(usedNumber, EarliestZoneId, cancellationToken);
                             
                             var ladderDiffTask = ladderScoresJobService.ProcessAsync(ladderScores.Zones[Constants.World], snapshot, cancellationToken);
 
@@ -237,7 +237,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                                 PublishedAt = publishedAt
                             };
 
-                            var campaignScores = await masterServer.DownloadCampaignScoresAsync(scoreType, usedNumber, LatestZoneId, cancellationToken);
+                            var campaignScores = await masterServer.DownloadCampaignScoresAsync(scoreType, usedNumber, EarliestZoneId, cancellationToken);
 
                             var campaignDiffsTask = campaignScoresJobService.ProcessAsync(
                                 scoreType,
