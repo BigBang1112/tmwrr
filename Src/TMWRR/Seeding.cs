@@ -37,7 +37,7 @@ public sealed class Seeding
 
         if (noGames)
         {
-            await using var fs = fileSystem.File.OpenRead(Path.Combine(Resources, "Games.json"));
+            await using var fs = fileSystem.File.OpenRead(fileSystem.Path.Combine(Resources, "Games.json"));
             var games = (await JsonSerializer.DeserializeAsync(fs, AppJsonContext.Default.DictionaryStringGameResource, cancellationToken)) ?? [];
             await db.Games.AddRangeAsync(games.Select(x => new Game { Id = x.Key }), cancellationToken);
         }
@@ -48,7 +48,7 @@ public sealed class Seeding
 
         if (noModes)
         {
-            await using var fs = fileSystem.File.OpenRead(Path.Combine(Resources, "Modes.json"));
+            await using var fs = fileSystem.File.OpenRead(fileSystem.Path.Combine(Resources, "Modes.json"));
             var modes = (await JsonSerializer.DeserializeAsync(fs, AppJsonContext.Default.DictionaryStringModeResource, cancellationToken)) ?? [];
             await db.Modes.AddRangeAsync(modes.Select(x => new Mode { Id = x.Key }), cancellationToken);
         }
@@ -57,7 +57,7 @@ public sealed class Seeding
 
         var environments = await db.Environments.ToListAsync(cancellationToken);
 
-        await using (var fs = fileSystem.File.OpenRead(Path.Combine(Resources, "Environments.json")))
+        await using (var fs = fileSystem.File.OpenRead(fileSystem.Path.Combine(Resources, "Environments.json")))
         {
             var environmentDict = (await JsonSerializer.DeserializeAsync(fs, AppJsonContext.Default.DictionaryStringEnvironmentResource, cancellationToken)) ?? [];
 
@@ -66,8 +66,8 @@ public sealed class Seeding
                 await db.Environments.AddRangeAsync(environmentDict.Select(x => new TMEnvironment
                 {
                     Id = x.Key,
-                    Name = x.Value.Name, 
-                    GameId = x.Value.Game 
+                    Name = x.Value.Name,
+                    GameId = x.Value.Game
                 }), cancellationToken);
             }
             else
@@ -98,7 +98,7 @@ public sealed class Seeding
 
         var campaignsTMF = await db.TMFCampaigns.ToListAsync(cancellationToken);
 
-        await using (var fs = fileSystem.File.OpenRead(Path.Combine(Resources, "CampaignsTMF.json")))
+        await using (var fs = fileSystem.File.OpenRead(fileSystem.Path.Combine(Resources, "CampaignsTMF.json")))
         {
             var campaignDict = (await JsonSerializer.DeserializeAsync(fs, AppJsonContext.Default.DictionaryStringCampaignTMFResource, cancellationToken)) ?? [];
 
@@ -132,7 +132,7 @@ public sealed class Seeding
 
         var noMaps = !await db.Maps.AnyAsync(cancellationToken);
 
-        await using (var fs = fileSystem.File.OpenRead(Path.Combine(Resources, "MapsTMF.json")))
+        await using (var fs = fileSystem.File.OpenRead(fileSystem.Path.Combine(Resources, "MapsTMF.json")))
         {
             var mapDict = (await JsonSerializer.DeserializeAsync(fs, AppJsonContext.Default.DictionaryStringMapTMFResource, cancellationToken)) ?? [];
 
