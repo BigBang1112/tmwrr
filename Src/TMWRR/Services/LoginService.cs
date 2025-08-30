@@ -13,7 +13,7 @@ namespace TMWRR.Services;
 
 public interface ILoginService
 {
-    ValueTask<IDictionary<string, TMFLogin>> PopulateAsync(IDictionary<string, string> loginNicknameDict, CancellationToken cancellationToken);
+    ValueTask<IDictionary<string, TMFLogin>> PopulateAsync(IDictionary<string, string> loginNicknameDict, bool enableDetails, CancellationToken cancellationToken);
     //Task<TMFLogin?> GetTMFAsync(string login, CancellationToken cancellationToken);
     Task<TMFLoginDto?> GetTMFDtoAsync(string login, CancellationToken cancellationToken);
     ValueTask<IEnumerable<TMFLogin>> GetMultipleTMFAsync(IEnumerable<string> logins, CancellationToken cancellationToken);
@@ -35,7 +35,7 @@ public sealed class LoginService : ILoginService
         this.logger = logger;
     }
 
-    public async ValueTask<IDictionary<string, TMFLogin>> PopulateAsync(IDictionary<string, string> loginNicknameDict, CancellationToken cancellationToken)
+    public async ValueTask<IDictionary<string, TMFLogin>> PopulateAsync(IDictionary<string, string> loginNicknameDict, bool enableDetails, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(loginNicknameDict);
 
@@ -58,7 +58,7 @@ public sealed class LoginService : ILoginService
             login.Nickname = nickname;
             login.NicknameDeformatted = TextFormatter.Deformat(nickname);
 
-            if (deadend || login.RegistrationId is not null)
+            if (deadend || login.RegistrationId is not null || !enableDetails)
             {
                 continue;
             }
@@ -107,7 +107,7 @@ public sealed class LoginService : ILoginService
             return logins;
         }
 
-        if (!deadend)
+        if (!deadend && enableDetails)
         {
             foreach (var login in missingLogins)
             {

@@ -1,7 +1,9 @@
 ﻿using ManiaAPI.Xml.TMUF;
+using Microsoft.Extensions.Options;
 using TMWRR.Entities;
 using TMWRR.Entities.TMF;
 using TMWRR.Models;
+using TMWRR.Options;
 
 namespace TMWRR.Services.TMF;
 
@@ -21,6 +23,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
     private readonly ILoginService loginService;
     private readonly IScoresSnapshotService scoresSnapshotService;
     private readonly IGhostService ghostService;
+    private readonly IOptionsSnapshot<TMUFOptions> options;
     private readonly ILogger<CampaignScoresJobService> logger;
 
     public CampaignScoresJobService(
@@ -28,12 +31,14 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         ILoginService loginService, 
         IScoresSnapshotService scoresSnapshotService,
         IGhostService ghostService,
+        IOptionsSnapshot<TMUFOptions> options,
         ILogger<CampaignScoresJobService> logger)
     {
         this.mapService = mapService;
         this.loginService = loginService;
         this.scoresSnapshotService = scoresSnapshotService;
         this.ghostService = ghostService;
+        this.options = options;
         this.logger = logger;
     }
 
@@ -44,6 +49,8 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         TMFCampaignScoresSnapshot snapshot,
         CancellationToken cancellationToken)
     {
+        logger.LogInformation("Processing campaign {CampaignId} with {MapCount} maps...", campaignId, maps.Count);
+
         var mapsByUid = await mapService.PopulateAsync(maps.Keys, cancellationToken);
 
         var nicknamesByLogin = maps.Values
@@ -52,14 +59,20 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             .ToDictionary(x => x.Login, x => x.Nickname);
 
         // these could run in parallel
-        var playersByLogin = await loginService.PopulateAsync(nicknamesByLogin, cancellationToken);
+        logger.LogInformation("Gathering {Count} unique logins...", nicknamesByLogin.Count);
+        var playersByLogin = await loginService.PopulateAsync(nicknamesByLogin, options.Value.EnableLoginDetails, cancellationToken);
+        
+        logger.LogInformation("Fetching previous records and player counts...");
         var prevRecords = await scoresSnapshotService.GetLatestRecordsAsync(mapsByUid.Values, cancellationToken);
+
+        logger.LogInformation("Fetching previous player counts...");
         var prevPlayerCounts = await scoresSnapshotService.GetLatestPlayerCountsAsync(mapsByUid.Values, cancellationToken);
         //
 
         // map record counts used to calculate skillpoints
         var playerCounts = new Dictionary<string, int>();
 
+        logger.LogInformation("Populating snapshot with player counts...");
         // Populate snapshot with player counts if they are different
         foreach (var (mapUid, leaderboardZones) in maps)
         {
@@ -69,8 +82,9 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             prevPlayerCounts.TryGetValue(mapUid, out var existingCount);
 
             var currentCount = leaderboard.Skillpoints.Sum(x => x.Count);
-
             playerCounts[mapUid] = currentCount;
+
+            logger.LogDebug("Map {MapUid} player count: {Count} (previously {ExistingCount})", mapUid, currentCount, existingCount);
 
             if (existingCount == currentCount)
             {
@@ -85,6 +99,8 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 Count = currentCount,
             });
         }
+
+        logger.LogInformation("Populating snapshot with records...");
 
         var diffs = new Dictionary<string, TMFCampaignScoreDiff>();
 
@@ -102,9 +118,12 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             {
                 // Doesn't count towards the diff, but we still need to populate the snapshot
                 // This ensures that a full leaderboard isn't imported when seeding
+                logger.LogInformation("No previous records found for map {MapUid}, populating snapshot with no diff to report...", mapUid);
                 await PopulateSnapshotAsync(snapshot, playersByLogin, map, leaderboard, diff: null, cancellationToken);
                 continue;
             }
+
+            logger.LogInformation("Calculating diff for {MapUid}...", mapUid);
 
             var prevPlayerCount = prevPlayerCounts.TryGetValue(mapUid, out var count) ? count : default(int?);
             var prevSkillpointRanks = SkillpointCalculator.GetRanksForSkillpoints(existingRecords.Select(x => x.Rank).ToArray());
@@ -124,26 +143,35 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             if (diff.IsEmpty)
             {
                 // No changes, skip snapshot creation
+                logger.LogInformation("No changes detected, skipping snapshot data creation for {MapUid}...", mapUid);
                 continue;
             }
 
             diffs[mapUid] = diff;
+
+            logger.LogInformation("Populating snapshot with new data from {MapUid}...", mapUid);
 
             // be aware this wont populate existing records with ghosts, only new snapshot records
             // for existing records, either demand-based (request=download) or maintenance job solution needed 
             await PopulateSnapshotAsync(snapshot, playersByLogin, map, leaderboard, diff, cancellationToken);
         }
 
+        logger.LogInformation("Returning diffs for {Count} maps...", diffs.Count);
+
         return diffs;
     }
 
     private async Task<Ghost?> DownloadGhostAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken)
     {
+        logger.LogDebug("Checking existing ghost for map {MapUid} and login {Login}...", map.MapUid, login.Id);
+
         var existingRecord = await scoresSnapshotService.GetRecordAsync(map, login, score, cancellationToken);
         var ghost = existingRecord?.Ghost;
 
         if (ghost is null)
         {
+            logger.LogDebug("No existing ghost found, attempting to download for map {MapUid} and login {Login}...", map.MapUid, login.Id);
+
             try
             {
                 return await ghostService.CreateGhostAsync(map, login, cancellationToken);
@@ -176,7 +204,9 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         {
             var player = playersByLogin[score.Login];
 
-            var ghost = await DownloadGhostAsync(map, player, score.Score, cancellationToken);
+            var ghost = options.Value.EnableGhostDownload
+                ? await DownloadGhostAsync(map, player, score.Score, cancellationToken)
+                : null;
 
             var record = new TMFCampaignScoresRecord
             {

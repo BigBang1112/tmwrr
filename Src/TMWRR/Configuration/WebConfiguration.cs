@@ -7,6 +7,7 @@ using Polly;
 using System.Text.Json.Serialization;
 using TMWRR.Exceptions;
 using TMWRR.Options;
+using TMWRR.Services;
 
 namespace TMWRR.Configuration;
 
@@ -15,6 +16,11 @@ public static class WebConfiguration
     public static void AddWebServices(this IServiceCollection services, IConfiguration config)
     {
         var tmufOptions = config.GetSection("TMUF").Get<TMUFOptions>() ?? throw new InvalidOperationException("TMUF options not found");
+
+        services.AddHttpClient<IGhostService, GhostService>(client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("TMWRR/0.1 (World Record Report v3; Email=petrpiv1@gmail.com; Discord=bigbang1112)");
+        }).AddStandardResilienceHandler();
 
         services.AddMasterServerTMUF().AddStandardResilienceHandler();
         services.AddTrackmaniaWS(new TrackmaniaWSOptions

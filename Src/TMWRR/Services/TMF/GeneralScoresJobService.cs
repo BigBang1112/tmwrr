@@ -1,6 +1,8 @@
 ﻿using ManiaAPI.Xml.TMUF;
+using Microsoft.Extensions.Options;
 using TMWRR.Entities.TMF;
 using TMWRR.Models;
+using TMWRR.Options;
 
 namespace TMWRR.Services.TMF;
 
@@ -13,11 +15,19 @@ public class GeneralScoresJobService : IGeneralScoresJobService
 {
     private readonly IScoresSnapshotService scoresSnapshotService;
     private readonly ILoginService loginService;
+    private readonly IOptionsSnapshot<TMUFOptions> options;
+    private readonly ILogger<GeneralScoresJobService> logger;
 
-    public GeneralScoresJobService(IScoresSnapshotService scoresSnapshotService, ILoginService loginService)
+    public GeneralScoresJobService(
+        IScoresSnapshotService scoresSnapshotService, 
+        ILoginService loginService,
+        IOptionsSnapshot<TMUFOptions> options,
+        ILogger<GeneralScoresJobService> logger)
     {
         this.scoresSnapshotService = scoresSnapshotService;
         this.loginService = loginService;
+        this.options = options;
+        this.logger = logger;
     }
 
     public async Task<TMFGeneralScoreDiff?> ProcessAsync(
@@ -27,19 +37,28 @@ public class GeneralScoresJobService : IGeneralScoresJobService
     {
         snapshot.PlayerCount = leaderboard.Skillpoints.Sum(x => x.Count);
 
+        logger.LogInformation("Player count: {Count}", snapshot.PlayerCount);
+
         var nicknamesByLogin = leaderboard.HighScores
             .DistinctBy(x => x.Login)
             .ToDictionary(x => x.Login, x => x.Nickname);
 
-        var playersByLogin = await loginService.PopulateAsync(nicknamesByLogin, cancellationToken);
+        logger.LogInformation("Gathering {Count} unique logins...", nicknamesByLogin.Count);
+
+        var playersByLogin = await loginService.PopulateAsync(nicknamesByLogin, options.Value.EnableLoginDetails, cancellationToken);
+
+        logger.LogInformation("Fetching previous snapshot...");
 
         var prevSnapshot = await scoresSnapshotService.GetLatestGeneralSnapshotAsync(cancellationToken);
 
         if (prevSnapshot is null)
         {
-            PopulateSnapshot(snapshot, playersByLogin, leaderboard, diff: null);
+            logger.LogInformation("No previous snapshot found, populating current snapshot with no diff to report...");
+            PopulateSnapshot(snapshot, playersByLogin, leaderboard);
             return null;
         }
+
+        logger.LogInformation("Calculating diff...");
 
         var oldByLogin = prevSnapshot.Players
             .ToDictionary(r => r.PlayerId, r => new TMFGeneralScore(r.Rank, r.Score, r.PlayerId));
@@ -51,10 +70,15 @@ public class GeneralScoresJobService : IGeneralScoresJobService
         if (diff.IsEmpty)
         {
             // No changes, skip snapshot data creation (inside the snapshot, snapshot is still created but empty)
+            logger.LogInformation("No changes detected, skipping snapshot data creation...");
             return diff;
         }
 
-        PopulateSnapshot(snapshot, playersByLogin, leaderboard, diff);
+        logger.LogInformation("Populating snapshot with new data...");
+
+        PopulateSnapshot(snapshot, playersByLogin, leaderboard);
+
+        logger.LogInformation("Returning diff...");
 
         return diff;
     }
@@ -62,14 +86,8 @@ public class GeneralScoresJobService : IGeneralScoresJobService
     private static void PopulateSnapshot(
         TMFGeneralScoresSnapshot snapshot,
         IDictionary<string, TMFLogin> playersByLogin,
-        Leaderboard leaderboard,
-        TMFGeneralScoreDiff? diff)
+        Leaderboard leaderboard)
     {
-        // Prepare a dictionary of logins to ghosts for new/improved records
-        var scoreDict = diff?.NewPlayers
-            .Concat(diff.ImprovedPlayers.Select(x => x.New))
-            .ToDictionary(x => x.Login);
-
         foreach (var (i, score) in leaderboard.HighScores.Index())
         {
             var playerLogin = playersByLogin[score.Login];

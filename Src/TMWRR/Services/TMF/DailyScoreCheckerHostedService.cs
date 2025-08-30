@@ -12,6 +12,7 @@ public sealed class DailyScoreCheckerHostedService : BackgroundService
     private readonly IServiceScopeFactory scopeFactory;
     private readonly IDelayService delayService;
     private readonly TimeProvider timeProvider;
+    private readonly IOptions<TMUFOptions> options;
     private readonly ILogger<DailyScoreCheckerHostedService> logger;
 
     private static readonly TimeZoneInfo CET = TZConvert.GetTimeZoneInfo("CET");
@@ -20,16 +21,24 @@ public sealed class DailyScoreCheckerHostedService : BackgroundService
         IServiceScopeFactory scopeFactory,
         IDelayService delayService,
         TimeProvider timeProvider, 
+        IOptions<TMUFOptions> options,
         ILogger<DailyScoreCheckerHostedService> logger)
     {
         this.scopeFactory = scopeFactory;
         this.delayService = delayService;
         this.timeProvider = timeProvider;
+        this.options = options;
         this.logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (!options.Value.EnableSoloReport)
+        {
+            logger.LogInformation("The TMUF Solo daily score checker is disabled.");
+            return;
+        }
+
         // Execute the scheduled task immediately when the service starts
         var (nextCheckAt, nextNumber) = await RunScoreCheckAsync(number: null, stoppingToken);
 

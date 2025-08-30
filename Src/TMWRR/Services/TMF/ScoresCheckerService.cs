@@ -78,9 +78,12 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         }
         else
         {
+            logger.LogInformation("No score number provided, fetching the latest one from master server...");
             var scoresInfo = await masterServer.FetchLatestGeneralScoresInfoAsync(EarliestZoneId, cancellationToken: cancellationToken);
             usedNumber = scoresInfo.Number;
         }
+
+        logger.LogInformation("Checking scores for {ScoresNumber}...", usedNumber);
 
         var pipeline = pipelineProvider.GetPipeline("scores");
 
@@ -115,6 +118,8 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         {
             await foreach (var (scoreType, lastModifiedAtTask) in dateTimeTasks.WhenEachRemove())
             {
+                logger.LogInformation("Received {ScoreType} scores, processing...", scoreType);
+
                 var publishedAt = timeProvider.GetUtcNow();
 
                 DateTimeOffset lastModifiedAt;
@@ -129,6 +134,8 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                     continue;
                 }
 
+                logger.LogInformation("{ScoreType} scores were made at {LastModifiedAt}.", scoreType, lastModifiedAt);
+
                 scoresDate = lastModifiedAt.Date;
 
                 var entry = zip.CreateEntry($"{scoreType}.json");
@@ -136,6 +143,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
                 // TODO: should be executed per-thread so that each is not bottlenecked
                 // But the debug zip is complicating this part
+                // though the scores are not all published at once so it might not be necessary
                 switch (scoreType)
                 {
                     case Constants.General:
@@ -155,6 +163,8 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                                 CreatedAt = lastModifiedAt,
                                 PublishedAt = publishedAt
                             };
+
+                            logger.LogInformation("Downloading general scores...");
 
                             var generalScores = await masterServer.DownloadGeneralScoresAsync(usedNumber, EarliestZoneId, cancellationToken);
                             
@@ -194,6 +204,8 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                                 CreatedAt = lastModifiedAt,
                                 PublishedAt = publishedAt
                             };
+
+                            logger.LogInformation("Downloading ladder scores...");
 
                             var ladderScores = await masterServer.DownloadLadderScoresAsync(usedNumber, EarliestZoneId, cancellationToken);
                             
@@ -236,6 +248,8 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                                 CreatedAt = lastModifiedAt,
                                 PublishedAt = publishedAt
                             };
+
+                            logger.LogInformation("Downloading campaign scores for {ScoreType}...", scoreType);
 
                             var campaignScores = await masterServer.DownloadCampaignScoresAsync(scoreType, usedNumber, EarliestZoneId, cancellationToken);
 

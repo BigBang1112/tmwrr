@@ -54,28 +54,37 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
     private readonly AppDbContext db;
     private readonly HybridCache hybridCache;
     private readonly IOutputCacheStore outputCache;
+    private readonly ILogger<ScoresSnapshotService> logger;
 
-    public ScoresSnapshotService(AppDbContext db, HybridCache hybridCache, IOutputCacheStore outputCache)
+    public ScoresSnapshotService(
+        AppDbContext db, 
+        HybridCache hybridCache, 
+        IOutputCacheStore outputCache,
+        ILogger<ScoresSnapshotService> logger)
     {
         this.db = db;
         this.hybridCache = hybridCache;
         this.outputCache = outputCache;
+        this.logger = logger;
     }
 
     public async Task<bool> CampaignSnapshotExistsAsync(string campaignId, DateTimeOffset createdAt, CancellationToken cancellationToken)
     {
+        logger.LogDebug("Checking if TMF campaign snapshot exists for campaign {CampaignId} at {CreatedAt}", campaignId, createdAt);
         return await db.TMFCampaignScoresSnapshots
             .AnyAsync(x => x.CampaignId == campaignId && x.CreatedAt == createdAt, cancellationToken);
     }
 
     public async Task<bool> LadderSnapshotExistsAsync(DateTimeOffset createdAt, CancellationToken cancellationToken)
     {
+        logger.LogDebug("Checking if TMF ladder snapshot exists at {CreatedAt}", createdAt);
         return await db.TMFLadderScoresSnapshots
             .AnyAsync(x => x.CreatedAt == createdAt, cancellationToken);
     }
 
     public async Task<bool> GeneralSnapshotExistsAsync(DateTimeOffset createdAt, CancellationToken cancellationToken)
     {
+        logger.LogDebug("Checking if TMF general snapshot exists at {CreatedAt}", createdAt);
         return await db.TMFGeneralScoresSnapshots
             .AnyAsync(x => x.CreatedAt == createdAt, cancellationToken);
     }
@@ -85,7 +94,13 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         ArgumentNullException.ThrowIfNull(snapshot);
 
         await db.TMFCampaignScoresSnapshots.AddAsync(snapshot, cancellationToken);
+
+        logger.LogInformation("Saving TMF campaign snapshot for campaign {CampaignId} at {CreatedAt} with {RecordCount} records and {PlayerCount} player counts",
+            snapshot.CampaignId, snapshot.CreatedAt, snapshot.Records.Count, snapshot.PlayerCounts.Count);
+
         await db.SaveChangesAsync(cancellationToken);
+
+        logger.LogDebug("Evicting TMF campaign snapshot cache for campaign {CampaignId}...", snapshot.CampaignId);
 
         await outputCache.EvictByTagAsync("snapshot-campaign-tmf", CancellationToken.None);
         await hybridCache.RemoveByTagAsync("snapshot-campaign-tmf", CancellationToken.None);
@@ -97,6 +112,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         }
 
         // same might be needed for recordsTMF
+        logger.LogInformation("TMF campaign snapshot saved.");
     }
 
     public async Task SaveSnapshotAsync(TMFLadderScoresSnapshot snapshot, CancellationToken cancellationToken)
@@ -104,7 +120,13 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         ArgumentNullException.ThrowIfNull(snapshot);
 
         await db.TMFLadderScoresSnapshots.AddAsync(snapshot, cancellationToken);
+
+        logger.LogInformation("Saving TMF ladder snapshot at {CreatedAt} with {XYCount} XY points...",
+            snapshot.CreatedAt, snapshot.XYs.Count);
+
         await db.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("TMF ladder snapshot saved.");
     }
 
     public async Task SaveSnapshotAsync(TMFGeneralScoresSnapshot snapshot, CancellationToken cancellationToken)
@@ -112,7 +134,13 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         ArgumentNullException.ThrowIfNull(snapshot);
 
         await db.TMFGeneralScoresSnapshots.AddAsync(snapshot, cancellationToken);
+
+        logger.LogInformation("Saving TMF general snapshot at {CreatedAt} with {PlayerCount} players...",
+            snapshot.CreatedAt, snapshot.Players.Count);
+
         await db.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("TMF general snapshot saved.");
     }
 
     public async ValueTask<IEnumerable<TMFCampaignScoresRecord>> GetLatestRecordsAsync(IEnumerable<Map> maps, CancellationToken cancellationToken)

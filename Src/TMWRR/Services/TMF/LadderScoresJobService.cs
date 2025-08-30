@@ -11,15 +11,21 @@ public interface ILadderScoresJobService
 public class LadderScoresJobService : ILadderScoresJobService
 {
     private readonly IScoresSnapshotService scoresSnapshotService;
+    private readonly ILogger<LadderScoresJobService> logger;
 
-    public LadderScoresJobService(IScoresSnapshotService scoresSnapshotService)
+    public LadderScoresJobService(IScoresSnapshotService scoresSnapshotService, ILogger<LadderScoresJobService> logger)
     {
         this.scoresSnapshotService = scoresSnapshotService;
+        this.logger = logger;
     }
 
     public async Task<bool> ProcessAsync(LadderZone ladder, TMFLadderScoresSnapshot snapshot, CancellationToken cancellationToken)
     {
         snapshot.PlayerCount = ladder.PlayerCount;
+
+        logger.LogInformation("Player count: {Count}", snapshot.PlayerCount);
+
+        logger.LogInformation("Fetching previous snapshot...");
 
         var prevSnapshot = await scoresSnapshotService.GetLatestLadderSnapshotAsync(cancellationToken);
 
@@ -34,9 +40,12 @@ public class LadderScoresJobService : ILadderScoresJobService
             if (rankPoints.SequenceEqual(prevRankPoints) && prevSnapshot.PlayerCount == ladder.PlayerCount)
             {
                 // no changes
+                logger.LogInformation("No changes detected, skipping snapshot data creation...");
                 return false;
             }
         }
+
+        logger.LogInformation("Populating snapshot with new data...");
 
         foreach (var (i, (rank, points)) in rankPoints.Index())
         {
@@ -48,6 +57,8 @@ public class LadderScoresJobService : ILadderScoresJobService
                 Snapshot = snapshot
             });
         }
+
+        logger.LogInformation("Returning snapshot...");
 
         return true;
     }

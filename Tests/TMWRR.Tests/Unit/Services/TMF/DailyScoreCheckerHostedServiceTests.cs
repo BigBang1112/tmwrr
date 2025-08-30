@@ -50,7 +50,7 @@ public class DailyScoreCheckerHostedServiceTests
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(2)), TimeSpan.Zero);
 
-        var service = new DailyScoreCheckerHostedService(scopeFactory, delayService, timeProvider, logger);
+        var service = new DailyScoreCheckerHostedService(scopeFactory, delayService, timeProvider, options, logger);
 
         // Act
         var nextCheckDateTime = service.GetNextCheckDateTime();
@@ -84,7 +84,7 @@ public class DailyScoreCheckerHostedServiceTests
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST.Add(TimeSpan.FromDays(1)) - TimeSpan.FromHours(2)), TimeSpan.Zero);
 
-        var service = new DailyScoreCheckerHostedService(scopeFactory, delayService, timeProvider, logger);
+        var service = new DailyScoreCheckerHostedService(scopeFactory, delayService, timeProvider, options, logger);
 
         // Act
         var nextCheckDateTime = service.GetNextCheckDateTime();
@@ -118,7 +118,7 @@ public class DailyScoreCheckerHostedServiceTests
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(1)), TimeSpan.Zero);
 
-        var service = new DailyScoreCheckerHostedService(scopeFactory, delayService, timeProvider, logger);
+        var service = new DailyScoreCheckerHostedService(scopeFactory, delayService, timeProvider, options, logger);
 
         // Act
         var nextCheckDateTime = service.GetNextCheckDateTime();
@@ -152,7 +152,7 @@ public class DailyScoreCheckerHostedServiceTests
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST.Add(TimeSpan.FromDays(1)) - TimeSpan.FromHours(1)), TimeSpan.Zero);
 
-        var service = new DailyScoreCheckerHostedService(scopeFactory, delayService, timeProvider, logger);
+        var service = new DailyScoreCheckerHostedService(scopeFactory, delayService, timeProvider, options, logger);
 
         // Act
         var nextCheckDateTime = service.GetNextCheckDateTime();
@@ -192,7 +192,7 @@ public class DailyScoreCheckerHostedServiceTests
         var serviceProvider = serviceCollection.BuildServiceProvider();
         var serviceScopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
 
-        var service = new DailyScoreCheckerHostedService(serviceScopeFactory, delayService, timeProvider, logger);
+        var service = new DailyScoreCheckerHostedService(serviceScopeFactory, delayService, timeProvider, options, logger);
 
         // Setup GetNextCheckDateTime
         var cancellationToken = CancellationToken.None;
@@ -248,7 +248,7 @@ public class DailyScoreCheckerHostedServiceTests
 
         var cancellationToken = CancellationToken.None;
 
-        var service = new DailyScoreCheckerHostedService(serviceScopeFactory, delayService, timeProvider, logger);
+        var service = new DailyScoreCheckerHostedService(serviceScopeFactory, delayService, timeProvider, options, logger);
 
         // Act
         var result = await service.WaitForNextCheckAsync(nextCheckAt, expectedNumber, cancellationToken);
@@ -302,7 +302,7 @@ public class DailyScoreCheckerHostedServiceTests
         var serviceScopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
 
         var cancellationToken = CancellationToken.None;
-        var service = new DailyScoreCheckerHostedService(serviceScopeFactory, delayService, timeProvider, logger);
+        var service = new DailyScoreCheckerHostedService(serviceScopeFactory, delayService, timeProvider, options, logger);
 
         // Act
         var result = await service.WaitForNextCheckAsync(nextCheckAt, expectedNumber, cancellationToken);
@@ -351,7 +351,7 @@ public class DailyScoreCheckerHostedServiceTests
         var serviceScopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
 
         var cancellationToken = CancellationToken.None;
-        var service = new DailyScoreCheckerHostedService(serviceScopeFactory, delayService, timeProvider, logger);
+        var service = new DailyScoreCheckerHostedService(serviceScopeFactory, delayService, timeProvider, options, logger);
 
         // Act
         var result = await service.WaitForNextCheckAsync(nextCheckAt, expectedNumber, cancellationToken);
@@ -403,7 +403,7 @@ public class DailyScoreCheckerHostedServiceTests
             .Throws(new Exception("Test exception"));
 
         var cancellationToken = CancellationToken.None;
-        var service = new DailyScoreCheckerHostedService(serviceScopeFactory, delayService, timeProvider, logger);
+        var service = new DailyScoreCheckerHostedService(serviceScopeFactory, delayService, timeProvider, options, logger);
 
         // Act
         var result = await service.WaitForNextCheckAsync(nextCheckAt, expectedNumber, cancellationToken);

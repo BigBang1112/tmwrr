@@ -33,6 +33,8 @@ public sealed class GhostService : IGhostService
             return null;
         }
 
+        logger.LogInformation("Downloading ghost for map {MapUid} and login {Login}...", map.MapUid, login.Id);
+
         var url = $"http://data.trackmaniaforever.com/official_replays/records/{map.TMFCampaign.Section}/{map.TMFCampaign.StartId + map.Order}/{login.RegistrationId}.replay.gbx";
 
         using var response = await http.GetAsync(url, cancellationToken);
