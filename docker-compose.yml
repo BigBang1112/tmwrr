@@ -28,7 +28,7 @@ services:
     image: beeyev/phpmyadmin-lightweight
     restart: unless-stopped
     ports:
-      - 9010:80
+      - 9014:80
     environment:
       PMA_HOST: mariadb
       PMA_USER: root
@@ -36,11 +36,16 @@ services:
       mariadb:
         condition: service_healthy
 
-  seq:
-    image: datalust/seq:latest
+  grafana:
+    image: grafana/otel-lgtm
     restart: unless-stopped
     ports:
-      - 8081:80
+      - 3000:3000
+
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.3
+    restart: unless-stopped
+    ports:
+      - 18888:18888
     environment:
-      ACCEPT_EULA: Y
-      SEQ_FIRSTRUN_NOAUTHENTICATION: true
+      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: true
