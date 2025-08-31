@@ -105,210 +105,178 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         }
 
         var scoresDate = default(DateTime?);
-        var sbWebhookMessage = new StringBuilder();
 
         var hasNewCampaignSnapshots = false;
         var allCampaignDiffs = new Dictionary<string, TMFCampaignScoreDiff>();
         var generalDiff = default(TMFGeneralScoreDiff?);
 
-        // This zip stores full score snapshots for debugging purposes and uploads them via webhook
-        // It is not stored in the database for now, as the content is very low level and includes unused zones
-        await using var ms = new MemoryStream();
-        await using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+        await foreach (var (scoreType, lastModifiedAtTask) in dateTimeTasks.WhenEachRemove())
         {
-            await foreach (var (scoreType, lastModifiedAtTask) in dateTimeTasks.WhenEachRemove())
+            logger.LogInformation("Received {ScoreType} scores, processing...", scoreType);
+
+            var publishedAt = timeProvider.GetUtcNow();
+
+            DateTimeOffset lastModifiedAt;
+
+            try
             {
-                logger.LogInformation("Received {ScoreType} scores, processing...", scoreType);
+                lastModifiedAt = await lastModifiedAtTask;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to fetch {ScoreType} scores.", scoreType);
+                continue;
+            }
 
-                var publishedAt = timeProvider.GetUtcNow();
+            logger.LogInformation("{ScoreType} scores were made at {LastModifiedAt}.", scoreType, lastModifiedAt);
 
-                DateTimeOffset lastModifiedAt;
+            scoresDate = lastModifiedAt.Date;
 
-                try
-                {
-                    lastModifiedAt = await lastModifiedAtTask;
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Failed to fetch {ScoreType} scores.", scoreType);
-                    continue;
-                }
+            // TODO: should be executed per-thread so that each is not bottlenecked
+            // But the debug zip is complicating this part
+            // though the scores are not all published at once so it might not be necessary
+            switch (scoreType)
+            {
+                case Constants.General:
+                    {
+                        var snapshotExists = await scoresSnapshotService.GeneralSnapshotExistsAsync(lastModifiedAt, cancellationToken);
 
-                logger.LogInformation("{ScoreType} scores were made at {LastModifiedAt}.", scoreType, lastModifiedAt);
-
-                scoresDate = lastModifiedAt.Date;
-
-                var entry = zip.CreateEntry($"{scoreType}.json");
-                await using var entryStream = entry.Open();
-
-                // TODO: should be executed per-thread so that each is not bottlenecked
-                // But the debug zip is complicating this part
-                // though the scores are not all published at once so it might not be necessary
-                switch (scoreType)
-                {
-                    case Constants.General:
+                        if (snapshotExists)
                         {
-                            var snapshotExists = await scoresSnapshotService.GeneralSnapshotExistsAsync(lastModifiedAt, cancellationToken);
-
-                            if (snapshotExists)
-                            {
-                                logger.LogInformation("General scores are up to date.");
-                                continue; // MUST BE CONTINUE not break, to skip the debug webhook part
-                            }
-
-                            logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
-
-                            var snapshot = new TMFGeneralScoresSnapshot
-                            {
-                                CreatedAt = lastModifiedAt,
-                                PublishedAt = publishedAt
-                            };
-
-                            logger.LogInformation("Downloading general scores...");
-
-                            var generalScores = await masterServer.DownloadGeneralScoresAsync(usedNumber, EarliestZoneId, cancellationToken);
-                            
-                            var generalDiffTask = generalScoresJobService.ProcessAsync(generalScores.Zones[Constants.World], snapshot, cancellationToken);
-
-                            await Task.WhenAll(
-                                generalDiffTask,
-                                JsonSerializer.SerializeAsync(entryStream, generalScores, AppJsonContext.Default.GeneralScores, cancellationToken)
-                            );
-
-                            generalDiff = await generalDiffTask;
-
-                            if (snapshot.Players.Count == 0 || generalDiff?.PlayerCountDelta != 0)
-                            {
-                                snapshot.NoChanges = true;
-                                logger.LogInformation("No score changes for {ScoreType}.", scoreType);
-                            }
-
-                            await scoresSnapshotService.SaveSnapshotAsync(snapshot, cancellationToken);
-
-                            break;
+                            logger.LogInformation("General scores are up to date.");
+                            continue; // MUST BE CONTINUE not break, to skip the debug webhook part
                         }
-                    case Constants.Multi:
+
+                        logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
+
+                        var snapshot = new TMFGeneralScoresSnapshot
                         {
-                            var snapshotExists = await scoresSnapshotService.LadderSnapshotExistsAsync(lastModifiedAt, cancellationToken);
+                            CreatedAt = lastModifiedAt,
+                            PublishedAt = publishedAt
+                        };
 
-                            if (snapshotExists)
-                            {
-                                logger.LogInformation("Ladder scores are up to date.");
-                                continue; // MUST BE CONTINUE not break, to skip the debug webhook part
-                            }
+                        logger.LogInformation("Downloading general scores...");
 
-                            logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
+                        var generalScores = await masterServer.DownloadGeneralScoresAsync(usedNumber, EarliestZoneId, cancellationToken);
 
-                            var snapshot = new TMFLadderScoresSnapshot
-                            {
-                                CreatedAt = lastModifiedAt,
-                                PublishedAt = publishedAt
-                            };
+                        generalDiff = await generalScoresJobService.ProcessAsync(generalScores.Zones[Constants.World], snapshot, cancellationToken);
 
-                            logger.LogInformation("Downloading ladder scores...");
-
-                            var ladderScores = await masterServer.DownloadLadderScoresAsync(usedNumber, EarliestZoneId, cancellationToken);
-                            
-                            var ladderDiffTask = ladderScoresJobService.ProcessAsync(ladderScores.Zones[Constants.World], snapshot, cancellationToken);
-
-                            await Task.WhenAll(
-                                ladderDiffTask,
-                                JsonSerializer.SerializeAsync(entryStream, ladderScores, AppJsonContext.Default.LadderScores, cancellationToken)
-                            );
-
-                            var ladderHasChanged = await ladderDiffTask;
-
-                            if (!ladderHasChanged)
-                            {
-                                snapshot.NoChanges = true;
-                                logger.LogInformation("No score changes for {ScoreType}.", scoreType);
-                            }
-
-                            await scoresSnapshotService.SaveSnapshotAsync(snapshot, cancellationToken);
-
-                            break;
-                        }
-                    default:
+                        if (snapshot.Players.Count == 0 || generalDiff?.PlayerCountDelta != 0)
                         {
-                            var snapshotExists = await scoresSnapshotService.CampaignSnapshotExistsAsync(scoreType, lastModifiedAt, cancellationToken);
-
-                            if (snapshotExists)
-                            {
-                                logger.LogInformation("Campaign scores for {ScoreType} are up to date.", scoreType);
-                                continue; // MUST BE CONTINUE not break, to skip the debug webhook part
-                            }
-
-                            logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
-
-                            hasNewCampaignSnapshots = true;
-
-                            var snapshot = new TMFCampaignScoresSnapshot
-                            {
-                                CampaignId = scoreType,
-                                CreatedAt = lastModifiedAt,
-                                PublishedAt = publishedAt
-                            };
-
-                            logger.LogInformation("Downloading campaign scores for {ScoreType}...", scoreType);
-
-                            var campaignScores = await masterServer.DownloadCampaignScoresAsync(scoreType, usedNumber, EarliestZoneId, cancellationToken);
-
-                            var campaignDiffsTask = campaignScoresJobService.ProcessAsync(
-                                scoreType,
-                                campaignScores.Maps,
-                                campaignScores.MedalZones[Constants.World],
-                                snapshot,
-                                cancellationToken);
-
-                            await Task.WhenAll(
-                                campaignDiffsTask,
-                                JsonSerializer.SerializeAsync(entryStream, campaignScores, AppJsonContext.Default.CampaignScores, cancellationToken)
-                            );
-
-                            var campaignDiffs = await campaignDiffsTask;
-
-                            // populate all campaign diffs for reporting
-                            foreach (var (mapUid, diff) in campaignDiffs)
-                            {
-                                if (!diff.IsEmpty)
-                                {
-                                    allCampaignDiffs[mapUid] = diff;
-                                }
-                            }
-
-                            // DO NOT USE DIFFS IN THIS COMPARISON because then fresh maps won't be saved in the snapshot
-                            // this will rarely hit though cuz player count changes basically everyday
-                            if (snapshot.Records.Count == 0 && snapshot.PlayerCounts.Count == 0)
-                            {
-                                snapshot.NoChanges = true;
-                                logger.LogInformation("No score changes for {ScoreType}.", scoreType);
-                            }
-
-                            await scoresSnapshotService.SaveSnapshotAsync(snapshot, cancellationToken);
-
-                            break;
+                            snapshot.NoChanges = true;
+                            logger.LogInformation("No score changes for {ScoreType}.", scoreType);
                         }
-                }
 
-                sbWebhookMessage.AppendLine($"{scoreType}: {Discord.TimestampTag.FromDateTimeOffset(lastModifiedAt)} (available {Discord.TimestampTag.FromDateTimeOffset(publishedAt)})");
+                        await scoresSnapshotService.SaveSnapshotAsync(snapshot, cancellationToken);
+
+                        break;
+                    }
+                case Constants.Multi:
+                    {
+                        var snapshotExists = await scoresSnapshotService.LadderSnapshotExistsAsync(lastModifiedAt, cancellationToken);
+
+                        if (snapshotExists)
+                        {
+                            logger.LogInformation("Ladder scores are up to date.");
+                            continue; // MUST BE CONTINUE not break, to skip the debug webhook part
+                        }
+
+                        logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
+
+                        var snapshot = new TMFLadderScoresSnapshot
+                        {
+                            CreatedAt = lastModifiedAt,
+                            PublishedAt = publishedAt
+                        };
+
+                        logger.LogInformation("Downloading ladder scores...");
+
+                        var ladderScores = await masterServer.DownloadLadderScoresAsync(usedNumber, EarliestZoneId, cancellationToken);
+
+                        var ladderHasChanged = await ladderScoresJobService.ProcessAsync(ladderScores.Zones[Constants.World], snapshot, cancellationToken);
+
+                        if (!ladderHasChanged)
+                        {
+                            snapshot.NoChanges = true;
+                            logger.LogInformation("No score changes for {ScoreType}.", scoreType);
+                        }
+
+                        await scoresSnapshotService.SaveSnapshotAsync(snapshot, cancellationToken);
+
+                        break;
+                    }
+                default:
+                    {
+                        var snapshotExists = await scoresSnapshotService.CampaignSnapshotExistsAsync(scoreType, lastModifiedAt, cancellationToken);
+
+                        if (snapshotExists)
+                        {
+                            logger.LogInformation("Campaign scores for {ScoreType} are up to date.", scoreType);
+                            continue; // MUST BE CONTINUE not break, to skip the debug webhook part
+                        }
+
+                        logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
+
+                        hasNewCampaignSnapshots = true;
+
+                        var snapshot = new TMFCampaignScoresSnapshot
+                        {
+                            CampaignId = scoreType,
+                            CreatedAt = lastModifiedAt,
+                            PublishedAt = publishedAt
+                        };
+
+                        logger.LogInformation("Downloading campaign scores for {ScoreType}...", scoreType);
+
+                        var campaignScores = await masterServer.DownloadCampaignScoresAsync(scoreType, usedNumber, EarliestZoneId, cancellationToken);
+
+                        var campaignDiffs = await campaignScoresJobService.ProcessAsync(
+                            scoreType,
+                            campaignScores.Maps,
+                            campaignScores.MedalZones[Constants.World],
+                            snapshot,
+                            cancellationToken);
+
+                        // populate all campaign diffs for reporting
+                        foreach (var (mapUid, diff) in campaignDiffs)
+                        {
+                            if (!diff.IsEmpty)
+                            {
+                                allCampaignDiffs[mapUid] = diff;
+                            }
+                        }
+
+                        // DO NOT USE DIFFS IN THIS COMPARISON because then fresh maps won't be saved in the snapshot
+                        // this will rarely hit though cuz player count changes basically everyday
+                        if (snapshot.Records.Count == 0 && snapshot.PlayerCounts.Count == 0)
+                        {
+                            snapshot.NoChanges = true;
+                            logger.LogInformation("No score changes for {ScoreType}.", scoreType);
+                        }
+
+                        await scoresSnapshotService.SaveSnapshotAsync(snapshot, cancellationToken);
+
+                        break;
+                    }
             }
         }
 
+        logger.LogInformation("Score check for {ScoresNumber} completed.", usedNumber);
+
         if (hasNewCampaignSnapshots)
         {
+            logger.LogInformation("Reporting campaign score changes...");
+
             await reportService.ReportAsync(allCampaignDiffs, cancellationToken);
         }
 
-        using var webhook = Sample.CreateWebhook(options.Value.DiscordWebhookUrl);
-
         if (scoresDate is null)
         {
+            using var webhook = Sample.CreateWebhook(options.Value.DiscordWebhookUrl);
             await webhook.SendMessageAsync("No scores were processed. Master server is likely having issues.");
             return null;
         }
         
-        await webhook.SendFileAsync(new Discord.FileAttachment(ms, $"{scoresDate:yyyyMMdd}.zip"), sbWebhookMessage.ToString());
-
         return (ScoresNumber)(((int)usedNumber % 6) + 1);
     }
 

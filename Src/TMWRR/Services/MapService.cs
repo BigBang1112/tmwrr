@@ -18,11 +18,13 @@ public sealed class MapService : IMapService
 {
     private readonly AppDbContext db;
     private readonly HybridCache cache;
+    private readonly ILogger<MapService> logger;
 
-    public MapService(AppDbContext db, HybridCache cache)
+    public MapService(AppDbContext db, HybridCache cache, ILogger<MapService> logger)
     {
         this.db = db;
         this.cache = cache;
+        this.logger = logger;
     }
 
     public async ValueTask<IDictionary<string, Map>> PopulateAsync(IEnumerable<string> mapUids, CancellationToken cancellationToken)
@@ -31,15 +33,19 @@ public sealed class MapService : IMapService
 
         if (!mapUids.Any())
         {
+            logger.LogWarning("No map UIDs to populate with new data.");
             return new Dictionary<string, Map>();
         }
 
         // MapUid is not an unique index, so the duplicates need to be handled manually.
+        logger.LogInformation("Gathering {Count} unique map UIDs...", mapUids.Distinct().Count());
 
         var maps = await db.Maps
             .Include(x => x.TMFCampaign) // needed for the CampaignScoresJobService
             .Where(e => mapUids.Contains(e.MapUid))
             .ToDictionaryAsync(x => x.MapUid, cancellationToken);
+
+        logger.LogInformation("Found {Count} existing maps in database, will add {MissingCount} new ones...", maps.Count, mapUids.Distinct().Count() - maps.Count);
 
         var missingMaps = mapUids.Except(maps.Keys).Select(x => new Map
         {
@@ -51,6 +57,8 @@ public sealed class MapService : IMapService
             return maps;
         }
 
+        logger.LogInformation("Adding {Count} new maps to database...", missingMaps.Count);
+
         await db.Maps.AddRangeAsync(missingMaps, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 
@@ -58,6 +66,8 @@ public sealed class MapService : IMapService
         {
             maps[map.MapUid] = map;
         }
+
+        logger.LogInformation("Returning {Count} maps...", maps.Count);
 
         return maps;
     }

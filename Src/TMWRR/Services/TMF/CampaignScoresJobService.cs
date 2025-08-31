@@ -59,7 +59,6 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             .ToDictionary(x => x.Login, x => x.Nickname);
 
         // these could run in parallel
-        logger.LogInformation("Gathering {Count} unique logins...", nicknamesByLogin.Count);
         var playersByLogin = await loginService.PopulateAsync(nicknamesByLogin, options.Value.EnableLoginDetails, cancellationToken);
         
         logger.LogInformation("Fetching previous records and player counts...");

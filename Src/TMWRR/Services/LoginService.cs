@@ -41,12 +41,17 @@ public sealed class LoginService : ILoginService
 
         if (loginNicknameDict.Count == 0)
         {
+            logger.LogWarning("No logins to populate with new data.");
             return new Dictionary<string, TMFLogin>();
         }
+
+        logger.LogInformation("Gathering {Count} unique logins...", loginNicknameDict.Count);
 
         var logins = await db.TMFLogins
             .Where(e => loginNicknameDict.Keys.Contains(e.Id))
             .ToDictionaryAsync(x => x.Id, cancellationToken);
+
+        logger.LogInformation("Found {Count} existing logins in database, will add {MissingCount} new ones...", logins.Count, loginNicknameDict.Count - logins.Count);
 
         var rateLimited = false;
         var deadend = false;
@@ -103,7 +108,11 @@ public sealed class LoginService : ILoginService
 
         if (missingLogins.Count == 0)
         {
+            logger.LogInformation("Updating existing logins only, no new logins to add.");
+
             await db.SaveChangesAsync(cancellationToken);
+
+            logger.LogInformation("Returning {Count} logins...", logins.Count);
             return logins;
         }
 
@@ -144,6 +153,7 @@ public sealed class LoginService : ILoginService
             }
         }
 
+        logger.LogInformation("Adding {Count} new logins and updating existing ones...", missingLogins.Count);
         await db.TMFLogins.AddRangeAsync(missingLogins, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 
@@ -151,6 +161,8 @@ public sealed class LoginService : ILoginService
         {
             logins[login.Id] = login;
         }
+
+        logger.LogInformation("Returning {Count} logins...", logins.Count);
 
         return logins;
     }

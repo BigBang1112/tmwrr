@@ -20,25 +20,36 @@ public class ReportDiscordService : IReportDiscordService
     private readonly IDiscordWebhookFactory webhookFactory;
     private readonly ILoginService loginService;
     private readonly IOptionsSnapshot<TMUFOptions> tmufOptions;
+    private readonly ILogger<ReportDiscordService> logger;
 
-    public ReportDiscordService(IDiscordWebhookFactory webhookFactory, ILoginService loginService, IOptionsSnapshot<TMUFOptions> tmufOptions)
+    public ReportDiscordService(
+        IDiscordWebhookFactory webhookFactory, 
+        ILoginService loginService,
+        IOptionsSnapshot<TMUFOptions> tmufOptions,
+        ILogger<ReportDiscordService> logger)
     {
         this.webhookFactory = webhookFactory;
         this.loginService = loginService;
         this.tmufOptions = tmufOptions;
+        this.logger = logger;
     }
 
     public async Task ReportAsync(DateTimeOffset reportedAt, IEnumerable<TMFCampaignScoreDiffReport> campaignScoreDiffReports, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(campaignScoreDiffReports);
 
+        logger.LogInformation("Creating Discord webhook...");
+
         using var webhook = webhookFactory.Create(tmufOptions.Value.ChangesDiscordWebhookUrl);
 
         if (!campaignScoreDiffReports.Any())
         {
+            logger.LogInformation("Sending report about no changes in TMF campaigns...");
             await SendReportAsync(webhook, reportedAt, "No changes in TMF campaigns!", [], cancellationToken);
             return;
         }
+
+        logger.LogInformation("Resolving logins once more...");
 
         // TODO: TMFLogin should be probably given directly by the TMFCampaignScoreDiffReport model
         var loginSet = campaignScoreDiffReports
@@ -52,6 +63,8 @@ public class ReportDiscordService : IReportDiscordService
         var logins = (await loginService.GetMultipleTMFAsync(loginSet, cancellationToken))
             .ToDictionary(x => x.Id, x => x.Nickname);
         //
+
+        logger.LogInformation("Building report message...");
 
         var fields = new List<EmbedFieldBuilder>();
 
@@ -163,10 +176,12 @@ public class ReportDiscordService : IReportDiscordService
         var maps = campaignScoreDiffReports.Select(x =>
             string.Format("[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)", x.Map.GetDeformattedName(), x.Map.MapUid));
 
+        logger.LogInformation("Sending report about changed maps...");
+
         await SendReportAsync(webhook, reportedAt, $"Solo leaderboards have changed for {string.Join(", ", maps)}.", fields, cancellationToken);
     }
 
-    private static async Task SendReportAsync(IDiscordWebhook webhook, DateTimeOffset reportedAt, string text, IEnumerable<EmbedFieldBuilder> fields, CancellationToken cancellationToken)
+    private async Task SendReportAsync(IDiscordWebhook webhook, DateTimeOffset reportedAt, string text, IEnumerable<EmbedFieldBuilder> fields, CancellationToken cancellationToken)
     {
         var embed = new EmbedBuilder()
             .WithDescription(text)
@@ -178,6 +193,8 @@ public class ReportDiscordService : IReportDiscordService
             .WithTimestamp(reportedAt)
             .Build();
 
-        await webhook.SendMessageAsync(embed, cancellationToken);
+        await webhook.SendMessageAsync(embed, cancellationToken); 
+        
+        logger.LogInformation("Discord report sent.");
     }
 }

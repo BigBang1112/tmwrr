@@ -43,8 +43,6 @@ public class GeneralScoresJobService : IGeneralScoresJobService
             .DistinctBy(x => x.Login)
             .ToDictionary(x => x.Login, x => x.Nickname);
 
-        logger.LogInformation("Gathering {Count} unique logins...", nicknamesByLogin.Count);
-
         var playersByLogin = await loginService.PopulateAsync(nicknamesByLogin, options.Value.EnableLoginDetails, cancellationToken);
 
         logger.LogInformation("Fetching previous snapshot...");
