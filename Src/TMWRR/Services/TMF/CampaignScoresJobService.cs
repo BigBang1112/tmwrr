@@ -173,7 +173,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
 
             try
             {
-                return await ghostService.CreateGhostAsync(map, login, cancellationToken);
+                return await ghostService.CreateGhostAsync(map, login, score, cancellationToken);
             }
             catch (Exception ex)
             {
