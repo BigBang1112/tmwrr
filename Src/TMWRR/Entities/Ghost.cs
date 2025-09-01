@@ -25,4 +25,5 @@ public class Ghost
     public string? Url { get; set; }
 
     public ICollection<TMFCampaignScoresRecord> Records { get; set; } = [];
+    public ICollection<GhostCheckpoint> Checkpoints { get; set; } = [];
 }

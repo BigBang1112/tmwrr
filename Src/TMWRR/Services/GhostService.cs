@@ -50,6 +50,8 @@ public sealed class GhostService : IGhostService
 
         var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
+        var checkpoints = new List<GhostCheckpoint>();
+
         using var ms = new MemoryStream(data);
 
         try
@@ -77,6 +79,16 @@ public sealed class GhostService : IGhostService
                 logger.LogWarning("Downloaded ghost time {GhostTime} does not match expected time {ExpectedTime} for map {MapUid} and login {Login}", ghostNode.RaceTime, expectedScore, map.MapUid, login.Id);
                 return null;
             }
+
+            foreach (var cp in ghostNode.Checkpoints ?? [])
+            {
+                checkpoints.Add(new GhostCheckpoint
+                {
+                    Time = cp.Time,
+                    StuntsScore = cp.StuntsScore,
+                    Speed = cp.Speed
+                });
+            }
         }
         catch (Exception ex)
         {
@@ -90,6 +102,7 @@ public sealed class GhostService : IGhostService
             LastModifiedAt = response.Content.Headers.LastModified,
             Etag = response.Headers.ETag?.Tag,
             Url = url,
+            Checkpoints = checkpoints
         };
     }
 

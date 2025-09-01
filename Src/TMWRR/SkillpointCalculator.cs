@@ -4,6 +4,10 @@ public static class SkillpointCalculator
 {
     public static int[] GetRanksForSkillpoints(int[] ranks)
     {
+        // TODO: ranks could be wrong if there are ties above the last rank in the array equaling the last rank
+        // use Skillpoints Count value from scores to figure out the true amount of ties
+        // possibly needs another column for PlayerCount called LastRankCount that's passed into this
+
         var skillpointRanks = new int[ranks.Length];
         var outIdx = 0;
         var i = 0;

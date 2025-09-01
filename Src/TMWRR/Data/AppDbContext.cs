@@ -23,6 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Mode> Modes { get; set; }
     public DbSet<TMEnvironment> Environments { get; set; }
     public DbSet<Ghost> Ghosts { get; set; }
+    public DbSet<GhostCheckpoint> GhostCheckpoints { get; set; }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
