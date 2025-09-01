@@ -78,12 +78,13 @@ public class ReportDiscordService : IReportDiscordService
                 var score = report.Map.IsStunts() || report.Map.IsPlatform()
                     ? removedRecord.Score.ToString()
                     : removedRecord.GetTime().ToString(useHundredths: true);
+                var timeLink = removedRecord.GhostGuid is null
+                    ? $"`{score}`"
+                    : $"[`{score}`](https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{removedRecord.GhostGuid}&mapuid={report.Map.MapUid})";
 
-                sb.AppendFormat("`{0}` [`{1}`](<https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{2}&mapuid={3}>) by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** was **removed**",
+                sb.AppendFormat("`{0}` {1} by **[{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>)** was **removed**",
                     removedRecord.Rank.ToString("00"),
-                    score,
-                    removedRecord.GhostGuid, // can be null sometimes (if something breaks), be careful
-                    report.Map.MapUid,
+                    timeLink,
                     TextFormatter.Deformat(removedRecordNickname),
                     removedRecord.Login);
                 sb.AppendLine();
@@ -101,12 +102,13 @@ public class ReportDiscordService : IReportDiscordService
                 var timestamp = newRecord.Timestamp.HasValue
                     ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
                     : string.Empty;
+                var timeLink = newRecord.GhostGuid is null
+                    ? $"`{score}`"
+                    : $"[`{score}`](https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{newRecord.GhostGuid}&mapuid={report.Map.MapUid})";
 
-                sb.AppendFormat("`{0}` **[`{1}`](<https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{2}&mapuid={3}>)** by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** {6} [`{7} SP`]",
+                sb.AppendFormat("`{0}` **{1}** by **[{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>)** {4} [`{5} SP`]",
                     newRecord.Rank.ToString("00"),
-                    score,
-                    newRecord.GhostGuid, // can be null sometimes (if something breaks), be careful
-                    report.Map.MapUid,
+                    timeLink,
                     TextFormatter.Deformat(newRecordNickname),
                     newRecord.Login,
                     timestamp,
@@ -150,12 +152,13 @@ public class ReportDiscordService : IReportDiscordService
                 var skillpointDiff = newRecord.Skillpoints.GetValueOrDefault() - oldRecord.Skillpoints.GetValueOrDefault();
                 var skillpointDiffStr = skillpointDiff.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' ');
                 var skillpointDiffPlusStr = skillpointDiff >= 0 ? $"+{skillpointDiffStr}" : skillpointDiffStr;
+                var timeLink = newRecord.GhostGuid is null
+                    ? $"`{score}`"
+                    : $"[`{score}`](https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{newRecord.GhostGuid}&mapuid={report.Map.MapUid})";
 
-                sb.AppendFormat("`{0}` **[`{1}`](<https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{2}&mapuid={3}>)** `{4}` from `{5}` by **[{6}](<https://ul.unitedascenders.xyz/lookup?login={7}>)** {8} [`{10} SP`]",
+                sb.AppendFormat("`{0}` **{1}** `{2}` from `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** {6} [`{8} SP`]",
                     newRecord.Rank.ToString("00"),
-                    score,
-                    newRecord.GhostGuid, // can be null sometimes (if something breaks), be careful
-                    report.Map.MapUid,
+                    timeLink,
                     delta,
                     oldRecord.Rank.ToString("00"),
                     TextFormatter.Deformat(newRecordNickname),
