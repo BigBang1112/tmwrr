@@ -44,13 +44,14 @@ public sealed class GhostFillDataHostedService : BackgroundService
             {
                 var ghostNode = Gbx.ParseNode<CGameCtnGhost>(ms);
 
-                foreach (var cp in ghostNode.Checkpoints ?? [])
+                foreach (var (i, cp) in ghostNode.Checkpoints?.Index() ?? [])
                 {
                     ghost.Checkpoints.Add(new GhostCheckpoint
                     {
                         Time = cp.Time,
                         StuntsScore = cp.StuntsScore,
-                        Speed = cp.Speed
+                        Speed = cp.Speed,
+                        Order = i
                     });
                 }
             }
