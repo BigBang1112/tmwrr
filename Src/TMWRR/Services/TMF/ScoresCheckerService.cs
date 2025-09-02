@@ -272,7 +272,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
         if (scoresDate is null)
         {
-            using var webhook = Sample.CreateWebhook(options.Value.DiscordWebhookUrl);
+            using var webhook = Sample.CreateWebhook(options.Value.Discord.TestWebhookUrl);
             await webhook.SendMessageAsync("No scores were processed. Master server is likely having issues.");
             return null;
         }

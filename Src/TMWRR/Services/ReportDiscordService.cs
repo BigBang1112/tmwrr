@@ -41,7 +41,7 @@ public class ReportDiscordService : IReportDiscordService
 
         logger.LogInformation("Creating Discord webhook...");
 
-        using var webhook = webhookFactory.Create(tmufOptions.Value.ChangesDiscordWebhookUrl);
+        using var webhook = webhookFactory.Create(tmufOptions.Value.Discord.TestWebhookUrl);
 
         if (!campaignScoreDiffReports.Any())
         {

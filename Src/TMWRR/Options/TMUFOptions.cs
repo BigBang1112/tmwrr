@@ -13,14 +13,8 @@ public sealed class TMUFOptions
     public TimeSpan CheckRetryDelay { get; set; }
 
     [Required]
-    public required string DiscordWebhookUrl { get; set; }
+    public required TMUFDiscord Discord { get; set; }
 
     [Required]
-    public required string ChangesDiscordWebhookUrl { get; set; }
-
-    [Required]
-    public required string ApiUsername { get; set; }
-
-    [Required]
-    public required string ApiPassword { get; set; }
+    public required TMUFWebServices WebServices { get; set; }
 }

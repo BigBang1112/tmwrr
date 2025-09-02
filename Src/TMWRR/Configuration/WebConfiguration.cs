@@ -25,7 +25,7 @@ public static class WebConfiguration
         services.AddMasterServerTMUF().AddStandardResilienceHandler();
         services.AddTrackmaniaWS(new TrackmaniaWSOptions
         {
-            Credentials = new TrackmaniaWSCredentials(tmufOptions.ApiUsername, tmufOptions.ApiPassword)
+            Credentials = new TrackmaniaWSCredentials(tmufOptions.WebServices.ApiUsername, tmufOptions.WebServices.ApiPassword)
         }).AddStandardResilienceHandler();
         services.AddHttpClient<UnitedLadder>().AddStandardResilienceHandler();
 
