@@ -320,6 +320,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
     public async ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(string campaignId, CancellationToken cancellationToken)
     {
         return await db.TMFCampaignScoresPlayerCounts
+            .Include(x => x.Map)
             .Where(x => x.Map.TMFCampaignId == campaignId)
             .GroupBy(x => x.Map.MapUid)
             .Select(g => g.OrderByDescending(x => x.Snapshot.CreatedAt).First())
@@ -329,6 +330,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
     public async Task<int?> GetLatestPlayerCountAsync(string mapUid, CancellationToken cancellationToken)
     {
         return await db.TMFCampaignScoresPlayerCounts
+            .Include(x => x.Map)
             .Where(x => x.Map.MapUid == mapUid)
             .OrderByDescending(x => x.Snapshot.CreatedAt)
             .Select(x => x.Count)
@@ -338,6 +340,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
     public async Task<int?> GetPlayerCountAsync(string mapUid, DateTimeOffset createdAt, CancellationToken cancellationToken)
     {
         return await db.TMFCampaignScoresPlayerCounts
+            .Include(x => x.Map)
             .Where(x => x.Map.MapUid == mapUid && x.Snapshot.CreatedAt == createdAt)
             .Select(x => x.Count)
             .FirstOrDefaultAsync(cancellationToken);
