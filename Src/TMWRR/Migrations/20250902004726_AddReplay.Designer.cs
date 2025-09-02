@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TMWRR.Data;
 
@@ -11,9 +12,11 @@ using TMWRR.Data;
 namespace TMWRR.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250902004726_AddReplay")]
+    partial class AddReplay
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -221,9 +224,6 @@ namespace TMWRR.Migrations
                         .HasColumnType("int");
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Order")
-                        .HasColumnType("int");
 
                     b.Property<int>("ReplayId")
                         .HasColumnType("int");
@@ -570,13 +570,11 @@ namespace TMWRR.Migrations
                         .WithMany("Checkpoints")
                         .HasForeignKey("GhostId");
 
-                    b.HasOne("TMWRR.Entities.ReplayGhost", "ReplayGhost")
+                    b.HasOne("TMWRR.Entities.ReplayGhost", null)
                         .WithMany("Checkpoints")
                         .HasForeignKey("ReplayGhostId");
 
                     b.Navigation("Ghost");
-
-                    b.Navigation("ReplayGhost");
                 });
 
             modelBuilder.Entity("TMWRR.Entities.Map", b =>

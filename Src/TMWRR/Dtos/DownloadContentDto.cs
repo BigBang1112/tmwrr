@@ -1,6 +1,6 @@
 ﻿namespace TMWRR.Dtos;
 
-public sealed class GhostDataDto
+public sealed class DownloadContentDto
 {
     public required byte[] Data { get; set; }
     public DateTimeOffset? LastModifiedAt { get; set; }

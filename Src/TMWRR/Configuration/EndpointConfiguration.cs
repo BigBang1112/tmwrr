@@ -19,5 +19,6 @@ public static class EndpointConfiguration
         EnvironmentsEndpoint.Map(app.MapGroup("environments"));
         UsersEndpoint.Map(app.MapGroup("users"));
         MapsEndpoint.Map(app.MapGroup("maps"));
+        ReplaysEndpoint.Map(app.MapGroup("replays"));
     }
 }

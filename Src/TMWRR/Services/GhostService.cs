@@ -1,6 +1,7 @@
 ﻿using GBX.NET;
 using GBX.NET.Engines.Game;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Immutable;
 using TmEssentials;
 using TMWRR.Data;
 using TMWRR.Dtos;
@@ -12,7 +13,9 @@ namespace TMWRR.Services;
 public interface IGhostService
 {
     Task<Ghost?> CreateGhostAsync(Map map, TMFLogin login, int expectedScore, CancellationToken cancellationToken);
-    Task<GhostDataDto?> GetGhostDataAsync(Guid guid, CancellationToken cancellationToken);
+    Task<DownloadContentDto?> GetGhostDownloadAsync(Guid guid, CancellationToken cancellationToken);
+    Task<IEnumerable<GhostCheckpointDto>> GetGhostCheckpointDtosAsync(Guid guid, CancellationToken cancellationToken);
+    Task<GhostDto?> GetGhostDtoAsync(Guid guid, CancellationToken cancellationToken);
 }
 
 public sealed class GhostService : IGhostService
@@ -106,15 +109,48 @@ public sealed class GhostService : IGhostService
         };
     }
 
-    public async Task<GhostDataDto?> GetGhostDataAsync(Guid guid, CancellationToken cancellationToken)
+    public async Task<DownloadContentDto?> GetGhostDownloadAsync(Guid guid, CancellationToken cancellationToken)
     {
         return await db.Ghosts
             .Where(x => x.Guid == guid)
-            .Select(x => new GhostDataDto
+            .Select(x => new DownloadContentDto
             {
                 Data = x.Data,
                 LastModifiedAt = x.LastModifiedAt,
                 Etag = x.Etag
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<GhostCheckpointDto>> GetGhostCheckpointDtosAsync(Guid guid, CancellationToken cancellationToken)
+    {
+        return await db.GhostCheckpoints
+            .Where(x => x.Ghost!.Guid == guid)
+            .OrderBy(x => x.Order)
+            .Select(x => new GhostCheckpointDto
+            {
+                Time = x.Time,
+                Speed = x.Speed,
+                StuntsScore = x.StuntsScore
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<GhostDto?> GetGhostDtoAsync(Guid guid, CancellationToken cancellationToken)
+    {
+        return await db.Ghosts
+            .Where(x => x.Guid == guid)
+            .Select(x => new GhostDto
+            {
+                Guid = x.Guid,
+                Timestamp = x.LastModifiedAt,
+                Url = x.Url,
+                Checkpoints = x.Checkpoints.OrderBy(m => m.Order).Select(c => new GhostCheckpointDto
+                {
+                    Time = c.Time,
+                    StuntsScore = c.StuntsScore,
+                    Speed = c.Speed
+                }).ToImmutableList()
             })
             .FirstOrDefaultAsync(cancellationToken);
     }

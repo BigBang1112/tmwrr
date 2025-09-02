@@ -6,6 +6,7 @@ public sealed record TMFCampaignScore(int Rank, int Score, string Login, int? Sk
 {
     public DateTimeOffset? Timestamp { get; set; }
     public Guid? GhostGuid { get; set; }
+    public Guid? ReplayGuid { get; set; }
 
     public TimeInt32 GetTime()
     {

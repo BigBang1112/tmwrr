@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text;
 using TmEssentials;
 using TMWRR.DiscordReport;
+using TMWRR.Entities;
 using TMWRR.Enums;
 using TMWRR.Models;
 using TMWRR.Options;
@@ -78,9 +79,7 @@ public class ReportDiscordService : IReportDiscordService
                 var score = report.Map.IsStunts() || report.Map.IsPlatform()
                     ? removedRecord.Score.ToString()
                     : removedRecord.GetTime().ToString(useHundredths: true);
-                var timeLink = removedRecord.GhostGuid is null
-                    ? $"`{score}`"
-                    : $"[`{score}`](https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{removedRecord.GhostGuid}&mapuid={report.Map.MapUid})";
+                var timeLink = GetTimeLink(report.Map, removedRecord, score);
 
                 sb.AppendFormat("`{0}` {1} by **[{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>)** was **removed**",
                     removedRecord.Rank.ToString("00"),
@@ -102,9 +101,7 @@ public class ReportDiscordService : IReportDiscordService
                 var timestamp = newRecord.Timestamp.HasValue
                     ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
                     : string.Empty;
-                var timeLink = newRecord.GhostGuid is null
-                    ? $"`{score}`"
-                    : $"[`{score}`](https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{newRecord.GhostGuid}&mapuid={report.Map.MapUid})";
+                var timeLink = GetTimeLink(report.Map, newRecord, score);
 
                 sb.AppendFormat("`{0}` **{1}** by **[{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>)** {4} [`{5} SP`]",
                     newRecord.Rank.ToString("00"),
@@ -152,9 +149,7 @@ public class ReportDiscordService : IReportDiscordService
                 var skillpointDiff = newRecord.Skillpoints.GetValueOrDefault() - oldRecord.Skillpoints.GetValueOrDefault();
                 var skillpointDiffStr = skillpointDiff.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' ');
                 var skillpointDiffPlusStr = skillpointDiff >= 0 ? $"+{skillpointDiffStr}" : skillpointDiffStr;
-                var timeLink = newRecord.GhostGuid is null
-                    ? $"`{score}`"
-                    : $"[`{score}`](https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{newRecord.GhostGuid}&mapuid={report.Map.MapUid})";
+                var timeLink = GetTimeLink(report.Map, newRecord, score);
 
                 sb.AppendFormat("`{0}` **{1}** `{2}` from `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** {6} [`{8} SP`]",
                     newRecord.Rank.ToString("00"),
@@ -169,6 +164,7 @@ public class ReportDiscordService : IReportDiscordService
                 sb.AppendLine();
             }
 
+            // Field value length must be less than or equal to 1024
             fields.Add(new EmbedFieldBuilder
             {
                 Name = report.Map.GetDeformattedName(),
@@ -182,6 +178,21 @@ public class ReportDiscordService : IReportDiscordService
         logger.LogInformation("Sending report about changed maps...");
 
         await SendReportAsync(webhook, reportedAt, $"Solo leaderboards have changed for {string.Join(", ", maps)}.", fields, cancellationToken);
+    }
+
+    private static string GetTimeLink(Map map, TMFCampaignScore record, string score)
+    {
+        if (record.ReplayGuid is not null)
+        {
+            return $"[`{score}`](https://3d.gbx.tools/view/replay?url=https://api.tmwrr.bigbang1112.cz/replays/{record.ReplayGuid}/download)";
+        }
+        
+        if (record.GhostGuid is not null)
+        {
+            return $"[`{score}`](https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{record.GhostGuid}/download&mapuid={map.MapUid})";
+        }
+
+        return $"`{score}`";
     }
 
     private async Task SendReportAsync(IDiscordWebhook webhook, DateTimeOffset reportedAt, string text, IEnumerable<EmbedFieldBuilder> fields, CancellationToken cancellationToken)

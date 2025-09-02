@@ -23,6 +23,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
     private readonly ILoginService loginService;
     private readonly IScoresSnapshotService scoresSnapshotService;
     private readonly IGhostService ghostService;
+    private readonly IReplayService replayService;
     private readonly IOptionsSnapshot<TMUFOptions> options;
     private readonly ILogger<CampaignScoresJobService> logger;
 
@@ -31,6 +32,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         ILoginService loginService, 
         IScoresSnapshotService scoresSnapshotService,
         IGhostService ghostService,
+        IReplayService replayService,
         IOptionsSnapshot<TMUFOptions> options,
         ILogger<CampaignScoresJobService> logger)
     {
@@ -38,6 +40,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         this.loginService = loginService;
         this.scoresSnapshotService = scoresSnapshotService;
         this.ghostService = ghostService;
+        this.replayService = replayService;
         this.options = options;
         this.logger = logger;
     }
@@ -186,6 +189,32 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         return ghost;
     }
 
+    private async Task<Replay?> DownloadReplayAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Checking existing replay for map {MapUid} and login {Login}...", map.MapUid, login.Id);
+
+        var existingRecord = await scoresSnapshotService.GetRecordAsync(map, login, score, cancellationToken);
+        var replay = existingRecord?.Replay;
+
+        if (replay is null)
+        {
+            logger.LogDebug("No existing replay found, attempting to download for map {MapUid} and login {Login}...", map.MapUid, login.Id);
+
+            try
+            {
+                return await replayService.CreateReplayAsync(map, login, score, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                // in case download resilience fails, just skip this ghost and dont kill the whole job
+                logger.LogError(ex, "Failed to create a replay entity for map {MapUid} and login {Login}", map.MapUid, login.Id);
+                return null;
+            }
+        }
+
+        return replay;
+    }
+
     private async Task PopulateSnapshotAsync(
         TMFCampaignScoresSnapshot snapshot, 
         IDictionary<string, TMFLogin> playersByLogin, 
@@ -204,13 +233,13 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             var player = playersByLogin[score.Login];
 
             var ghost = default(Ghost);
+            var replay = default(Replay);
 
             if (options.Value.EnableGhostDownload)
             {
                 if (map.IsPuzzle())
                 {
-                    // TODO: Download replay instead of ghost
-                    ghost = await DownloadGhostAsync(map, player, score.Score, cancellationToken);
+                    replay = await DownloadReplayAsync(map, player, score.Score, cancellationToken);
                 }
                 else
                 {
@@ -227,15 +256,25 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 Rank = score.Rank,
                 Order = (byte)i,
                 Ghost = ghost,
+                Replay = replay,
             };
 
             snapshot.Records.Add(record);
 
             // Set the timestamp for new/improved records
-            if (ghost is not null && scoreDict?.TryGetValue(score.Login, out var diffScore) == true)
+            if (scoreDict?.TryGetValue(score.Login, out var diffScore) == true)
             {
-                diffScore.Timestamp = ghost.LastModifiedAt;
-                diffScore.GhostGuid = ghost.Guid;
+                if (ghost is not null)
+                {
+                    diffScore.Timestamp = ghost.LastModifiedAt;
+                    diffScore.GhostGuid = ghost.Guid;
+                }
+
+                if (replay is not null)
+                {
+                    diffScore.Timestamp = replay.LastModifiedAt;
+                    diffScore.ReplayGuid = replay.Guid;
+                }
             }
         }
 

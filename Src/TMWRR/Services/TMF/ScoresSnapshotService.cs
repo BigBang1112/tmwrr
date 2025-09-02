@@ -189,6 +189,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
             var records = await db.TMFCampaignScoresRecords
                 .Include(x => x.Player)
                 .Include(x => x.Ghost)
+                .Include(x => x.Replay)
                 .Where(x => x.Snapshot.Campaign.Id == campaignId && x.Map.MapUid == mapUid)
                 .GroupBy(x => x.Order)
                 .Select(g => g.OrderByDescending(x => x.Snapshot.CreatedAt).First())
@@ -200,7 +201,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                 ? SkillpointCalculator.GetRanksForSkillpoints(records.Select(x => x.Rank).ToArray())
                 : [];
 
-            return records.Select((x, i) => new TMFCampaignScoresRecordDto
+            return records.OrderBy(x => x.Order).Select((x, i) => new TMFCampaignScoresRecordDto
             {
                 Rank = x.Rank,
                 Score = x.Score,
@@ -216,7 +217,11 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                     Guid = x.Ghost.Guid,
                     Timestamp = x.Ghost.LastModifiedAt
                 },
-                Order = x.Order,
+                Replay = x.Replay is null ? null : new ReplayDto
+                {
+                    Guid = x.Replay.Guid,
+                    Timestamp = x.Replay.LastModifiedAt,
+                },
             });
         }, new() { Expiration = TimeSpan.FromDays(1) }, ["snapshot-campaign-tmf"], cancellationToken);
     }
@@ -229,6 +234,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                 .Include(x => x.Player)
                 .Include(x => x.Ghost)
                 .Where(x => x.Snapshot.Campaign.Id == campaignId && x.Snapshot.CreatedAt == createdAt && x.Map.MapUid == mapUid)
+                .OrderBy(x => x.Order)
                 .Select(x => new TMFCampaignScoresRecordDto
                 {
                     Rank = x.Rank,
@@ -244,7 +250,11 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                         Guid = x.Ghost.Guid,
                         Timestamp = x.Ghost.LastModifiedAt
                     },
-                    Order = x.Order
+                    Replay = x.Replay == null ? null : new ReplayDto
+                    {
+                        Guid = x.Replay.Guid,
+                        Timestamp = x.Replay.LastModifiedAt,
+                    }
                 })
                 .ToListAsync(token);
 

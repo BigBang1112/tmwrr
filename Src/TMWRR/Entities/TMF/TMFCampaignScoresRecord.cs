@@ -13,6 +13,7 @@ public class TMFCampaignScoresRecord
     public required int Rank { get; set; }
     public required byte Order { get; set; }
     public Ghost? Ghost { get; set; }
+    public Replay? Replay { get; set; }
 
     public TimeInt32 GetTime()
     {

@@ -24,6 +24,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<TMEnvironment> Environments { get; set; }
     public DbSet<Ghost> Ghosts { get; set; }
     public DbSet<GhostCheckpoint> GhostCheckpoints { get; set; }
+    public DbSet<Replay> Replays { get; set; }
+    public DbSet<ReplayGhost> ReplayGhosts { get; set; }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

@@ -7,5 +7,5 @@ public class TMFCampaignScoresRecordDto
     public required TMFLoginDto Player { get; set; }
     public int? Skillpoints { get; set; }
     public GhostDto? Ghost { get; set; }
-    public required byte Order { get; set; }
+    public ReplayDto? Replay { get; set; }
 }

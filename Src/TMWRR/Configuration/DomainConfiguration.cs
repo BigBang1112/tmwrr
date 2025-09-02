@@ -19,8 +19,10 @@ public static class DomainConfiguration
         services.AddScoped<IScoresSnapshotService, ScoresSnapshotService>();
         services.AddScoped<ICampaignService, CampaignService>();
 
+        services.AddHostedService<TransferGhostToReplayHostedService>();
         services.AddHostedService<GhostFillDataHostedService>();
         services.AddScoped<IGhostService, GhostService>();
+        services.AddScoped<IReplayService, ReplayService>();
 
         services.AddScoped<IMapService, MapService>();
         services.AddScoped<ILoginService, LoginService>();
