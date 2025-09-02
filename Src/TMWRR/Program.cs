@@ -12,6 +12,10 @@ builder.Host.UseDefaultServiceProvider(options =>
     options.ValidateOnBuild = true;
 });
 
+builder.Services.AddOptions<DatabaseOptions>()
+    .Bind(builder.Configuration.GetSection("Database"))
+    .ValidateDataAnnotations();
+
 builder.Services.AddOptions<TMUFOptions>()
     .Bind(builder.Configuration.GetSection("TMUF"))
     .ValidateDataAnnotations();

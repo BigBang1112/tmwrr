@@ -18,6 +18,8 @@ public static class DomainConfiguration
         services.AddScoped<ILadderScoresJobService, LadderScoresJobService>();
         services.AddScoped<IScoresSnapshotService, ScoresSnapshotService>();
         services.AddScoped<ICampaignService, CampaignService>();
+
+        services.AddHostedService<GhostFillDataHostedService>();
         services.AddScoped<IGhostService, GhostService>();
 
         services.AddScoped<IMapService, MapService>();

@@ -52,7 +52,7 @@ public sealed class GhostService : IGhostService
 
         var checkpoints = new List<GhostCheckpoint>();
 
-        using var ms = new MemoryStream(data);
+        await using var ms = new MemoryStream(data);
 
         try
         {
@@ -93,7 +93,6 @@ public sealed class GhostService : IGhostService
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to parse ghost for map {MapUid} and login {Login}", map.MapUid, login.Id);
-            return null;
         }
 
         return new Ghost

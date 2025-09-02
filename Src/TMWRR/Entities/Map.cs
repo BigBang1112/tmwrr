@@ -93,4 +93,9 @@ public class Map
     {
         return ModeId == nameof(EMode.Platform);
     }
+
+    public bool IsPuzzle()
+    {
+        return ModeId == nameof(EMode.Puzzle);
+    }
 }

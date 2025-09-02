@@ -1,12 +1,14 @@
 ﻿using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Options;
 using System.IO.Abstractions;
 using System.Text.Json;
 using TmEssentials;
 using TMWRR.Data;
 using TMWRR.Entities;
 using TMWRR.Entities.TMF;
+using TMWRR.Options;
 
 namespace TMWRR;
 
@@ -18,19 +20,33 @@ public sealed class Seeding
     private readonly HybridCache hybridCache;
     private readonly IOutputCacheStore outputCache;
     private readonly IFileSystem fileSystem;
+    private readonly IOptions<DatabaseOptions> options;
     private readonly ILogger<Seeding> logger;
 
-    public Seeding(AppDbContext db, HybridCache hybridCache, IOutputCacheStore outputCache, IFileSystem fileSystem, ILogger<Seeding> logger)
+    public Seeding(
+        AppDbContext db, 
+        HybridCache hybridCache, 
+        IOutputCacheStore outputCache, 
+        IFileSystem fileSystem, 
+        IOptions<DatabaseOptions> options,
+        ILogger<Seeding> logger)
     {
         this.db = db;
         this.hybridCache = hybridCache;
         this.outputCache = outputCache;
         this.fileSystem = fileSystem;
+        this.options = options;
         this.logger = logger;
     }
 
     public async Task SeedAsync(CancellationToken cancellationToken)
     {
+        if (!options.Value.EnableSeeding)
+        {
+            logger.LogInformation("Skipping seeding.");
+            return;
+        }
+
         logger.LogInformation("Seeding Games...");
 
         var noGames = !await db.Games.AnyAsync(cancellationToken);

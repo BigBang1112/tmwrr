@@ -203,9 +203,20 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         {
             var player = playersByLogin[score.Login];
 
-            var ghost = options.Value.EnableGhostDownload
-                ? await DownloadGhostAsync(map, player, score.Score, cancellationToken)
-                : null;
+            var ghost = default(Ghost);
+
+            if (options.Value.EnableGhostDownload)
+            {
+                if (map.IsPuzzle())
+                {
+                    // TODO: Download replay instead of ghost
+                    ghost = await DownloadGhostAsync(map, player, score.Score, cancellationToken);
+                }
+                else
+                {
+                    ghost = await DownloadGhostAsync(map, player, score.Score, cancellationToken);
+                }
+            }
 
             var record = new TMFCampaignScoresRecord
             {
