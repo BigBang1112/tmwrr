@@ -80,13 +80,14 @@ public sealed class GhostService : IGhostService
                 return null;
             }
 
-            foreach (var cp in ghostNode.Checkpoints ?? [])
+            foreach (var (i, cp) in ghostNode.Checkpoints?.Index() ?? [])
             {
                 checkpoints.Add(new GhostCheckpoint
                 {
                     Time = cp.Time,
                     StuntsScore = cp.StuntsScore,
-                    Speed = cp.Speed
+                    Speed = cp.Speed,
+                    Order = i
                 });
             }
         }

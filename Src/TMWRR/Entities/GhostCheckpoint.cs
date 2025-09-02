@@ -9,4 +9,5 @@ public class GhostCheckpoint
     public int? StuntsScore { get; set; }
     public float? Speed { get; set; }
     public Ghost? Ghost { get; set; }
+    public int Order { get; set; }
 }
