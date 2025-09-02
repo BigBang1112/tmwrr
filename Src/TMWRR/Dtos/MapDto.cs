@@ -1,4 +1,5 @@
-﻿using TmEssentials;
+﻿using System.Collections.Immutable;
+using TmEssentials;
 using TMWRR.Dtos.TMF;
 
 namespace TMWRR.Dtos;
@@ -16,6 +17,7 @@ public sealed class MapDto
     public int? NbLaps { get; set; }
     public TMFCampaignDto? CampaignTMF { get; set; }
     public int? RecordCountTMF { get; set; }
+    public ImmutableList<TMFCampaignScoresRecordDto>? RecordsTMF { get; set; }
     public int? Order { get; set; }
     public string? FileName { get; set; }
 }

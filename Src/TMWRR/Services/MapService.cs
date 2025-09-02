@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
+using System.Collections.Immutable;
 using TMWRR.Data;
 using TMWRR.Dtos;
 using TMWRR.Dtos.TMF;
 using TMWRR.Entities;
+using TMWRR.Extensions;
 
 namespace TMWRR.Services;
 
@@ -135,6 +137,29 @@ public sealed class MapService : IMapService
                         .OrderByDescending(x => x.Snapshot.CreatedAt)
                         .Select(x => x.Count)
                         .FirstOrDefault(),
+                    RecordsTMF = x.TMFRecords
+                        .OrderByDescending(x => x.Snapshot.CreatedAt)
+                        .Select(x => new TMFCampaignScoresRecordDto
+                        {
+                            Rank = x.Rank,
+                            Score = x.Score,
+                            Player = new TMFLoginDto
+                            {
+                                Id = x.Player.Id,
+                                Nickname = x.Player.Nickname,
+                                NicknameDeformatted = x.Player.NicknameDeformatted
+                            },
+                            Ghost = x.Ghost == null ? null : new GhostDto
+                            {
+                                Guid = x.Ghost.Guid,
+                                Timestamp = x.Ghost.LastModifiedAt
+                            },
+                            Replay = x.Replay == null ? null : new ReplayDto
+                            {
+                                Guid = x.Replay.Guid,
+                                Timestamp = x.Replay.LastModifiedAt,
+                            }
+                        }).ToNullableImmutableListIfEmpty(),
                     Order = x.Order,
                     FileName = x.FileName
                 })
