@@ -5,6 +5,7 @@ using System.Text;
 using TmEssentials;
 using TMWRR.DiscordReport;
 using TMWRR.Entities;
+using TMWRR.Entities.TMF;
 using TMWRR.Enums;
 using TMWRR.Models;
 using TMWRR.Options;
@@ -14,6 +15,7 @@ namespace TMWRR.Services;
 public interface IReportDiscordService
 {
     Task ReportAsync(DateTimeOffset reportedAt, IEnumerable<TMFCampaignScoreDiffReport> campaignScoreDiffReports, CancellationToken cancellationToken);
+    Task ReportAsync(DateTimeOffset reportedAt, TMFGeneralScoresSnapshot snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken);
 }
 
 public class ReportDiscordService : IReportDiscordService
@@ -24,7 +26,7 @@ public class ReportDiscordService : IReportDiscordService
     private readonly ILogger<ReportDiscordService> logger;
 
     public ReportDiscordService(
-        IDiscordWebhookFactory webhookFactory, 
+        IDiscordWebhookFactory webhookFactory,
         ILoginService loginService,
         IOptionsSnapshot<TMUFOptions> tmufOptions,
         ILogger<ReportDiscordService> logger)
@@ -186,7 +188,7 @@ public class ReportDiscordService : IReportDiscordService
         {
             return $"[`{score}`](https://3d.gbx.tools/view/replay?url=https://api.tmwrr.bigbang1112.cz/replays/{record.ReplayGuid}/download)";
         }
-        
+
         if (record.GhostGuid is not null)
         {
             return $"[`{score}`](https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{record.GhostGuid}/download&mapuid={map.MapUid})";
@@ -207,8 +209,201 @@ public class ReportDiscordService : IReportDiscordService
             .WithTimestamp(reportedAt)
             .Build();
 
-        await webhook.SendMessageAsync(embed, cancellationToken); 
-        
+        await webhook.SendMessageAsync(embed, cancellationToken);
+
         logger.LogInformation("Discord report sent.");
+    }
+
+    public async Task ReportAsync(DateTimeOffset reportedAt, TMFGeneralScoresSnapshot snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        logger.LogInformation("Creating Discord webhook...");
+
+        using var webhook = webhookFactory.Create(tmufOptions.Value.Discord.TestWebhookUrl);
+
+        if (snapshot.NoChanges || generalDiff is null)
+        {
+            logger.LogInformation("Sending report about no changes in TMF general scores...");
+            await SendReportAsync(webhook, reportedAt, "No changes in TMF skillpoint leaderboard!", [], cancellationToken);
+            return;
+        }
+
+        logger.LogInformation("Resolving logins once more...");
+
+        // TODO: TMFLogin should be probably given directly by the TMFCampaignScoreDiffReport model
+        var loginSet = snapshot.Players
+            .Select(x => x.PlayerId)
+            .ToHashSet();
+
+        var logins = (await loginService.GetMultipleTMFAsync(loginSet, cancellationToken))
+            .ToDictionary(x => x.Id, x => x.Nickname);
+        //
+
+        logger.LogInformation("Building report message...");
+
+        /*
+        var fields = new List<EmbedFieldBuilder>();
+
+        var rankSb = new StringBuilder();
+
+        foreach (var player in snapshot.Players.OrderBy(x => x.Order))
+        { 
+            rankSb.AppendLine(player.Rank.ToString("00"));
+        }
+
+        var playerSb = new StringBuilder();
+        foreach (var player in snapshot.Players.OrderBy(x => x.Order))
+        {
+            var playerName = logins.GetValueOrDefault(player.PlayerId) ?? player.PlayerId;
+            playerSb.AppendLine(TextFormatter.Deformat(playerName));
+        }
+
+        var scoreSb = new StringBuilder();
+        foreach (var player in snapshot.Players.OrderBy(x => x.Order))
+        {
+            scoreSb.AppendLine(player.Score.ToString("N0"));
+        }
+
+        fields.Add(new EmbedFieldBuilder
+        {
+            Name = "Rank",
+            Value = rankSb.ToString(),
+            IsInline = true
+        });
+        fields.Add(new EmbedFieldBuilder
+        {
+            Name = "Player",
+            Value = playerSb.ToString(),
+            IsInline = true
+        });
+        fields.Add(new EmbedFieldBuilder
+        {
+            Name = "Score",
+            Value = scoreSb.ToString(),
+            IsInline = true
+        });
+
+        var description = $"General leaderboard has changed with {generalDiff.PlayerCountDelta:+#;-#;0} player(s).";
+
+        await SendReportAsync(webhook, reportedAt, description, fields, cancellationToken);*/
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Skillpoint leaderboard has changed.");
+        sb.AppendLine("```diff");
+        sb.AppendLine("     | Player             Skillpoints   Difference");
+        sb.AppendLine("-----|---------------------------------------------");
+
+        foreach (var player in snapshot.Players.OrderBy(x => x.Order))
+        {
+            var playerName = SimplifyUnicode(TextFormatter.Deformat(logins.GetValueOrDefault(player.PlayerId) ?? player.PlayerId));
+            
+            if (playerName.Length > 16)
+            {
+                playerName = playerName[..16] + "…";
+            }
+
+            var diffMark = ' ';
+            var diffValue = "+0";
+
+            if (generalDiff.NewPlayers.Any(x => x.Login == player.PlayerId))
+            {
+                diffMark = '!';
+                diffValue = "NEW";
+            }
+            else if (generalDiff.ImprovedPlayers.Any(x => x.New.Login == player.PlayerId))
+            {
+                diffMark = '+';
+                var (oldScore, newScore) = generalDiff.ImprovedPlayers.First(x => x.New.Login == player.PlayerId);
+                var delta = newScore.Score - oldScore.Score;
+                diffValue = delta < 0 ? delta.ToString("N0").Replace(',', ' ') : $"+{delta.ToString("N0").Replace(',', ' ')}";
+            }
+            else if (generalDiff.WorsenedPlayers.Any(x => x.New.Login == player.PlayerId))
+            {
+                diffMark = '-';
+                var (oldScore, newScore) = generalDiff.WorsenedPlayers.First(x => x.New.Login == player.PlayerId);
+                var delta = newScore.Score - oldScore.Score;
+                diffValue = delta < 0 ? delta.ToString("N0").Replace(',', ' ') : $"+{delta.ToString("N0").Replace(',', ' ')}";
+            }
+
+            sb.AppendFormat("{0} {1,2} | {2,-17}  {3,11}   {4,-11}\n",
+                diffMark,
+                player.Rank,
+                playerName,
+                player.Score.ToString("N0").Replace(',', ' '),
+                diffValue);
+        }
+
+        foreach (var removedPlayer in generalDiff.RemovedPlayers)
+        {
+            var playerName = SimplifyUnicode(TextFormatter.Deformat(logins.GetValueOrDefault(removedPlayer.Login) ?? removedPlayer.Login));
+            
+            if (playerName.Length > 16)
+            {
+                playerName = playerName[..16] + "…";
+            }
+
+            sb.AppendFormat("- {0,2} | -- | {1,-16}   {2,11}   {3,-11}\n",
+                removedPlayer.Rank,
+                playerName,
+                removedPlayer.Score.ToString("N0").Replace(',', ' '),
+                "REMOVED");
+        }
+
+        foreach (var pushedOffPlayer in generalDiff.PushedOffPlayers)
+        {
+            var playerName = SimplifyUnicode(TextFormatter.Deformat(logins.GetValueOrDefault(pushedOffPlayer.Login) ?? pushedOffPlayer.Login));
+
+            if (playerName.Length > 16)
+            {
+                playerName = playerName[..16] + "…";
+            }
+
+            sb.AppendFormat("- {0,2} | -- | {1,-16}   {2,11}   {3,-11}\n",
+                pushedOffPlayer.Rank,
+                playerName,
+                pushedOffPlayer.Score.ToString("N0").Replace(',', ' '),
+                "PUSHED OFF");
+        }
+
+        sb.AppendLine("```");
+        sb.AppendLine("*(on phone, rotate Discord horizontally for clean overview)*");
+        sb.AppendLine();
+
+        if (generalDiff.PlayerCountDelta > 0)
+        {
+            sb.AppendLine($"`+ {generalDiff.PlayerCountDelta}` player(s) joined the leaderboard!");
+        } 
+        else if (generalDiff.PlayerCountDelta < 0)
+        {
+            sb.AppendLine($"**`- {Math.Abs(generalDiff.PlayerCountDelta)}` player(s) left the leaderboard!**");
+        }
+        else
+        {
+            sb.AppendLine("No change in player count.");
+        }
+
+        logger.LogInformation("Sending report about changed general scores...");
+
+        await SendReportAsync(webhook, reportedAt, sb.ToString(), [], cancellationToken);
+    }
+
+    private static string SimplifyUnicode(string input)
+    {
+        // Normalize to decomposition form (base char + combining marks)
+        string normalized = input.Normalize();
+
+        var sb = new StringBuilder();
+        foreach (char c in normalized)
+        {
+            var cat = CharUnicodeInfo.GetUnicodeCategory(c);
+            if (cat != UnicodeCategory.NonSpacingMark &&
+                cat != UnicodeCategory.EnclosingMark &&
+                cat != UnicodeCategory.Format)
+            {
+                sb.Append(c);
+            }
+        }
+        return sb.ToString();
     }
 }

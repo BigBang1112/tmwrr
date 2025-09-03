@@ -1,10 +1,12 @@
-﻿using TMWRR.Models;
+﻿using TMWRR.Entities.TMF;
+using TMWRR.Models;
 
 namespace TMWRR.Services;
 
 public interface IReportService
 {
     Task ReportAsync(IReadOnlyDictionary<string, TMFCampaignScoreDiff> mapUidCampaignScoreDiffs, CancellationToken cancellationToken);
+    Task ReportAsync(TMFGeneralScoresSnapshot snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken);
 }
 
 public sealed class ReportService : IReportService
@@ -55,6 +57,19 @@ public sealed class ReportService : IReportService
         logger.LogInformation("Reporting {Count} campaign score diffs to Discord...", campaignScoreDiffReports.Count);
 
         await reportDiscordService.ReportAsync(reportedAt, campaignScoreDiffReports, cancellationToken);
+
+        logger.LogInformation("Report completed.");
+    }
+
+    public async Task ReportAsync(TMFGeneralScoresSnapshot snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        logger.LogInformation("Reporting general score diff...");
+
+        var reportedAt = timeProvider.GetUtcNow();
+
+        await reportDiscordService.ReportAsync(reportedAt, snapshot, generalDiff, cancellationToken);
 
         logger.LogInformation("Report completed.");
     }

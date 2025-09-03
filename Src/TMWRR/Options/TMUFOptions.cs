@@ -4,9 +4,9 @@ namespace TMWRR.Options;
 
 public sealed class TMUFOptions
 {
-    public bool EnableSoloReport { get; set; } = true;
-    public bool EnableLoginDetails { get; set; } = true;
-    public bool EnableGhostDownload { get; set; } = true;
+    public bool EnableSoloReport { get; set; }
+    public bool EnableLoginDetails { get; set; }
+    public bool EnableGhostDownload { get; set; }
 
     public TimeSpan CheckTimeOfDayCEST { get; set; }
     public TimeSpan CheckRetryTimeout { get; set; }
