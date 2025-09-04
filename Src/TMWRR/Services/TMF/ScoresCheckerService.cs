@@ -186,7 +186,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
         var generalDiff = await generalScoresJobService.ProcessAsync(generalScores.Zones[Constants.World], snapshot, cancellationToken);
 
-        if (snapshot.Players.Count == 0 || generalDiff?.PlayerCountDelta != 0)
+        if (snapshot.Players.Count == 0 || generalDiff?.PlayerCountDelta == 0)
         {
             snapshot.NoChanges = true;
             logger.LogInformation("No score changes for {ScoreType}.", Constants.General);
