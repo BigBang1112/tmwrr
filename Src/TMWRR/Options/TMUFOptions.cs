@@ -12,6 +12,8 @@ public sealed class TMUFOptions
     public TimeSpan CheckRetryTimeout { get; set; }
     public TimeSpan CheckRetryDelay { get; set; }
 
+    public bool Report { get; set; }
+
     [Required]
     public required TMUFDiscord Discord { get; set; }
 
