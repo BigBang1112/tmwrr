@@ -23,7 +23,7 @@ public sealed class TransferGhostToReplayHostedService : BackgroundService
 
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var ghostsToRemove = new List<Ghost>();
+        var ghostsToRemove = new List<GhostEntity>();
 
         foreach (var ghost in db.Ghosts.Include(x => x.Records))
         {
@@ -47,7 +47,7 @@ public sealed class TransferGhostToReplayHostedService : BackgroundService
 
             ghostsToRemove.Add(ghost);
 
-            var replay = new Replay
+            var replay = new ReplayEntity
             {
                 Data = ghost.Data,
                 LastModifiedAt = ghost.LastModifiedAt,
@@ -74,7 +74,7 @@ public sealed class TransferGhostToReplayHostedService : BackgroundService
 
             foreach (var (i, ghostNode) in replayNode.Ghosts.Index())
             {
-                var replayGhost = new ReplayGhost
+                var replayGhost = new ReplayGhostEntity
                 {
                     Replay = replay,
                     Order = i
@@ -82,7 +82,7 @@ public sealed class TransferGhostToReplayHostedService : BackgroundService
 
                 foreach (var (j, cp) in ghostNode.Checkpoints?.Index() ?? [])
                 {
-                    replayGhost.Checkpoints.Add(new GhostCheckpoint
+                    replayGhost.Checkpoints.Add(new GhostCheckpointEntity
                     {
                         Time = cp.Time,
                         StuntsScore = cp.StuntsScore,

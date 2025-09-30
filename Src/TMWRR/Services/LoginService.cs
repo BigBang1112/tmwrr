@@ -5,18 +5,18 @@ using System.Collections.Immutable;
 using System.Net;
 using TmEssentials;
 using TMWRR.Data;
-using TMWRR.Dtos;
-using TMWRR.Dtos.TMF;
+using TMWRR.Api;
+using TMWRR.Api.TMF;
 using TMWRR.Entities.TMF;
 
 namespace TMWRR.Services;
 
 public interface ILoginService
 {
-    ValueTask<IDictionary<string, TMFLogin>> PopulateAsync(IDictionary<string, string> loginNicknameDict, bool enableDetails, CancellationToken cancellationToken);
+    ValueTask<IDictionary<string, TMFLoginEntity>> PopulateAsync(IDictionary<string, string> loginNicknameDict, bool enableDetails, CancellationToken cancellationToken);
     //Task<TMFLogin?> GetTMFAsync(string login, CancellationToken cancellationToken);
-    Task<TMFLoginDto?> GetTMFDtoAsync(string login, CancellationToken cancellationToken);
-    ValueTask<IEnumerable<TMFLogin>> GetMultipleTMFAsync(IEnumerable<string> logins, CancellationToken cancellationToken);
+    Task<TMFLogin?> GetTMFDtoAsync(string login, CancellationToken cancellationToken);
+    ValueTask<IEnumerable<TMFLoginEntity>> GetMultipleTMFAsync(IEnumerable<string> logins, CancellationToken cancellationToken);
     //ValueTask<IReadOnlyDictionary<string, string?>> GetMultipleNicknamesAsync(IEnumerable<string> logins, CancellationToken cancellationToken);
 }
 
@@ -35,14 +35,14 @@ public sealed class LoginService : ILoginService
         this.logger = logger;
     }
 
-    public async ValueTask<IDictionary<string, TMFLogin>> PopulateAsync(IDictionary<string, string> loginNicknameDict, bool enableDetails, CancellationToken cancellationToken)
+    public async ValueTask<IDictionary<string, TMFLoginEntity>> PopulateAsync(IDictionary<string, string> loginNicknameDict, bool enableDetails, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(loginNicknameDict);
 
         if (loginNicknameDict.Count == 0)
         {
             logger.LogWarning("No logins to populate with new data.");
-            return new Dictionary<string, TMFLogin>();
+            return new Dictionary<string, TMFLoginEntity>();
         }
 
         logger.LogInformation("Gathering {Count} unique logins...", loginNicknameDict.Count);
@@ -99,7 +99,7 @@ public sealed class LoginService : ILoginService
             }
         }
 
-        var missingLogins = loginNicknameDict.Keys.Except(logins.Keys).Select(x => new TMFLogin
+        var missingLogins = loginNicknameDict.Keys.Except(logins.Keys).Select(x => new TMFLoginEntity
         {
             Id = x,
             Nickname = loginNicknameDict[x],
@@ -167,25 +167,25 @@ public sealed class LoginService : ILoginService
         return logins;
     }
 
-    public async Task<TMFLogin?> GetTMFAsync(string login, CancellationToken cancellationToken)
+    public async Task<TMFLoginEntity?> GetTMFAsync(string login, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(login);
 
         return await db.TMFLogins.FirstOrDefaultAsync(x => x.Id == login, cancellationToken);
     }
 
-    public async Task<TMFLoginDto?> GetTMFDtoAsync(string login, CancellationToken cancellationToken)
+    public async Task<TMFLogin?> GetTMFDtoAsync(string login, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(login);
 
         return await db.TMFLogins
             .Include(x => x.Users)
-            .Select(x => new TMFLoginDto
+            .Select(x => new TMFLogin
             {
                 Id = x.Id,
                 Nickname = x.Nickname,
                 NicknameDeformatted = x.NicknameDeformatted,
-                Users = x.Users.Select(u => new UserDto
+                Users = x.Users.Select(u => new User
                 {
                     Guid = u.Guid
                 }).ToImmutableList(),
@@ -193,7 +193,7 @@ public sealed class LoginService : ILoginService
             .FirstOrDefaultAsync(x => x.Id == login, cancellationToken);
     }
 
-    public async ValueTask<IEnumerable<TMFLogin>> GetMultipleTMFAsync(IEnumerable<string> logins, CancellationToken cancellationToken)
+    public async ValueTask<IEnumerable<TMFLoginEntity>> GetMultipleTMFAsync(IEnumerable<string> logins, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(logins);
 

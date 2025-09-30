@@ -1,13 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TMWRR.Data;
-using TMWRR.Dtos;
-using TMWRR.Dtos.TMF;
+using TMWRR.Api;
+using TMWRR.Api.TMF;
 
 namespace TMWRR.Services;
 
 public interface IUserService
 {
-    Task<UserDto?> GetDtoAsync(Guid guid, CancellationToken cancellationToken);
+    Task<User?> GetDtoAsync(Guid guid, CancellationToken cancellationToken);
 }
 
 public sealed class UserService : IUserService
@@ -19,13 +19,13 @@ public sealed class UserService : IUserService
         this.db = db;
     }
 
-    public async Task<UserDto?> GetDtoAsync(Guid guid, CancellationToken cancellationToken)
+    public async Task<User?> GetDtoAsync(Guid guid, CancellationToken cancellationToken)
     {
         return await db.Users
-            .Select(x => new UserDto
+            .Select(x => new User
             {
                 Guid = x.Guid,
-                LoginTMF = x.LoginTMF == null ? null : new TMFLoginDto
+                LoginTMF = x.LoginTMF == null ? null : new TMFLogin
                 {
                     Id = x.LoginTMF.Id,
                     Nickname = x.LoginTMF.Nickname,

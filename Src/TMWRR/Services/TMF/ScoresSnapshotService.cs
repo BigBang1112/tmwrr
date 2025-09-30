@@ -2,8 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using TMWRR.Data;
-using TMWRR.Dtos;
-using TMWRR.Dtos.TMF;
+using TMWRR.Api;
+using TMWRR.Api.TMF;
 using TMWRR.Entities;
 using TMWRR.Entities.TMF;
 
@@ -21,32 +21,32 @@ public interface IScoresSnapshotService
     /// <param name="snapshot"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task SaveSnapshotAsync(TMFCampaignScoresSnapshot snapshot, CancellationToken cancellationToken);
+    Task SaveSnapshotAsync(TMFCampaignScoresSnapshotEntity snapshot, CancellationToken cancellationToken);
     /// <summary>
     /// Saves a new snapshot of the TMF ladder scores. Expects that the snapshot is populated with a graph.
     /// </summary>
     /// <param name="snapshot"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task SaveSnapshotAsync(TMFLadderScoresSnapshot snapshot, CancellationToken cancellationToken);
+    Task SaveSnapshotAsync(TMFLadderScoresSnapshotEntity snapshot, CancellationToken cancellationToken);
     /// <summary>
     /// Saves a new snapshot of the TMF campaign scores. Expects that the snapshot is populated with records.
     /// </summary>
     /// <param name="snapshot"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task SaveSnapshotAsync(TMFGeneralScoresSnapshot snapshot, CancellationToken cancellationToken);
-    ValueTask<IEnumerable<TMFCampaignScoresRecord>> GetLatestRecordsAsync(IEnumerable<Map> maps, CancellationToken cancellationToken);
-    Task<TMFCampaignScoresSnapshotDto?> GetLatestSnapshotDtoAsync(string campaignId, CancellationToken cancellationToken);
-    Task<IEnumerable<TMFCampaignScoresRecordDto>> GetLatestRecordDtosAsync(string campaignId, string mapUid, CancellationToken cancellationToken);
-    Task<IEnumerable<TMFCampaignScoresRecordDto>> GetSnapshotRecordDtosAsync(string campaignId, DateTimeOffset createdAt, string mapUid, CancellationToken cancellationToken);
-    Task<IEnumerable<TMFCampaignScoresSnapshotDto>> GetMapSnapshotDtosAsync(string mapUid, CancellationToken cancellationToken);
-    Task<TMFCampaignScoresRecord?> GetRecordAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken);
-    ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(IEnumerable<Map> values, CancellationToken cancellationToken);
+    Task SaveSnapshotAsync(TMFGeneralScoresSnapshotEntity snapshot, CancellationToken cancellationToken);
+    ValueTask<IEnumerable<TMFCampaignScoresRecordEntity>> GetLatestRecordsAsync(IEnumerable<MapEntity> maps, CancellationToken cancellationToken);
+    Task<TMFCampaignScoresSnapshot?> GetLatestSnapshotDtoAsync(string campaignId, CancellationToken cancellationToken);
+    Task<IEnumerable<TMFCampaignScoresRecord>> GetLatestRecordDtosAsync(string campaignId, string mapUid, CancellationToken cancellationToken);
+    Task<IEnumerable<TMFCampaignScoresRecord>> GetSnapshotRecordDtosAsync(string campaignId, DateTimeOffset createdAt, string mapUid, CancellationToken cancellationToken);
+    Task<IEnumerable<TMFCampaignScoresSnapshot>> GetMapSnapshotDtosAsync(string mapUid, CancellationToken cancellationToken);
+    Task<TMFCampaignScoresRecordEntity?> GetRecordAsync(MapEntity map, TMFLoginEntity login, int score, CancellationToken cancellationToken);
+    ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(IEnumerable<MapEntity> values, CancellationToken cancellationToken);
     ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(string campaignId, CancellationToken cancellationToken);
     Task<int?> GetLatestPlayerCountAsync(string mapUid, CancellationToken cancellationToken);
-    Task<TMFLadderScoresSnapshot?> GetLatestLadderSnapshotAsync(CancellationToken cancellationToken);
-    Task<TMFGeneralScoresSnapshot?> GetLatestGeneralSnapshotAsync(CancellationToken cancellationToken);
+    Task<TMFLadderScoresSnapshotEntity?> GetLatestLadderSnapshotAsync(CancellationToken cancellationToken);
+    Task<TMFGeneralScoresSnapshotEntity?> GetLatestGeneralSnapshotAsync(CancellationToken cancellationToken);
 }
 
 public sealed class ScoresSnapshotService : IScoresSnapshotService
@@ -89,7 +89,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
             .AnyAsync(x => x.CreatedAt == createdAt, cancellationToken);
     }
 
-    public async Task SaveSnapshotAsync(TMFCampaignScoresSnapshot snapshot, CancellationToken cancellationToken)
+    public async Task SaveSnapshotAsync(TMFCampaignScoresSnapshotEntity snapshot, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 
@@ -115,7 +115,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         logger.LogInformation("TMF campaign snapshot saved.");
     }
 
-    public async Task SaveSnapshotAsync(TMFLadderScoresSnapshot snapshot, CancellationToken cancellationToken)
+    public async Task SaveSnapshotAsync(TMFLadderScoresSnapshotEntity snapshot, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 
@@ -129,7 +129,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         logger.LogInformation("TMF ladder snapshot saved.");
     }
 
-    public async Task SaveSnapshotAsync(TMFGeneralScoresSnapshot snapshot, CancellationToken cancellationToken)
+    public async Task SaveSnapshotAsync(TMFGeneralScoresSnapshotEntity snapshot, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 
@@ -143,7 +143,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         logger.LogInformation("TMF general snapshot saved.");
     }
 
-    public async ValueTask<IEnumerable<TMFCampaignScoresRecord>> GetLatestRecordsAsync(IEnumerable<Map> maps, CancellationToken cancellationToken)
+    public async ValueTask<IEnumerable<TMFCampaignScoresRecordEntity>> GetLatestRecordsAsync(IEnumerable<MapEntity> maps, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(maps);
 
@@ -161,14 +161,14 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         return records;
     }
 
-    public async Task<TMFCampaignScoresSnapshotDto?> GetLatestSnapshotDtoAsync(string campaignId, CancellationToken cancellationToken)
+    public async Task<TMFCampaignScoresSnapshot?> GetLatestSnapshotDtoAsync(string campaignId, CancellationToken cancellationToken)
     {
         return await hybridCache.GetOrCreateAsync($"snapshot-tmf-latest-{campaignId}", async token =>
         {
             return await db.TMFCampaignScoresSnapshots
-                .Select(x => new TMFCampaignScoresSnapshotDto
+                .Select(x => new TMFCampaignScoresSnapshot
                 {
-                    Campaign = new TMFCampaignDto
+                    Campaign = new TMFCampaign
                     {
                         Id = x.Campaign.Id,
                         Name = x.Campaign.Name
@@ -182,7 +182,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         }, new() { Expiration = TimeSpan.FromDays(1) }, ["snapshot-campaign-tmf"], cancellationToken);
     }
 
-    public async Task<IEnumerable<TMFCampaignScoresRecordDto>> GetLatestRecordDtosAsync(string campaignId, string mapUid, CancellationToken cancellationToken)
+    public async Task<IEnumerable<TMFCampaignScoresRecord>> GetLatestRecordDtosAsync(string campaignId, string mapUid, CancellationToken cancellationToken)
     {
         return await hybridCache.GetOrCreateAsync($"snapshot-tmf-records-latest-{campaignId}-{mapUid}", async token =>
         {
@@ -201,23 +201,23 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                 ? SkillpointCalculator.GetRanksForSkillpoints(records.Select(x => x.Rank).ToArray())
                 : [];
 
-            return records.OrderBy(x => x.Order).Select((x, i) => new TMFCampaignScoresRecordDto
+            return records.OrderBy(x => x.Order).Select((x, i) => new TMFCampaignScoresRecord
             {
                 Rank = x.Rank,
                 Score = x.Score,
-                Player = new TMFLoginDto
+                Player = new TMFLogin
                 {
                     Id = x.Player.Id,
                     Nickname = x.Player.Nickname,
                     NicknameDeformatted = x.Player.NicknameDeformatted
                 },
                 Skillpoints = playerCount > 0 ? SkillpointCalculator.CalculateSkillpoints(playerCount.Value, skillpointRanks[i]) : null,
-                Ghost = x.Ghost is null ? null : new GhostDto
+                Ghost = x.Ghost is null ? null : new Ghost
                 {
                     Guid = x.Ghost.Guid,
                     Timestamp = x.Ghost.LastModifiedAt
                 },
-                Replay = x.Replay is null ? null : new ReplayDto
+                Replay = x.Replay is null ? null : new Replay
                 {
                     Guid = x.Replay.Guid,
                     Timestamp = x.Replay.LastModifiedAt,
@@ -226,7 +226,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         }, new() { Expiration = TimeSpan.FromDays(1) }, ["snapshot-campaign-tmf"], cancellationToken);
     }
 
-    public async Task<IEnumerable<TMFCampaignScoresRecordDto>> GetSnapshotRecordDtosAsync(string campaignId, DateTimeOffset createdAt, string mapUid, CancellationToken cancellationToken)
+    public async Task<IEnumerable<TMFCampaignScoresRecord>> GetSnapshotRecordDtosAsync(string campaignId, DateTimeOffset createdAt, string mapUid, CancellationToken cancellationToken)
     {
         return await hybridCache.GetOrCreateAsync($"snapshot-tmf-latest-{campaignId}-{createdAt}-{mapUid}", async token =>
         {
@@ -235,22 +235,22 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                 .Include(x => x.Ghost)
                 .Where(x => x.Snapshot.Campaign.Id == campaignId && x.Snapshot.CreatedAt == createdAt && x.Map.MapUid == mapUid)
                 .OrderBy(x => x.Order)
-                .Select(x => new TMFCampaignScoresRecordDto
+                .Select(x => new TMFCampaignScoresRecord
                 {
                     Rank = x.Rank,
                     Score = x.Score,
-                    Player = new TMFLoginDto
+                    Player = new TMFLogin
                     {
                         Id = x.Player.Id,
                         Nickname = x.Player.Nickname,
                         NicknameDeformatted = x.Player.NicknameDeformatted
                     },
-                    Ghost = x.Ghost == null ? null : new GhostDto
+                    Ghost = x.Ghost == null ? null : new Ghost
                     {
                         Guid = x.Ghost.Guid,
                         Timestamp = x.Ghost.LastModifiedAt
                     },
-                    Replay = x.Replay == null ? null : new ReplayDto
+                    Replay = x.Replay == null ? null : new Replay
                     {
                         Guid = x.Replay.Guid,
                         Timestamp = x.Replay.LastModifiedAt,
@@ -271,7 +271,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         }, new() { Expiration = TimeSpan.FromMinutes(10) }, ["snapshot-campaign-tmf"], cancellationToken);
     }
 
-    public async Task<IEnumerable<TMFCampaignScoresSnapshotDto>> GetMapSnapshotDtosAsync(string mapUid, CancellationToken cancellationToken)
+    public async Task<IEnumerable<TMFCampaignScoresSnapshot>> GetMapSnapshotDtosAsync(string mapUid, CancellationToken cancellationToken)
     {
         var snapshots = await db.TMFCampaignScoresRecords
             .Include(x => x.Snapshot.Campaign)
@@ -281,9 +281,9 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return snapshots.Select(x => new TMFCampaignScoresSnapshotDto
+        return snapshots.Select(x => new TMFCampaignScoresSnapshot
         {
-            Campaign = new TMFCampaignDto
+            Campaign = new TMFCampaign
             {
                 Id = x.Campaign.Id,
                 Name = x.Campaign.Name
@@ -294,14 +294,14 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         });
     }
 
-    public async Task<TMFCampaignScoresRecord?> GetRecordAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken)
+    public async Task<TMFCampaignScoresRecordEntity?> GetRecordAsync(MapEntity map, TMFLoginEntity login, int score, CancellationToken cancellationToken)
     {
         return await db.TMFCampaignScoresRecords
             .Include(x => x.Ghost)
             .FirstOrDefaultAsync(x => x.Map == map && x.Player == login && x.Score == score, cancellationToken);
     }
 
-    public async ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(IEnumerable<Map> values, CancellationToken cancellationToken)
+    public async ValueTask<IDictionary<string, int>> GetLatestPlayerCountsAsync(IEnumerable<MapEntity> values, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(values);
 
@@ -346,7 +346,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
             .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<TMFLadderScoresSnapshot?> GetLatestLadderSnapshotAsync(CancellationToken cancellationToken)
+    public async Task<TMFLadderScoresSnapshotEntity?> GetLatestLadderSnapshotAsync(CancellationToken cancellationToken)
     {
         return await db.TMFLadderScoresSnapshots
             .Include(x => x.XYs)
@@ -354,7 +354,7 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
             .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<TMFGeneralScoresSnapshot?> GetLatestGeneralSnapshotAsync(CancellationToken cancellationToken)
+    public async Task<TMFGeneralScoresSnapshotEntity?> GetLatestGeneralSnapshotAsync(CancellationToken cancellationToken)
     {
         return await db.TMFGeneralScoresSnapshots
             .Include(x => x.Players)

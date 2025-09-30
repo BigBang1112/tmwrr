@@ -55,7 +55,7 @@ public sealed class Seeding
         {
             await using var fs = fileSystem.File.OpenRead(fileSystem.Path.Combine(Resources, "Games.json"));
             var games = (await JsonSerializer.DeserializeAsync(fs, AppJsonContext.Default.DictionaryStringGameResource, cancellationToken)) ?? [];
-            await db.Games.AddRangeAsync(games.Select(x => new Game { Id = x.Key }), cancellationToken);
+            await db.Games.AddRangeAsync(games.Select(x => new GameEntity { Id = x.Key }), cancellationToken);
         }
 
         logger.LogInformation("Seeding Modes...");
@@ -66,7 +66,7 @@ public sealed class Seeding
         {
             await using var fs = fileSystem.File.OpenRead(fileSystem.Path.Combine(Resources, "Modes.json"));
             var modes = (await JsonSerializer.DeserializeAsync(fs, AppJsonContext.Default.DictionaryStringModeResource, cancellationToken)) ?? [];
-            await db.Modes.AddRangeAsync(modes.Select(x => new Mode { Id = x.Key }), cancellationToken);
+            await db.Modes.AddRangeAsync(modes.Select(x => new ModeEntity { Id = x.Key }), cancellationToken);
         }
 
         logger.LogInformation("Seeding Environments...");
@@ -79,7 +79,7 @@ public sealed class Seeding
 
             if (environments.Count == 0)
             {
-                await db.Environments.AddRangeAsync(environmentDict.Select(x => new TMEnvironment
+                await db.Environments.AddRangeAsync(environmentDict.Select(x => new TMEnvironmentEntity
                 {
                     Id = x.Key,
                     Name = x.Value.Name,
@@ -100,7 +100,7 @@ public sealed class Seeding
                 var existingEnvironmentIds = environments.Select(x => x.Id).ToHashSet();
                 var missingEnvironments = environmentDict
                     .Where(kv => !existingEnvironmentIds.Contains(kv.Key))
-                    .Select(kv => new TMEnvironment
+                    .Select(kv => new TMEnvironmentEntity
                     {
                         Id = kv.Key,
                         Name = kv.Value.Name,
@@ -120,7 +120,7 @@ public sealed class Seeding
 
             if (campaignsTMF.Count == 0)
             {
-                await db.TMFCampaigns.AddRangeAsync(campaignDict.Select(x => new TMFCampaign
+                await db.TMFCampaigns.AddRangeAsync(campaignDict.Select(x => new TMFCampaignEntity
                 {
                     Id = x.Key,
                     Name = x.Value.Name,
@@ -168,7 +168,7 @@ public sealed class Seeding
                     continue;
                 }
 
-                var loginModel = new TMFLogin { Id = login };
+                var loginModel = new TMFLoginEntity { Id = login };
                 loginDict[login] = loginModel;
                 await db.TMFLogins.AddAsync(loginModel, cancellationToken);
             }
@@ -184,14 +184,14 @@ public sealed class Seeding
                     continue;
                 }
 
-                var user = new User { LoginTMF = login };
+                var user = new UserEntity { LoginTMF = login };
                 userDict[login.Id] = user;
                 await db.Users.AddAsync(user, cancellationToken);
             }
 
             if (noMaps)
             {
-                await db.Maps.AddRangeAsync(mapDict.Select(x => new Map
+                await db.Maps.AddRangeAsync(mapDict.Select(x => new MapEntity
                 {
                     MapUid = x.Key,
                     Name = x.Value.Name,
@@ -238,7 +238,7 @@ public sealed class Seeding
                 var existingMapUids = maps.Select(x => x.MapUid).ToHashSet();
                 var missingMaps = mapDict
                     .Where(kv => !existingMapUids.Contains(kv.Key))
-                    .Select(kv => new Map
+                    .Select(kv => new MapEntity
                     {
                         MapUid = kv.Key,
                         Name = kv.Value.Name,

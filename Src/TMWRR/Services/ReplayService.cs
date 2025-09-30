@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Immutable;
 using TmEssentials;
 using TMWRR.Data;
-using TMWRR.Dtos;
+using TMWRR.Api;
 using TMWRR.Entities;
 using TMWRR.Entities.TMF;
 
@@ -12,9 +12,9 @@ namespace TMWRR.Services;
 
 public interface IReplayService
 {
-    Task<Replay?> CreateReplayAsync(Map map, TMFLogin login, int expectedScore, CancellationToken cancellationToken);
-    Task<DownloadContentDto?> GetReplayDownloadAsync(Guid guid, CancellationToken cancellationToken);
-    Task<ReplayDto?> GetReplayDtoAsync(Guid guid, CancellationToken cancellationToken);
+    Task<ReplayEntity?> CreateReplayAsync(MapEntity map, TMFLoginEntity login, int expectedScore, CancellationToken cancellationToken);
+    Task<DownloadContent?> GetReplayDownloadAsync(Guid guid, CancellationToken cancellationToken);
+    Task<Replay?> GetReplayDtoAsync(Guid guid, CancellationToken cancellationToken);
 }
 
 public sealed class ReplayService : IReplayService
@@ -30,7 +30,7 @@ public sealed class ReplayService : IReplayService
         this.logger = logger;
     }
 
-    public async Task<Replay?> CreateReplayAsync(Map map, TMFLogin login, int expectedScore, CancellationToken cancellationToken)
+    public async Task<ReplayEntity?> CreateReplayAsync(MapEntity map, TMFLoginEntity login, int expectedScore, CancellationToken cancellationToken)
     {
         if (map.TMFCampaign is null || login.RegistrationId is null)
         {
@@ -52,7 +52,7 @@ public sealed class ReplayService : IReplayService
 
         var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
-        var replay = new Replay
+        var replay = new ReplayEntity
         {
             Data = data,
             LastModifiedAt = response.Content.Headers.LastModified,
@@ -104,7 +104,7 @@ public sealed class ReplayService : IReplayService
                     }
                 }
 
-                var ghost = new ReplayGhost
+                var ghost = new ReplayGhostEntity
                 {
                     Replay = replay,
                     Order = i
@@ -112,7 +112,7 @@ public sealed class ReplayService : IReplayService
 
                 foreach (var (j, cp) in ghostNode.Checkpoints?.Index() ?? [])
                 {
-                    ghost.Checkpoints.Add(new GhostCheckpoint
+                    ghost.Checkpoints.Add(new GhostCheckpointEntity
                     {
                         Time = cp.Time,
                         StuntsScore = cp.StuntsScore,
@@ -132,11 +132,11 @@ public sealed class ReplayService : IReplayService
         return replay;
     }
 
-    public async Task<DownloadContentDto?> GetReplayDownloadAsync(Guid guid, CancellationToken cancellationToken)
+    public async Task<DownloadContent?> GetReplayDownloadAsync(Guid guid, CancellationToken cancellationToken)
     {
         return await db.Replays
             .Where(x => x.Guid == guid)
-            .Select(x => new DownloadContentDto
+            .Select(x => new DownloadContent
             {
                 Data = x.Data,
                 LastModifiedAt = x.LastModifiedAt,
@@ -145,18 +145,18 @@ public sealed class ReplayService : IReplayService
             .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<ReplayDto?> GetReplayDtoAsync(Guid guid, CancellationToken cancellationToken)
+    public async Task<Replay?> GetReplayDtoAsync(Guid guid, CancellationToken cancellationToken)
     {
         return await db.Replays
             .Where(x => x.Guid == guid)
-            .Select(x => new ReplayDto
+            .Select(x => new Replay
             {
                 Guid = x.Guid,
                 Timestamp = x.LastModifiedAt,
                 Url = x.Url,
-                Ghosts = x.Ghosts.OrderBy(g => g.Order).Select(g => new ReplayGhostDto
+                Ghosts = x.Ghosts.OrderBy(g => g.Order).Select(g => new ReplayGhost
                 {
-                    Checkpoints = g.Checkpoints.OrderBy(c => c.Order).Select(c => new GhostCheckpointDto
+                    Checkpoints = g.Checkpoints.OrderBy(c => c.Order).Select(c => new GhostCheckpoint
                     {
                         Time = c.Time,
                         StuntsScore = c.StuntsScore,

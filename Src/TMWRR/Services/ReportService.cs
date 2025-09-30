@@ -8,7 +8,7 @@ namespace TMWRR.Services;
 public interface IReportService
 {
     Task ReportAsync(IReadOnlyDictionary<string, TMFCampaignScoreDiff> mapUidCampaignScoreDiffs, CancellationToken cancellationToken);
-    Task ReportAsync(TMFGeneralScoresSnapshot snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken);
+    Task ReportAsync(TMFGeneralScoresSnapshotEntity snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken);
 }
 
 public sealed class ReportService : IReportService
@@ -72,7 +72,7 @@ public sealed class ReportService : IReportService
         logger.LogInformation("Report completed.");
     }
 
-    public async Task ReportAsync(TMFGeneralScoresSnapshot snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken)
+    public async Task ReportAsync(TMFGeneralScoresSnapshotEntity snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 

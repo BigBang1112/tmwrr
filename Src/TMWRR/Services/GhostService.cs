@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Immutable;
 using TmEssentials;
 using TMWRR.Data;
-using TMWRR.Dtos;
+using TMWRR.Api;
 using TMWRR.Entities;
 using TMWRR.Entities.TMF;
 
@@ -12,10 +12,10 @@ namespace TMWRR.Services;
 
 public interface IGhostService
 {
-    Task<Ghost?> CreateGhostAsync(Map map, TMFLogin login, int expectedScore, CancellationToken cancellationToken);
-    Task<DownloadContentDto?> GetGhostDownloadAsync(Guid guid, CancellationToken cancellationToken);
-    Task<IEnumerable<GhostCheckpointDto>> GetGhostCheckpointDtosAsync(Guid guid, CancellationToken cancellationToken);
-    Task<GhostDto?> GetGhostDtoAsync(Guid guid, CancellationToken cancellationToken);
+    Task<GhostEntity?> CreateGhostAsync(MapEntity map, TMFLoginEntity login, int expectedScore, CancellationToken cancellationToken);
+    Task<DownloadContent?> GetGhostDownloadAsync(Guid guid, CancellationToken cancellationToken);
+    Task<IEnumerable<GhostCheckpoint>> GetGhostCheckpointDtosAsync(Guid guid, CancellationToken cancellationToken);
+    Task<Ghost?> GetGhostDtoAsync(Guid guid, CancellationToken cancellationToken);
 }
 
 public sealed class GhostService : IGhostService
@@ -31,7 +31,7 @@ public sealed class GhostService : IGhostService
         this.logger = logger;
     }
 
-    public async Task<Ghost?> CreateGhostAsync(Map map, TMFLogin login, int expectedScore, CancellationToken cancellationToken)
+    public async Task<GhostEntity?> CreateGhostAsync(MapEntity map, TMFLoginEntity login, int expectedScore, CancellationToken cancellationToken)
     {
         if (map.TMFCampaign is null || login.RegistrationId is null)
         {
@@ -53,7 +53,7 @@ public sealed class GhostService : IGhostService
 
         var data = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
-        var checkpoints = new List<GhostCheckpoint>();
+        var checkpoints = new List<GhostCheckpointEntity>();
 
         await using var ms = new MemoryStream(data);
 
@@ -85,7 +85,7 @@ public sealed class GhostService : IGhostService
 
             foreach (var (i, cp) in ghostNode.Checkpoints?.Index() ?? [])
             {
-                checkpoints.Add(new GhostCheckpoint
+                checkpoints.Add(new GhostCheckpointEntity
                 {
                     Time = cp.Time,
                     StuntsScore = cp.StuntsScore,
@@ -99,7 +99,7 @@ public sealed class GhostService : IGhostService
             logger.LogWarning(ex, "Failed to parse ghost for map {MapUid} and login {Login}", map.MapUid, login.Id);
         }
 
-        return new Ghost
+        return new GhostEntity
         {
             Data = data,
             LastModifiedAt = response.Content.Headers.LastModified,
@@ -109,11 +109,11 @@ public sealed class GhostService : IGhostService
         };
     }
 
-    public async Task<DownloadContentDto?> GetGhostDownloadAsync(Guid guid, CancellationToken cancellationToken)
+    public async Task<DownloadContent?> GetGhostDownloadAsync(Guid guid, CancellationToken cancellationToken)
     {
         return await db.Ghosts
             .Where(x => x.Guid == guid)
-            .Select(x => new DownloadContentDto
+            .Select(x => new DownloadContent
             {
                 Data = x.Data,
                 LastModifiedAt = x.LastModifiedAt,
@@ -122,12 +122,12 @@ public sealed class GhostService : IGhostService
             .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<GhostCheckpointDto>> GetGhostCheckpointDtosAsync(Guid guid, CancellationToken cancellationToken)
+    public async Task<IEnumerable<GhostCheckpoint>> GetGhostCheckpointDtosAsync(Guid guid, CancellationToken cancellationToken)
     {
         return await db.GhostCheckpoints
             .Where(x => x.Ghost!.Guid == guid)
             .OrderBy(x => x.Order)
-            .Select(x => new GhostCheckpointDto
+            .Select(x => new GhostCheckpoint
             {
                 Time = x.Time,
                 Speed = x.Speed,
@@ -136,16 +136,16 @@ public sealed class GhostService : IGhostService
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<GhostDto?> GetGhostDtoAsync(Guid guid, CancellationToken cancellationToken)
+    public async Task<Ghost?> GetGhostDtoAsync(Guid guid, CancellationToken cancellationToken)
     {
         return await db.Ghosts
             .Where(x => x.Guid == guid)
-            .Select(x => new GhostDto
+            .Select(x => new Ghost
             {
                 Guid = x.Guid,
                 Timestamp = x.LastModifiedAt,
                 Url = x.Url,
-                Checkpoints = x.Checkpoints.OrderBy(m => m.Order).Select(c => new GhostCheckpointDto
+                Checkpoints = x.Checkpoints.OrderBy(m => m.Order).Select(c => new GhostCheckpoint
                 {
                     Time = c.Time,
                     StuntsScore = c.StuntsScore,

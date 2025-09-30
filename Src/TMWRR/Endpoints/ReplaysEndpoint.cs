@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Net.Http.Headers;
-using TMWRR.Dtos;
+using TMWRR.Api;
 using TMWRR.Services;
 
 namespace TMWRR.Endpoints;
@@ -14,7 +14,7 @@ public static class ReplaysEndpoint
         group.MapGet("/{guid}/download", DownloadReplay);
     }
 
-    private static async Task<Results<Ok<ReplayDto>, NotFound>> GetReplay(Guid guid, IReplayService replayService, CancellationToken cancellationToken)
+    private static async Task<Results<Ok<Replay>, NotFound>> GetReplay(Guid guid, IReplayService replayService, CancellationToken cancellationToken)
     {
         var dto = await replayService.GetReplayDtoAsync(guid, cancellationToken);
 

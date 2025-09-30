@@ -46,7 +46,7 @@ public sealed class GhostFillDataHostedService : BackgroundService
 
                 foreach (var (i, cp) in ghostNode.Checkpoints?.Index() ?? [])
                 {
-                    ghost.Checkpoints.Add(new GhostCheckpoint
+                    ghost.Checkpoints.Add(new GhostCheckpointEntity
                     {
                         Time = cp.Time,
                         StuntsScore = cp.StuntsScore,

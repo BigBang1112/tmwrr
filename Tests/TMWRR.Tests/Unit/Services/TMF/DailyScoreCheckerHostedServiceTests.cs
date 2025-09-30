@@ -42,10 +42,15 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            DiscordWebhookUrl = "",
-            ChangesDiscordWebhookUrl = "",
-            ApiUsername = "",
-            ApiPassword = ""
+            Discord = new TMUFDiscord
+            {
+                TestWebhookUrl = ""
+            },
+            WebServices = new TMUFWebServices
+            {
+                ApiUsername = "",
+                ApiPassword = ""
+            }
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(2)), TimeSpan.Zero);
@@ -76,10 +81,15 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            DiscordWebhookUrl = "",
-            ChangesDiscordWebhookUrl = "",
-            ApiUsername = "",
-            ApiPassword = ""
+            Discord = new TMUFDiscord
+            {
+                TestWebhookUrl = ""
+            },
+            WebServices = new TMUFWebServices
+            {
+                ApiUsername = "",
+                ApiPassword = ""
+            }
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST.Add(TimeSpan.FromDays(1)) - TimeSpan.FromHours(2)), TimeSpan.Zero);
@@ -110,10 +120,15 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            DiscordWebhookUrl = "",
-            ChangesDiscordWebhookUrl = "",
-            ApiUsername = "",
-            ApiPassword = ""
+            Discord = new TMUFDiscord
+            {
+                TestWebhookUrl = ""
+            },
+            WebServices = new TMUFWebServices
+            {
+                ApiUsername = "",
+                ApiPassword = ""
+            }
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(1)), TimeSpan.Zero);
@@ -144,10 +159,15 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            DiscordWebhookUrl = "",
-            ChangesDiscordWebhookUrl = "",
-            ApiUsername = "",
-            ApiPassword = ""
+            Discord = new TMUFDiscord
+            {
+                TestWebhookUrl = ""
+            },
+            WebServices = new TMUFWebServices
+            {
+                ApiUsername = "",
+                ApiPassword = ""
+            }
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST.Add(TimeSpan.FromDays(1)) - TimeSpan.FromHours(1)), TimeSpan.Zero);
@@ -172,10 +192,15 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            DiscordWebhookUrl = "",
-            ChangesDiscordWebhookUrl = "",
-            ApiUsername = "",
-            ApiPassword = ""
+            Discord = new TMUFDiscord
+            {
+                TestWebhookUrl = ""
+            },
+            WebServices = new TMUFWebServices
+            {
+                ApiUsername = "",
+                ApiPassword = ""
+            }
         });
 
         var expectedNextCheck = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(1)), TimeSpan.Zero);
@@ -223,10 +248,15 @@ public class DailyScoreCheckerHostedServiceTests
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
             CheckRetryTimeout = TimeSpan.FromSeconds(30),
-            DiscordWebhookUrl = "",
-            ChangesDiscordWebhookUrl = "",
-            ApiUsername = "",
-            ApiPassword = ""
+            Discord = new TMUFDiscord
+            {
+                TestWebhookUrl = ""
+            },
+            WebServices = new TMUFWebServices
+            {
+                ApiUsername = "",
+                ApiPassword = ""
+            }
         });
 
         // Setup delay to complete successfully.
@@ -282,10 +312,15 @@ public class DailyScoreCheckerHostedServiceTests
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
             CheckRetryTimeout = TimeSpan.FromSeconds(30),
-            DiscordWebhookUrl = "",
-            ChangesDiscordWebhookUrl = "",
-            ApiUsername = "",
-            ApiPassword = ""
+            Discord = new TMUFDiscord
+            {
+                TestWebhookUrl = ""
+            },
+            WebServices = new TMUFWebServices
+            {
+                ApiUsername = "",
+                ApiPassword = ""
+            }
         });
 
         // Setup delay to throw TaskCanceledException.
@@ -331,10 +366,15 @@ public class DailyScoreCheckerHostedServiceTests
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
             CheckRetryTimeout = TimeSpan.FromSeconds(30),
-            DiscordWebhookUrl = "",
-            ChangesDiscordWebhookUrl = "",
-            ApiUsername = "",
-            ApiPassword = ""
+            Discord = new TMUFDiscord
+            {
+                TestWebhookUrl = ""
+            },
+            WebServices = new TMUFWebServices
+            {
+                ApiUsername = "",
+                ApiPassword = ""
+            }
         });
 
         var scoreCheckerService = Substitute.For<IScoresCheckerService>();
@@ -380,10 +420,15 @@ public class DailyScoreCheckerHostedServiceTests
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
             CheckRetryTimeout = TimeSpan.FromSeconds(30),
-            DiscordWebhookUrl = "",
-            ChangesDiscordWebhookUrl = "",
-            ApiUsername = "",
-            ApiPassword = ""
+            Discord = new TMUFDiscord
+            {
+                TestWebhookUrl = ""
+            },
+            WebServices = new TMUFWebServices
+            {
+                ApiUsername = "",
+                ApiPassword = ""
+            }
         });
 
         // Setup delay to complete successfully.

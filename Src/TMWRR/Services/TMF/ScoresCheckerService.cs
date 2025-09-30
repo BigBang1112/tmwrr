@@ -174,7 +174,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
         logger.LogWarning("New! {ScoreType}: {CreatedAt}", Constants.General, lastModifiedAt);
 
-        var snapshot = new TMFGeneralScoresSnapshot
+        var snapshot = new TMFGeneralScoresSnapshotEntity
         {
             CreatedAt = lastModifiedAt,
             PublishedAt = publishedAt
@@ -211,7 +211,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
         logger.LogWarning("New! {ScoreType}: {CreatedAt}", Constants.Multi, lastModifiedAt);
 
-        var snapshot = new TMFLadderScoresSnapshot
+        var snapshot = new TMFLadderScoresSnapshotEntity
         {
             CreatedAt = lastModifiedAt,
             PublishedAt = publishedAt
@@ -250,7 +250,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
         logger.LogWarning("New! {ScoreType}: {CreatedAt}", scoreType, lastModifiedAt);
 
-        var snapshot = new TMFCampaignScoresSnapshot
+        var snapshot = new TMFCampaignScoresSnapshotEntity
         {
             CampaignId = scoreType,
             CreatedAt = lastModifiedAt,

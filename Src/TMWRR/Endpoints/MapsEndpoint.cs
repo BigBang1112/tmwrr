@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
-using TMWRR.Dtos;
-using TMWRR.Dtos.TMF;
+using TMWRR.Api;
+using TMWRR.Api.TMF;
 using TMWRR.Services;
 using TMWRR.Services.TMF;
 
@@ -15,7 +15,7 @@ public static class MapsEndpoint
             .CacheOutput(CachePolicy.SnapshotsCampaignTMF);
     }
 
-    private static async Task<Results<Ok<MapDto>, ValidationProblem, NotFound>> GetMap(
+    private static async Task<Results<Ok<Map>, ValidationProblem, NotFound>> GetMap(
         string mapUid, 
         IMapService mapService, 
         CancellationToken cancellationToken)
@@ -39,7 +39,7 @@ public static class MapsEndpoint
         return TypedResults.Ok(dto);
     }
 
-    private static async Task<Results<Ok<IEnumerable<TMFCampaignScoresSnapshotDto>>, ValidationProblem>> GetTMFSnapshots(string mapUid, IScoresSnapshotService scoresSnapshotService, CancellationToken cancellationToken)
+    private static async Task<Results<Ok<IEnumerable<TMFCampaignScoresSnapshot>>, ValidationProblem>> GetTMFSnapshots(string mapUid, IScoresSnapshotService scoresSnapshotService, CancellationToken cancellationToken)
     {
         if (mapUid.Length > 32)
         {

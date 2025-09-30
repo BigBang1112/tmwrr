@@ -8,7 +8,7 @@ namespace TMWRR.Services.TMF;
 
 public interface IGeneralScoresJobService
 {
-    Task<TMFGeneralScoreDiff?> ProcessAsync(Leaderboard leaderboard, TMFGeneralScoresSnapshot snapshot, CancellationToken cancellationToken);
+    Task<TMFGeneralScoreDiff?> ProcessAsync(Leaderboard leaderboard, TMFGeneralScoresSnapshotEntity snapshot, CancellationToken cancellationToken);
 }
 
 public class GeneralScoresJobService : IGeneralScoresJobService
@@ -32,7 +32,7 @@ public class GeneralScoresJobService : IGeneralScoresJobService
 
     public async Task<TMFGeneralScoreDiff?> ProcessAsync(
         Leaderboard leaderboard, 
-        TMFGeneralScoresSnapshot snapshot, 
+        TMFGeneralScoresSnapshotEntity snapshot, 
         CancellationToken cancellationToken)
     {
         snapshot.PlayerCount = leaderboard.Skillpoints.Sum(x => x.Count);
@@ -82,15 +82,15 @@ public class GeneralScoresJobService : IGeneralScoresJobService
     }
 
     private static void PopulateSnapshot(
-        TMFGeneralScoresSnapshot snapshot,
-        IDictionary<string, TMFLogin> playersByLogin,
+        TMFGeneralScoresSnapshotEntity snapshot,
+        IDictionary<string, TMFLoginEntity> playersByLogin,
         Leaderboard leaderboard)
     {
         foreach (var (i, score) in leaderboard.HighScores.Index())
         {
             var playerLogin = playersByLogin[score.Login];
 
-            var player = new TMFGeneralScoresPlayer
+            var player = new TMFGeneralScoresPlayerEntity
             {
                 Snapshot = snapshot,
                 Player = playerLogin,

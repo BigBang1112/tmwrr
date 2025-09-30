@@ -59,6 +59,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\TMWRR.Api\TMWRR.Api.csproj" />
       <ProjectReference Include="..\TMWRR.DiscordReport\TMWRR.DiscordReport.csproj" />
     </ItemGroup>
 

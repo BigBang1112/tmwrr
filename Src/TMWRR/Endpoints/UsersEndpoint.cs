@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
-using TMWRR.Dtos;
+using TMWRR.Api;
 using TMWRR.Services;
 
 namespace TMWRR.Endpoints;
@@ -11,7 +11,7 @@ public static class UsersEndpoint
         group.MapGet("/{guid}", GetUser);
     }
 
-    private static async Task<Results<Ok<UserDto>, NotFound>> GetUser(Guid guid, IUserService userService, CancellationToken cancellationToken)
+    private static async Task<Results<Ok<User>, NotFound>> GetUser(Guid guid, IUserService userService, CancellationToken cancellationToken)
     {
         var dto = await userService.GetDtoAsync(guid, cancellationToken);
 

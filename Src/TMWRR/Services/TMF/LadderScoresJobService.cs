@@ -5,7 +5,7 @@ namespace TMWRR.Services.TMF;
 
 public interface ILadderScoresJobService
 {
-    Task<bool> ProcessAsync(LadderZone ladder, TMFLadderScoresSnapshot snapshot, CancellationToken cancellationToken);
+    Task<bool> ProcessAsync(LadderZone ladder, TMFLadderScoresSnapshotEntity snapshot, CancellationToken cancellationToken);
 }
 
 public class LadderScoresJobService : ILadderScoresJobService
@@ -19,7 +19,7 @@ public class LadderScoresJobService : ILadderScoresJobService
         this.logger = logger;
     }
 
-    public async Task<bool> ProcessAsync(LadderZone ladder, TMFLadderScoresSnapshot snapshot, CancellationToken cancellationToken)
+    public async Task<bool> ProcessAsync(LadderZone ladder, TMFLadderScoresSnapshotEntity snapshot, CancellationToken cancellationToken)
     {
         snapshot.PlayerCount = ladder.PlayerCount;
 
@@ -49,7 +49,7 @@ public class LadderScoresJobService : ILadderScoresJobService
 
         foreach (var (i, (rank, points)) in rankPoints.Index())
         {
-            snapshot.XYs.Add(new TMFLadderScoresXY
+            snapshot.XYs.Add(new TMFLadderScoresXYEntity
             {
                 Rank = rank,
                 Points = points,

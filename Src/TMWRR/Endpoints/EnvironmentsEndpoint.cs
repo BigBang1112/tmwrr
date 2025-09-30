@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
-using TMWRR.Dtos;
+using TMWRR.Api;
 using TMWRR.Extensions;
 using TMWRR.Services;
 
@@ -16,7 +16,7 @@ public static class EnvironmentsEndpoint
             .CacheOutput(CachePolicy.Environments);
     }
 
-    private static async Task<Ok<IEnumerable<TMEnvironmentDto>>> GetEnvironments(
+    private static async Task<Ok<IEnumerable<TMEnvironment>>> GetEnvironments(
         IEnvironmentService environmentService,
         HttpResponse response,
         CancellationToken cancellationToken)
@@ -28,7 +28,7 @@ public static class EnvironmentsEndpoint
         return TypedResults.Ok(dtos);
     }
 
-    private static async Task<Results<Ok<TMEnvironmentDto>, ValidationProblem, NotFound>> GetEnvironment(
+    private static async Task<Results<Ok<TMEnvironment>, ValidationProblem, NotFound>> GetEnvironment(
         string id,
         IEnvironmentService environmentService,
         HttpResponse response,

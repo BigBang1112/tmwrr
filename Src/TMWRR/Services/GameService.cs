@@ -1,15 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Collections.Immutable;
 using TMWRR.Data;
-using TMWRR.Dtos;
+using TMWRR.Api;
 using TMWRR.Enums;
 
 namespace TMWRR.Services;
 
 public interface IGameService
 {
-    Task<IEnumerable<GameDto>> GetAllDtosAsync(CancellationToken cancellationToken);
-    Task<GameDto?> GetDtoAsync(EGame id, CancellationToken cancellationToken);
+    Task<IEnumerable<Game>> GetAllDtosAsync(CancellationToken cancellationToken);
+    Task<Game?> GetDtoAsync(EGame id, CancellationToken cancellationToken);
 }
 
 public sealed class GameService : IGameService
@@ -21,14 +21,14 @@ public sealed class GameService : IGameService
         this.db = db;
     }
 
-    public async Task<IEnumerable<GameDto>> GetAllDtosAsync(CancellationToken cancellationToken)
+    public async Task<IEnumerable<Game>> GetAllDtosAsync(CancellationToken cancellationToken)
     {
         return await db.Games
             .Include(x => x.Environments)
-            .Select(x => new GameDto
+            .Select(x => new Game
             {
                 Id = x.Id,
-                Environments = x.Environments.Select(e => new TMEnvironmentDto
+                Environments = x.Environments.Select(e => new TMEnvironment
                 {
                     Id = e.Id,
                     Name = e.Name ?? e.Id
@@ -37,14 +37,14 @@ public sealed class GameService : IGameService
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<GameDto?> GetDtoAsync(EGame id, CancellationToken cancellationToken)
+    public async Task<Game?> GetDtoAsync(EGame id, CancellationToken cancellationToken)
     {
         return await db.Games
             .Include(x => x.Environments)
-            .Select(x => new GameDto
+            .Select(x => new Game
             {
                 Id = x.Id,
-                Environments = x.Environments.Select(e => new TMEnvironmentDto
+                Environments = x.Environments.Select(e => new TMEnvironment
                 {
                     Id = e.Id,
                     Name = e.Name ?? e.Id

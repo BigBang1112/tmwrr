@@ -1,13 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TMWRR.Data;
-using TMWRR.Dtos;
+using TMWRR.Api;
 
 namespace TMWRR.Services;
 
 public interface IEnvironmentService
 {
-    Task<IEnumerable<TMEnvironmentDto>> GetAllDtosAsync(CancellationToken cancellationToken);
-    Task<TMEnvironmentDto?> GetDtoAsync(string id, CancellationToken cancellationToken);
+    Task<IEnumerable<TMEnvironment>> GetAllDtosAsync(CancellationToken cancellationToken);
+    Task<TMEnvironment?> GetDtoAsync(string id, CancellationToken cancellationToken);
 }
 
 public sealed class EnvironmentService : IEnvironmentService
@@ -19,14 +19,14 @@ public sealed class EnvironmentService : IEnvironmentService
         this.db = db;
     }
 
-    public async Task<IEnumerable<TMEnvironmentDto>> GetAllDtosAsync(CancellationToken cancellationToken)
+    public async Task<IEnumerable<TMEnvironment>> GetAllDtosAsync(CancellationToken cancellationToken)
     {
         return await db.Environments
-            .Select(x => new TMEnvironmentDto
+            .Select(x => new TMEnvironment
             {
                 Id = x.Id,
                 Name = x.Name ?? x.Id,
-                Game = new GameDto
+                Game = new Game
                 {
                     Id = x.Game.Id
                 }
@@ -34,14 +34,14 @@ public sealed class EnvironmentService : IEnvironmentService
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<TMEnvironmentDto?> GetDtoAsync(string id, CancellationToken cancellationToken)
+    public async Task<TMEnvironment?> GetDtoAsync(string id, CancellationToken cancellationToken)
     {
         return await db.Environments
-            .Select(x => new TMEnvironmentDto
+            .Select(x => new TMEnvironment
             {
                 Id = x.Id,
                 Name = x.Name ?? x.Id,
-                Game = new GameDto
+                Game = new Game
                 {
                     Id = x.Game.Id
                 }

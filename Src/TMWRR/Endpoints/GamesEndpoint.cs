@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
-using TMWRR.Dtos;
-using TMWRR.Dtos.TMF;
+using TMWRR.Api;
+using TMWRR.Api.TMF;
 using TMWRR.Enums;
 using TMWRR.Extensions;
 using TMWRR.Services;
@@ -38,7 +38,7 @@ public static class GamesEndpoint
         group.MapGet("/{gameId}/logins/{loginId}", GetGameLogin);
     }
 
-    private static async Task<Ok<IEnumerable<GameDto>>> GetGames(
+    private static async Task<Ok<IEnumerable<Game>>> GetGames(
         IGameService gameService,
         HttpResponse response, 
         CancellationToken cancellationToken)
@@ -50,7 +50,7 @@ public static class GamesEndpoint
         return TypedResults.Ok(dtos);
     }
 
-    private static async Task<Results<Ok<GameDto>, ValidationProblem, NotFound>> GetGame(
+    private static async Task<Results<Ok<Game>, ValidationProblem, NotFound>> GetGame(
         EGame gameId, 
         IGameService gameService, 
         HttpResponse response,
@@ -68,7 +68,7 @@ public static class GamesEndpoint
         return TypedResults.Ok(dto);
     }
 
-    private static async Task<Results<Ok<IEnumerable<TMFCampaignDto>>, ValidationProblem>> GetGameCampaigns(
+    private static async Task<Results<Ok<IEnumerable<TMFCampaign>>, ValidationProblem>> GetGameCampaigns(
         EGame gameId, 
         ICampaignService campaignService,
         HttpResponse response,
@@ -90,7 +90,7 @@ public static class GamesEndpoint
         return TypedResults.Ok(dtos);
     }
 
-    private static async Task<Results<Ok<TMFCampaignDto>, ValidationProblem, NotFound>> GetGameCampaign(
+    private static async Task<Results<Ok<TMFCampaign>, ValidationProblem, NotFound>> GetGameCampaign(
         EGame gameId, 
         string campaignId,
         ICampaignService campaignService,
@@ -123,7 +123,7 @@ public static class GamesEndpoint
         return TypedResults.Ok(dto);
     }
 
-    private static async Task<Results<Ok<IEnumerable<TMFCampaignMapDto>>, ValidationProblem>> GetGameCampaignMaps(
+    private static async Task<Results<Ok<IEnumerable<TMFCampaignMap>>, ValidationProblem>> GetGameCampaignMaps(
         EGame gameId, 
         string campaignId, 
         ICampaignService campaignService, 
@@ -148,7 +148,7 @@ public static class GamesEndpoint
         return TypedResults.Ok(dtos);
     }
 
-    private static async Task<Results<Ok<TMFCampaignMapDto>, ValidationProblem, NotFound>> GetGameCampaignMap(
+    private static async Task<Results<Ok<TMFCampaignMap>, ValidationProblem, NotFound>> GetGameCampaignMap(
         EGame gameId, 
         string campaignId, 
         string mapUid, 
@@ -183,7 +183,7 @@ public static class GamesEndpoint
         return TypedResults.Ok(dto);
     }
 
-    private static async Task<Results<Ok<IEnumerable<TMFCampaignScoresRecordDto>>, ValidationProblem>> GetGameCampaignRecordsByMapUid(
+    private static async Task<Results<Ok<IEnumerable<TMFCampaignScoresRecord>>, ValidationProblem>> GetGameCampaignRecordsByMapUid(
         EGame gameId,
         string campaignId, 
         string mapUid,
@@ -213,7 +213,7 @@ public static class GamesEndpoint
         return TypedResults.Ok(dtos);
     }
 
-    private static async Task<Results<Ok<TMFCampaignScoresSnapshotDto>, ValidationProblem, NotFound>> GetLatestGameCampaignSnapshot(
+    private static async Task<Results<Ok<TMFCampaignScoresSnapshot>, ValidationProblem, NotFound>> GetLatestGameCampaignSnapshot(
         EGame gameId, 
         string campaignId, 
         IScoresSnapshotService scoresSnapshotService,
@@ -243,7 +243,7 @@ public static class GamesEndpoint
         return TypedResults.Ok(dto);
     }
 
-    private static async Task<Results<Ok<IEnumerable<TMFCampaignScoresRecordDto>>, ValidationProblem>> GetGameCampaignSnapshotRecordsByMapUid(
+    private static async Task<Results<Ok<IEnumerable<TMFCampaignScoresRecord>>, ValidationProblem>> GetGameCampaignSnapshotRecordsByMapUid(
         EGame gameId,
         string campaignId, 
         DateTimeOffset createdAt, 
@@ -274,7 +274,7 @@ public static class GamesEndpoint
         return TypedResults.Ok(dtos);
     }
 
-    private static async Task<Results<Ok<TMFLoginDto>, ValidationProblem, NotFound>> GetGameLogin(
+    private static async Task<Results<Ok<TMFLogin>, ValidationProblem, NotFound>> GetGameLogin(
         string gameId, 
         string loginId, 
         ILoginService loginService,

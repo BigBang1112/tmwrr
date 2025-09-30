@@ -2,17 +2,17 @@
 using Microsoft.Extensions.Caching.Hybrid;
 using System.Collections.Immutable;
 using TMWRR.Data;
-using TMWRR.Dtos;
-using TMWRR.Dtos.TMF;
+using TMWRR.Api;
+using TMWRR.Api.TMF;
 
 namespace TMWRR.Services.TMF;
 
 public interface ICampaignService
 {
-    Task<IEnumerable<TMFCampaignDto>> GetAllDtosAsync(CancellationToken cancellationToken);
-    Task<TMFCampaignDto?> GetDtoAsync(string id, CancellationToken cancellationToken);
-    Task<TMFCampaignMapDto?> GetMapDtoAsync(string campaignId, string mapUid, CancellationToken cancellationToken);
-    Task<IEnumerable<TMFCampaignMapDto>> GetMapDtosAsync(string campaignId, CancellationToken cancellationToken);
+    Task<IEnumerable<TMFCampaign>> GetAllDtosAsync(CancellationToken cancellationToken);
+    Task<TMFCampaign?> GetDtoAsync(string id, CancellationToken cancellationToken);
+    Task<TMFCampaignMap?> GetMapDtoAsync(string campaignId, string mapUid, CancellationToken cancellationToken);
+    Task<IEnumerable<TMFCampaignMap>> GetMapDtosAsync(string campaignId, CancellationToken cancellationToken);
 }
 
 public sealed class CampaignService : ICampaignService
@@ -28,10 +28,10 @@ public sealed class CampaignService : ICampaignService
         this.cache = cache;
     }
 
-    public async Task<IEnumerable<TMFCampaignDto>> GetAllDtosAsync(CancellationToken cancellationToken)
+    public async Task<IEnumerable<TMFCampaign>> GetAllDtosAsync(CancellationToken cancellationToken)
     {
         return await db.TMFCampaigns
-            .Select(x => new TMFCampaignDto
+            .Select(x => new TMFCampaign
             {
                 Id = x.Id,
                 Name = x.Name ?? x.Id,
@@ -39,15 +39,15 @@ public sealed class CampaignService : ICampaignService
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<TMFCampaignDto?> GetDtoAsync(string id, CancellationToken cancellationToken)
+    public async Task<TMFCampaign?> GetDtoAsync(string id, CancellationToken cancellationToken)
     {
         return await db.TMFCampaigns
             .Include(x => x.Maps)
-            .Select(x => new TMFCampaignDto
+            .Select(x => new TMFCampaign
             {
                 Id = x.Id,
                 Name = x.Name ?? x.Id,
-                Maps = x.Maps.OrderBy(m => m.Order).Select(m => new MapDto
+                Maps = x.Maps.OrderBy(m => m.Order).Select(m => new Map
                 {
                     MapUid = m.MapUid,
                     Name = m.Name,
@@ -57,11 +57,11 @@ public sealed class CampaignService : ICampaignService
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
-    public async Task<TMFCampaignMapDto?> GetMapDtoAsync(string campaignId, string mapUid, CancellationToken cancellationToken)
+    public async Task<TMFCampaignMap?> GetMapDtoAsync(string campaignId, string mapUid, CancellationToken cancellationToken)
     {
         var map = await db.Maps
             .Where(x => x.TMFCampaignId == campaignId && x.MapUid == mapUid)
-            .Select(m => new MapDto
+            .Select(m => new Map
             {
                 MapUid = m.MapUid,
                 Name = m.Name,
@@ -76,21 +76,21 @@ public sealed class CampaignService : ICampaignService
 
         var recordCount = await scoresSnapshotService.GetLatestPlayerCountAsync(mapUid, cancellationToken);
 
-        return new TMFCampaignMapDto
+        return new TMFCampaignMap
         {
             Map = map,
             RecordCount = recordCount
         };
     }
 
-    public async Task<IEnumerable<TMFCampaignMapDto>> GetMapDtosAsync(string campaignId, CancellationToken cancellationToken)
+    public async Task<IEnumerable<TMFCampaignMap>> GetMapDtosAsync(string campaignId, CancellationToken cancellationToken)
     {
         return await cache.GetOrCreateAsync($"campaign-maps-{campaignId}", async token =>
         {
             var maps = await db.Maps
                 .Where(x => x.TMFCampaignId == campaignId)
                 .OrderBy(x => x.Order)
-                .Select(m => new MapDto
+                .Select(m => new Map
                 {
                     MapUid = m.MapUid,
                     Name = m.Name,
@@ -105,7 +105,7 @@ public sealed class CampaignService : ICampaignService
 
             var recordCount = await scoresSnapshotService.GetLatestPlayerCountsAsync(campaignId, token);
 
-            return maps.Select(m => new TMFCampaignMapDto
+            return maps.Select(m => new TMFCampaignMap
             {
                 Map = m,
                 RecordCount = recordCount.TryGetValue(m.MapUid, out var count) ? count : null

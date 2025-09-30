@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Net.Http.Headers;
-using TMWRR.Dtos;
+using TMWRR.Api;
 using TMWRR.Services;
 
 namespace TMWRR.Endpoints;
@@ -14,7 +14,7 @@ public static class GhostsEndpoint
         group.MapGet("/{guid}/download", DownloadGhost);
     }
 
-    private static async Task<Results<Ok<GhostDto>, NotFound>> GetGhost(Guid guid, IGhostService ghostService, CancellationToken cancellationToken)
+    private static async Task<Results<Ok<Ghost>, NotFound>> GetGhost(Guid guid, IGhostService ghostService, CancellationToken cancellationToken)
     {
         var dto = await ghostService.GetGhostDtoAsync(guid, cancellationToken);
 

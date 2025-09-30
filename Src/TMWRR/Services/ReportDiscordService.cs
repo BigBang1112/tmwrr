@@ -15,7 +15,7 @@ namespace TMWRR.Services;
 public interface IReportDiscordService
 {
     Task ReportAsync(DateTimeOffset reportedAt, IEnumerable<TMFCampaignScoreDiffReport> campaignScoreDiffReports, CancellationToken cancellationToken);
-    Task ReportAsync(DateTimeOffset reportedAt, TMFGeneralScoresSnapshot snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken);
+    Task ReportAsync(DateTimeOffset reportedAt, TMFGeneralScoresSnapshotEntity snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken);
 }
 
 public class ReportDiscordService : IReportDiscordService
@@ -182,7 +182,7 @@ public class ReportDiscordService : IReportDiscordService
         await SendReportAsync(webhook, reportedAt, $"Solo leaderboards have changed for {string.Join(", ", maps)}.", fields, cancellationToken);
     }
 
-    private static string GetTimeLink(Map map, TMFCampaignScore record, string score)
+    private static string GetTimeLink(MapEntity map, TMFCampaignScore record, string score)
     {
         if (record.ReplayGuid is not null)
         {
@@ -214,7 +214,7 @@ public class ReportDiscordService : IReportDiscordService
         logger.LogInformation("Discord report sent.");
     }
 
-    public async Task ReportAsync(DateTimeOffset reportedAt, TMFGeneralScoresSnapshot snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken)
+    public async Task ReportAsync(DateTimeOffset reportedAt, TMFGeneralScoresSnapshotEntity snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 

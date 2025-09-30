@@ -8,24 +8,24 @@ namespace TMWRR.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public DbSet<TMFCampaign> TMFCampaigns { get; set; }
-    public DbSet<TMFCampaignScoresSnapshot> TMFCampaignScoresSnapshots { get; set; }
-    public DbSet<TMFCampaignScoresRecord> TMFCampaignScoresRecords { get; set; }
-    public DbSet<TMFCampaignScoresPlayerCount> TMFCampaignScoresPlayerCounts { get; set; }
-    public DbSet<TMFLadderScoresSnapshot> TMFLadderScoresSnapshots { get; set; }
-    public DbSet<TMFLadderScoresXY> TMFLadderScoresXYs { get; set; }
-    public DbSet<TMFGeneralScoresSnapshot> TMFGeneralScoresSnapshots { get; set; }
-    public DbSet<TMFGeneralScoresPlayer> TMFGeneralScoresPlayers { get; set; }
-    public DbSet<Map> Maps { get; set; }
-    public DbSet<TMFLogin> TMFLogins { get; set; }
-    public DbSet<User> Users { get; set; }
-    public DbSet<Game> Games { get; set; }
-    public DbSet<Mode> Modes { get; set; }
-    public DbSet<TMEnvironment> Environments { get; set; }
-    public DbSet<Ghost> Ghosts { get; set; }
-    public DbSet<GhostCheckpoint> GhostCheckpoints { get; set; }
-    public DbSet<Replay> Replays { get; set; }
-    public DbSet<ReplayGhost> ReplayGhosts { get; set; }
+    public DbSet<TMFCampaignEntity> TMFCampaigns { get; set; }
+    public DbSet<TMFCampaignScoresSnapshotEntity> TMFCampaignScoresSnapshots { get; set; }
+    public DbSet<TMFCampaignScoresRecordEntity> TMFCampaignScoresRecords { get; set; }
+    public DbSet<TMFCampaignScoresPlayerCountEntity> TMFCampaignScoresPlayerCounts { get; set; }
+    public DbSet<TMFLadderScoresSnapshotEntity> TMFLadderScoresSnapshots { get; set; }
+    public DbSet<TMFLadderScoresXYEntity> TMFLadderScoresXYs { get; set; }
+    public DbSet<TMFGeneralScoresSnapshotEntity> TMFGeneralScoresSnapshots { get; set; }
+    public DbSet<TMFGeneralScoresPlayerEntity> TMFGeneralScoresPlayers { get; set; }
+    public DbSet<MapEntity> Maps { get; set; }
+    public DbSet<TMFLoginEntity> TMFLogins { get; set; }
+    public DbSet<UserEntity> Users { get; set; }
+    public DbSet<GameEntity> Games { get; set; }
+    public DbSet<ModeEntity> Modes { get; set; }
+    public DbSet<TMEnvironmentEntity> Environments { get; set; }
+    public DbSet<GhostEntity> Ghosts { get; set; }
+    public DbSet<GhostCheckpointEntity> GhostCheckpoints { get; set; }
+    public DbSet<ReplayEntity> Replays { get; set; }
+    public DbSet<ReplayGhostEntity> ReplayGhosts { get; set; }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

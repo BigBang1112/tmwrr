@@ -13,7 +13,7 @@ public interface ICampaignScoresJobService
         string campaignId, 
         IReadOnlyDictionary<string, CampaignScoresLeaderboard> maps, 
         CampaignScoresMedalZone medals, 
-        TMFCampaignScoresSnapshot snapshot, 
+        TMFCampaignScoresSnapshotEntity snapshot, 
         CancellationToken cancellationToken);
 }
 
@@ -49,7 +49,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         string campaignId,
         IReadOnlyDictionary<string, CampaignScoresLeaderboard> maps,
         CampaignScoresMedalZone medals,
-        TMFCampaignScoresSnapshot snapshot,
+        TMFCampaignScoresSnapshotEntity snapshot,
         CancellationToken cancellationToken)
     {
         logger.LogInformation("Processing campaign {CampaignId} with {MapCount} maps...", campaignId, maps.Count);
@@ -94,7 +94,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 continue;
             }
 
-            snapshot.PlayerCounts.Add(new TMFCampaignScoresPlayerCount
+            snapshot.PlayerCounts.Add(new TMFCampaignScoresPlayerCountEntity
             {
                 Snapshot = snapshot,
                 Map = map,
@@ -163,7 +163,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         return diffs;
     }
 
-    private async Task<Ghost?> DownloadGhostAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken)
+    private async Task<GhostEntity?> DownloadGhostAsync(MapEntity map, TMFLoginEntity login, int score, CancellationToken cancellationToken)
     {
         logger.LogDebug("Checking existing ghost for map {MapUid} and login {Login}...", map.MapUid, login.Id);
 
@@ -189,7 +189,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         return ghost;
     }
 
-    private async Task<Replay?> DownloadReplayAsync(Map map, TMFLogin login, int score, CancellationToken cancellationToken)
+    private async Task<ReplayEntity?> DownloadReplayAsync(MapEntity map, TMFLoginEntity login, int score, CancellationToken cancellationToken)
     {
         logger.LogDebug("Checking existing replay for map {MapUid} and login {Login}...", map.MapUid, login.Id);
 
@@ -216,9 +216,9 @@ public class CampaignScoresJobService : ICampaignScoresJobService
     }
 
     private async Task PopulateSnapshotAsync(
-        TMFCampaignScoresSnapshot snapshot, 
-        IDictionary<string, TMFLogin> playersByLogin, 
-        Map map,
+        TMFCampaignScoresSnapshotEntity snapshot, 
+        IDictionary<string, TMFLoginEntity> playersByLogin, 
+        MapEntity map,
         Leaderboard leaderboard, 
         TMFCampaignScoreDiff? diff,
         CancellationToken cancellationToken)
@@ -232,8 +232,8 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         {
             var player = playersByLogin[score.Login];
 
-            var ghost = default(Ghost);
-            var replay = default(Replay);
+            var ghost = default(GhostEntity);
+            var replay = default(ReplayEntity);
 
             if (options.Value.EnableGhostDownload)
             {
@@ -247,7 +247,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 }
             }
 
-            var record = new TMFCampaignScoresRecord
+            var record = new TMFCampaignScoresRecordEntity
             {
                 Snapshot = snapshot,
                 Map = map,
