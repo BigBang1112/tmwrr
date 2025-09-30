@@ -5,11 +5,13 @@ WORKDIR /src
 
 # Copy project file and restore as distinct layers
 COPY --link Src/$APPNAME/*.csproj $APPNAME/
+COPY --link Src/$APPNAME.Api/*.csproj $APPNAME.Api/
 COPY --link Src/$APPNAME.DiscordReport/*.csproj $APPNAME.DiscordReport/
 RUN dotnet restore -a $TARGETARCH $APPNAME/$APPNAME.csproj
 
 # Copy source code and publish app
 COPY --link Src/$APPNAME/ $APPNAME/
+COPY --link Src/$APPNAME.Api/ $APPNAME.Api/
 COPY --link Src/$APPNAME.DiscordReport/ $APPNAME.DiscordReport/
 
 WORKDIR /src/$APPNAME
