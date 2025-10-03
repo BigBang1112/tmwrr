@@ -7,12 +7,17 @@ permissions:
   contents: read
   packages: write
 
-env:
-  IMAGE_NAME: tmwrr
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: TMWRR
+            image_name: tmwrr
+          - project: TMWRR.DiscordBot
+            image_name: tmwrr-discord-bot
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,8 +27,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ vars.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+            ${{ vars.DOCKERHUB_USERNAME }}/${{ matrix.image_name }}
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}
           tags: |
             type=raw,value=latest
           
@@ -51,7 +56,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           platforms: linux/amd64,linux/arm64
-          file: Src/TMWRR/Dockerfile
+          file: Src/${{ matrix.project }}/Dockerfile
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
           push: true
