@@ -1,2 +1,12 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using Microsoft.Extensions.Hosting;
+using TMWRR.DiscordBot.Configuration;
+
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services.AddDiscordServices();
+
+builder.Services.AddDomainServices();
+builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddTelemetryServices(builder.Configuration, builder.Environment);
+
+await builder.Build().RunAsync();

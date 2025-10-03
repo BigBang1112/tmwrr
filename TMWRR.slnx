@@ -1,7 +1,7 @@
 <Solution>
   <Folder Name="/Src/">
+    <Project Path="../Src/TMWRR.DiscordBot/TMWRR.DiscordBot/TMWRR.DiscordBot.csproj" Id="63e879e8-9c44-4949-bc65-a998151ff3d4" />
     <Project Path="Src/TMWRR.Api/TMWRR.Api.csproj" Id="543c3dc7-f33b-4f4c-954f-2690ee54b31d" />
-    <Project Path="Src/TMWRR.DiscordBot/TMWRR.DiscordBot.csproj" />
     <Project Path="Src/TMWRR.DiscordReport/TMWRR.DiscordReport.csproj" />
     <Project Path="Src/TMWRR/TMWRR.csproj" />
   </Folder>
