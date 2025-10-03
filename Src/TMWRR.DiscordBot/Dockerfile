@@ -19,10 +19,10 @@ RUN apt-get update \
     clang zlib1g-dev
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["Templates/GenericHost/TMWRR.DiscordBot/TMWRR.DiscordBot.csproj", "Templates/GenericHost/TMWRR.DiscordBot/"]
-RUN dotnet restore "./Templates/GenericHost/TMWRR.DiscordBot/TMWRR.DiscordBot.csproj"
+COPY ["TMWRR.DiscordBot/TMWRR.DiscordBot.csproj", "Src/TMWRR.DiscordBot/"]
+RUN dotnet restore "./TMWRR.DiscordBot/TMWRR.DiscordBot.csproj"
 COPY . .
-WORKDIR "/src/Templates/GenericHost/TMWRR.DiscordBot"
+WORKDIR "/src/TMWRR.DiscordBot"
 RUN dotnet build "./TMWRR.DiscordBot.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Tato fáze slouží k publikování projektu služby, který se má zkopírovat do konečné fáze.
