@@ -1,46 +1,32 @@
-# Na https://aka.ms/customizecontainer se dozvíte, jak si přizpůsobit kontejner ladění a jak Visual Studio používá tento dokument Dockerfile k sestavení vašich imagí pro rychlejší ladění.
-
-# Tyto argumenty umožňují při ladění z VS vyměnit bázi použitou k vytvoření konečné image za jinou.
-ARG LAUNCHING_FROM_VS
-# Nastaví image báze na konečnou image, ale jenom v případě, že je definovaná možnost LAUNCHING_FROM_VS.
-ARG FINAL_BASE_IMAGE=${LAUNCHING_FROM_VS:+aotdebug}
-
-# Tato fáze se používá při spuštění z VS v rychlém režimu (výchozí pro konfiguraci ladění).
-FROM mcr.microsoft.com/dotnet/runtime:9.0 AS base
-USER $APP_UID
-WORKDIR /app
-
-
-# Tato fáze slouží k sestavení projektu služby.
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-# Nainstalovat závislosti clang/zlib1g-dev pro publikování do nativního prostředí
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    clang zlib1g-dev
-ARG BUILD_CONFIGURATION=Release
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-preview-alpine AS build
+ARG TARGETARCH
+ARG APPNAME=TMWRR
 WORKDIR /src
-COPY ["Src/TMWRR.DiscordBot/TMWRR.DiscordBot.csproj", "TMWRR.DiscordBot/"]
-RUN dotnet restore "./TMWRR.DiscordBot/TMWRR.DiscordBot.csproj"
-COPY . .
-WORKDIR "/src/TMWRR.DiscordBot"
-RUN dotnet build "./TMWRR.DiscordBot.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# Tato fáze slouží k publikování projektu služby, který se má zkopírovat do konečné fáze.
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./TMWRR.DiscordBot.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=true
+# Copy project file and restore as distinct layers
+COPY --link Src/$APPNAME.DiscordBot/*.csproj $APPNAME.DiscordBot/
+COPY --link Src/$APPNAME.Api/*.csproj $APPNAME.Api/
+RUN dotnet restore -a $TARGETARCH $APPNAME.DiscordBot/$APPNAME.DiscordBot.csproj
 
-# Tato fáze se používá jako báze pro konečnou fázi při spouštění z VS pro podporu ladění v běžném režimu (výchozí, když se nepoužívá konfigurace ladění).
-FROM base AS aotdebug
-USER root
-# Nainstalovat GDB pro podporu nativního ladění
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    gdb
-USER app
+# Copy source code and publish app
+COPY --link Src/$APPNAME.DiscordBot/ $APPNAME.DiscordBot/
+COPY --link Src/$APPNAME.Api/ $APPNAME.Api/
 
-# Tato fáze se používá v produkčním prostředí nebo při spuštění z VS v běžném režimu (výchozí, když se nepoužívá konfigurace ladění).
-FROM ${FINAL_BASE_IMAGE:-mcr.microsoft.com/dotnet/runtime-deps:9.0} AS final
+WORKDIR /src/$APPNAME.DiscordBot
+RUN dotnet publish -a $TARGETARCH --no-restore -o /app
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview-alpine
+EXPOSE 8080
+
+ENV \
+    DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \
+    LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8
+RUN apk add --no-cache \
+    icu-data-full \
+    icu-libs
+
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --link --from=build /app .
+USER $APP_UID
 ENTRYPOINT ["./TMWRR.DiscordBot"]
