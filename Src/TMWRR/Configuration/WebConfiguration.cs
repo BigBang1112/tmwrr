@@ -64,7 +64,7 @@ public static class WebConfiguration
             options.ForwardedHeaders =
                 ForwardedHeaders.XForwardedFor |
                 ForwardedHeaders.XForwardedProto;
-            options.KnownIPNetworks.Clear();
+            options.KnownNetworks.Clear();
             options.KnownProxies.Clear();
         });
     }
