@@ -9,7 +9,6 @@ namespace TMWRR.DiscordBot.Options
         [Required]
         public required string Token { get; set; }
 
-        [Required]
-        public required string TestGuildId { get; set; }
+        public string TestGuildId { get; set; } = string.Empty;
     }
 }

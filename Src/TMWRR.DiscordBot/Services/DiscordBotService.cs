@@ -254,7 +254,10 @@ namespace TMWRR.DiscordBot.Services
 
             if (env.IsDevelopment())
             {
-                await interactionService.RegisterCommandsToGuildAsync(ulong.Parse(options.Value.TestGuildId), deleteMissing);
+                if (!string.IsNullOrWhiteSpace(options.Value.TestGuildId))
+                {
+                    await interactionService.RegisterCommandsToGuildAsync(ulong.Parse(options.Value.TestGuildId), deleteMissing);
+                }
             }
             else
             {
