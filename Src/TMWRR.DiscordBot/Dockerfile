@@ -19,7 +19,7 @@ RUN apt-get update \
     clang zlib1g-dev
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["TMWRR.DiscordBot/TMWRR.DiscordBot.csproj", "Src/TMWRR.DiscordBot/"]
+COPY ["Src/TMWRR.DiscordBot/TMWRR.DiscordBot.csproj", "TMWRR.DiscordBot/"]
 RUN dotnet restore "./TMWRR.DiscordBot/TMWRR.DiscordBot.csproj"
 COPY . .
 WORKDIR "/src/TMWRR.DiscordBot"
