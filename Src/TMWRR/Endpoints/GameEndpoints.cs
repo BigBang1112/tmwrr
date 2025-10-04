@@ -48,6 +48,10 @@ public static class GameEndpoints
             .WithSummary("Latest campaign snapshot")
             .WithDescription("Retrieve the latest scores snapshot for the specified campaign in the specified game. Currently, only 'TMF' is supported as game ID.");
 
+        group.MapGet("/{gameId}/campaigns/{campaignId}/snapshots/latest/{mapUid}", GetLatestGameCampaignSnapshotByMapUid)
+            .WithSummary("Latest campaign snapshot by map")
+            .WithDescription("Retrieve the latest scores snapshot for a specific map UID in the specified campaign of the specified game. Currently, only 'TMF' is supported as game ID.");
+
         group.MapGet("/{gameId}/campaigns/{campaignId}/snapshots/{createdAt}/{mapUid}/records", GetGameCampaignSnapshotRecordsByMapUid)
             .WithSummary("Snapshot records by map UID")
             .WithDescription("Retrieve all records for a specific map UID from a specific snapshot of the specified campaign in the specified game. Currently, only 'TMF' is supported as game ID.");
@@ -253,6 +257,41 @@ public static class GameEndpoints
         }
 
         var dto = await scoresSnapshotService.GetLatestSnapshotDtoAsync(campaignId, cancellationToken);
+
+        if (dto is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        return TypedResults.Ok(dto);
+    }
+
+    private static async Task<Results<Ok<TMFCampaignScoresSnapshot>, ValidationProblem, NotFound>> GetLatestGameCampaignSnapshotByMapUid(
+        EGame gameId, 
+        string campaignId, 
+        string mapUid, 
+        IScoresSnapshotService scoresSnapshotService, 
+        CancellationToken cancellationToken)
+    {
+        var errors = new Dictionary<string, string[]>();
+        if (gameId != EGame.TMF)
+        {
+            errors[nameof(gameId)] = ["Only 'TMF' is supported as game ID."];
+        }
+        if (campaignId.Length > 32)
+        {
+            errors[nameof(campaignId)] = ["The campaign ID length must not exceed 32 characters."];
+        }
+        if (mapUid.Length > 32)
+        {
+            errors[nameof(mapUid)] = ["The MapUid length must not exceed 32 characters."];
+        }
+        if (errors.Count > 0)
+        {
+            return TypedResults.ValidationProblem(errors);
+        }
+
+        var dto = await scoresSnapshotService.GetLatestSnapshotDtoAsync(campaignId, mapUid, cancellationToken);
 
         if (dto is null)
         {

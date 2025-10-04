@@ -65,13 +65,14 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
 
         if (map.CampaignTMF is not null)
         {
-            var snapshotInfo = await tmwrr.GetLatestTMFCampaignSnapshotAsync(map.CampaignTMF.Id);
+            var snapshotInfo = await tmwrr.GetLatestTMFCampaignSnapshotAsync(map.CampaignTMF.Id, map.MapUid);
             lastUpdatedAt = snapshotInfo?.CreatedAt;
         }
 
         var embed = new EmbedBuilder
         {
             Title = map.GetDisplayName() + " (Official Mode)",
+            Url = $"https://ul.unitedascenders.xyz/leaderboards/tracks/{map.MapUid}",
             Description = description,
             ThumbnailUrl = $"{apiOptions.Value.PublicBaseAddress}/{TmwrrClient.GetMapThumbnailEndpoint(map.MapUid)}",
             Footer = new EmbedFooterBuilder { Text = $"TMWR v2 (executed in {Stopwatch.GetElapsedTime(startedAt).TotalSeconds:0.00}s)" },
@@ -88,7 +89,7 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
 
         if (lastUpdatedAt.HasValue)
         {
-            embed.AddField("Last updated at", TimestampTag.FromDateTimeOffset(lastUpdatedAt.Value, TimestampTagStyles.LongDateTime), inline: true);
+            embed.AddField("Last detected change at", TimestampTag.FromDateTimeOffset(lastUpdatedAt.Value, TimestampTagStyles.LongDateTime), inline: true);
         }
 
         await RespondAsync(embed: embed.Build());

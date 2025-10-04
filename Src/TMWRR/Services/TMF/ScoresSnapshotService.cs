@@ -38,6 +38,7 @@ public interface IScoresSnapshotService
     Task SaveSnapshotAsync(TMFGeneralScoresSnapshotEntity snapshot, CancellationToken cancellationToken);
     ValueTask<IEnumerable<TMFCampaignScoresRecordEntity>> GetLatestRecordsAsync(IEnumerable<MapEntity> maps, CancellationToken cancellationToken);
     Task<TMFCampaignScoresSnapshot?> GetLatestSnapshotDtoAsync(string campaignId, CancellationToken cancellationToken);
+    Task<TMFCampaignScoresSnapshot?> GetLatestSnapshotDtoAsync(string campaignId, string mapUid, CancellationToken cancellationToken);
     Task<IEnumerable<TMFCampaignScoresRecord>> GetLatestRecordDtosAsync(string mapUid, CancellationToken cancellationToken);
     Task<IEnumerable<TMFCampaignScoresRecord>> GetSnapshotRecordDtosAsync(string campaignId, DateTimeOffset createdAt, string mapUid, CancellationToken cancellationToken);
     Task<IEnumerable<TMFCampaignScoresSnapshot>> GetMapSnapshotDtosAsync(string mapUid, CancellationToken cancellationToken);
@@ -180,6 +181,26 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
                 .OrderByDescending(x => x.CreatedAt)
                 .FirstOrDefaultAsync(x => x.Campaign.Id == campaignId, token);
         }, new() { Expiration = TimeSpan.FromDays(1) }, ["snapshot-campaign-tmf"], cancellationToken);
+    }
+
+    public async Task<TMFCampaignScoresSnapshot?> GetLatestSnapshotDtoAsync(string campaignId, string mapUid, CancellationToken cancellationToken)
+    {
+        return await db.TMFCampaignScoresRecords
+            .Include(x => x.Map)
+            .Where(x => x.Snapshot.CampaignId == campaignId && x.Map.MapUid == mapUid)
+            .OrderByDescending(x => x.Snapshot.CreatedAt)
+            .Select(x => new TMFCampaignScoresSnapshot
+            {
+                Campaign = new TMFCampaign
+                {
+                    Id = x.Snapshot.Campaign.Id,
+                    Name = x.Snapshot.Campaign.Name
+                },
+                CreatedAt = x.Snapshot.CreatedAt,
+                PublishedAt = x.Snapshot.PublishedAt,
+                NoChanges = x.Snapshot.NoChanges
+            })
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<IEnumerable<TMFCampaignScoresRecord>> GetLatestRecordDtosAsync(string mapUid, CancellationToken cancellationToken)

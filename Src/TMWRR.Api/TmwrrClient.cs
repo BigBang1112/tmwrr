@@ -99,6 +99,25 @@ public sealed class TmwrrClient
         return await response.Content.ReadFromJsonAsync(TmwrrJsonSerializerContext.Default.TMFCampaignScoresSnapshot, cancellationToken)!;
     }
 
+    public async Task<TMFCampaignScoresSnapshot?> GetLatestTMFCampaignSnapshotAsync(string campaignId, string mapUid, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(campaignId))
+        {
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(campaignId));
+        }
+
+        using var response = await client.GetAsync($"/games/TMF/campaigns/{Uri.EscapeDataString(campaignId)}/snapshots/latest/{mapUid}", cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        await EnsureSuccessStatusCodeAsync(response, cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync(TmwrrJsonSerializerContext.Default.TMFCampaignScoresSnapshot, cancellationToken)!;
+    }
+
     public static string GetMapThumbnailEndpoint(string mapUid)
     {
         if (string.IsNullOrWhiteSpace(mapUid))
