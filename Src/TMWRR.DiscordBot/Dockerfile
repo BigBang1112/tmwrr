@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-preview-alpine AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 ARG TARGETARCH
 ARG APPNAME=TMWRR
 WORKDIR /src
@@ -15,7 +15,7 @@ COPY --link Src/$APPNAME.Api/ $APPNAME.Api/
 WORKDIR /src/$APPNAME.DiscordBot
 RUN dotnet publish -a $TARGETARCH --no-restore -o /app
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview-alpine
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
 EXPOSE 8080
 
 ENV \
