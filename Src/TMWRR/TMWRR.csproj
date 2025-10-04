@@ -9,6 +9,12 @@
         <DockerfileContext>..\..</DockerfileContext>
         <DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
     </PropertyGroup>
+	
+	<ItemGroup>
+		<Content Include="Resources\**">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="FluentValidation" Version="12.0.0" />

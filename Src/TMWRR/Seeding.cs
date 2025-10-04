@@ -15,6 +15,7 @@ namespace TMWRR;
 public sealed class Seeding
 {
     private const string Resources = "Resources";
+    private const string Thumbnails = "Thumbnails";
 
     private readonly AppDbContext db;
     private readonly HybridCache hybridCache;
@@ -205,8 +206,8 @@ public sealed class Seeding
                     TMFCampaignId = x.Value.Campaign,
                     Order = x.Value.Order,
                     FileName = x.Value.FileName,
-                    Thumbnail = fileSystem.File.Exists(fileSystem.Path.Combine(Resources, "Thumbnails", x.Key + ".jpg"))
-                        ? fileSystem.File.ReadAllBytes(fileSystem.Path.Combine(Resources, "Thumbnails", x.Key + ".jpg"))
+                    Thumbnail = fileSystem.File.Exists(fileSystem.Path.Combine(Resources, Thumbnails, x.Key + ".jpg"))
+                        ? fileSystem.File.ReadAllBytes(fileSystem.Path.Combine(Resources, Thumbnails, x.Key + ".jpg"))
                         : null
                 }), cancellationToken);
             }
@@ -234,8 +235,8 @@ public sealed class Seeding
                     map.TMFCampaignId = mapResource.Campaign;
                     map.Order = mapResource.Order;
                     map.FileName = mapResource.FileName;
-                    map.Thumbnail = fileSystem.File.Exists(fileSystem.Path.Combine(Resources, "Thumbnails", map.MapUid + ".jpg"))
-                        ? fileSystem.File.ReadAllBytes(fileSystem.Path.Combine(Resources, "Thumbnails", map.MapUid + ".jpg"))
+                    map.Thumbnail = fileSystem.File.Exists(fileSystem.Path.Combine(Resources, Thumbnails, map.MapUid + ".jpg"))
+                        ? fileSystem.File.ReadAllBytes(fileSystem.Path.Combine(Resources, Thumbnails, map.MapUid + ".jpg"))
                         : null;
                 }
 
@@ -256,8 +257,8 @@ public sealed class Seeding
                         TMFCampaignId = kv.Value.Campaign,
                         Order = kv.Value.Order,
                         FileName = kv.Value.FileName,
-                        Thumbnail = fileSystem.File.Exists(fileSystem.Path.Combine(Resources, "Thumbnails", kv.Key + ".jpg"))
-                            ? fileSystem.File.ReadAllBytes(fileSystem.Path.Combine(Resources, "Thumbnails", kv.Key + ".jpg"))
+                        Thumbnail = fileSystem.File.Exists(fileSystem.Path.Combine(Resources, Thumbnails, kv.Key + ".jpg"))
+                            ? fileSystem.File.ReadAllBytes(fileSystem.Path.Combine(Resources, Thumbnails, kv.Key + ".jpg"))
                             : null
                     });
 
