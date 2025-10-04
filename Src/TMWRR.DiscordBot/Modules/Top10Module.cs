@@ -13,6 +13,8 @@ using TMWRR.DiscordBot.Options;
 
 namespace TMWRR.DiscordBot.Modules;
 
+[CommandContextType(InteractionContextType.BotDm, InteractionContextType.PrivateChannel, InteractionContextType.Guild)]
+[IntegrationType(ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall)]
 public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly TmwrrClient tmwrr;
@@ -25,7 +27,6 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
     }
 
     [SlashCommand("2top10", "Show Top 10 records on a map")]
-    [UserCommand("2top10")]
     public async Task Top10([Summary("map"), Autocomplete(typeof(MapAutocompleteHandler))] string mapName)
     {
         var startedAt = Stopwatch.GetTimestamp();
