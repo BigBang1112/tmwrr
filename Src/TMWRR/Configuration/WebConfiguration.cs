@@ -5,6 +5,8 @@ using ManiaAPI.Xml.Extensions.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Polly;
 using System.Text.Json.Serialization;
+using TMWRR.Api;
+using TMWRR.Api.Converters.Json;
 using TMWRR.Exceptions;
 using TMWRR.Options;
 using TMWRR.Services;
@@ -51,8 +53,10 @@ public static class WebConfiguration
 
         services.ConfigureHttpJsonOptions(options =>
         {
+            options.SerializerOptions.TypeInfoResolverChain.Insert(0, TmwrrJsonSerializerContext.Default);
             options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            options.SerializerOptions.Converters.Add(new JsonTimeInt32Converter());
         });
 
         services.AddHealthChecks();
@@ -64,7 +68,7 @@ public static class WebConfiguration
             options.ForwardedHeaders =
                 ForwardedHeaders.XForwardedFor |
                 ForwardedHeaders.XForwardedProto;
-            options.KnownNetworks.Clear();
+            options.KnownIPNetworks.Clear();
             options.KnownProxies.Clear();
         });
     }

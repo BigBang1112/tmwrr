@@ -1,13 +1,12 @@
 ﻿using Discord.Interactions;
 
-namespace TMWRR.DiscordBot.Modules
+namespace TMWRR.DiscordBot.Modules;
+
+public sealed class HelpModule : InteractionModuleBase<SocketInteractionContext>
 {
-    public sealed class HelpModule : InteractionModuleBase<SocketInteractionContext>
+    [SlashCommand("2help", "How to use TMWR v2?")]
+    public async Task Help()
     {
-        [SlashCommand("help", "How to use this?")]
-        public async Task Help()
-        {
-            await RespondAsync("This bot is designed to help you with various tasks.");
-        }
+        await RespondAsync("Running via https://api.tmwrr.bigbang1112.cz/");
     }
 }

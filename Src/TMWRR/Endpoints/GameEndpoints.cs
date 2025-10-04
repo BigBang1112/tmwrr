@@ -1,41 +1,60 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using TMWRR.Api;
 using TMWRR.Api.TMF;
-using TMWRR.Enums;
 using TMWRR.Extensions;
 using TMWRR.Services;
 using TMWRR.Services.TMF;
 
 namespace TMWRR.Endpoints;
 
-public static class GamesEndpoint
+public static class GameEndpoints
 {
     public static void Map(RouteGroupBuilder group)
     {
+        group.WithTags("Game");
+
         group.MapGet("/", GetGames)
+            .WithSummary("Games")
+            .WithDescription("Retrieve a list of all supported games.")
             .CacheOutput(CachePolicy.Games);
 
         group.MapGet("/{gameId}", GetGame)
+            .WithSummary("Game by ID")
+            .WithDescription("Retrieve details of a specific game by its ID.")
             .CacheOutput(CachePolicy.Games);
 
 
         group.MapGet("/{gameId}/campaigns", GetGameCampaigns)
+            .WithSummary("Campaigns for a game")
+            .WithDescription("Retrieve a list of all campaigns for the specified game. Currently, only 'TMF' is supported as game ID.")
             .CacheOutput(CachePolicy.Campaigns);
 
         group.MapGet("/{gameId}/campaigns/{campaignId}", GetGameCampaign)
+            .WithSummary("Campaign by ID")
+            .WithDescription("Retrieve details of a specific campaign by its ID for the specified game. Currently, only 'TMF' is supported as game ID.")
             .CacheOutput();
 
-        group.MapGet("/{gameId}/campaigns/{campaignId}/maps", GetGameCampaignMaps);
+        group.MapGet("/{gameId}/campaigns/{campaignId}/maps", GetGameCampaignMaps)
+            .WithSummary("Maps for a campaign")
+            .WithDescription("Retrieve a list of all maps for the specified campaign in the specified game. Currently, only 'TMF' is supported as game ID.");
 
-        group.MapGet("/{gameId}/campaigns/{campaignId}/maps/{mapUid}", GetGameCampaignMap);
+        group.MapGet("/{gameId}/campaigns/{campaignId}/maps/{mapUid}", GetGameCampaignMap)
+            .WithSummary("Map by UID")
+            .WithDescription("Retrieve details of a specific map by its UID for the specified campaign in the specified game. Currently, only 'TMF' is supported as game ID.");
 
-        group.MapGet("/{gameId}/campaigns/{campaignId}/maps/{mapUid}/records", GetGameCampaignRecordsByMapUid);
+        //group.MapGet("/{gameId}/campaigns/{campaignId}/maps/{mapUid}/records", GetGameCampaignRecordsByMapUid);
 
-        group.MapGet("/{gameId}/campaigns/{campaignId}/snapshots/latest", GetLatestGameCampaignSnapshot);
+        group.MapGet("/{gameId}/campaigns/{campaignId}/snapshots/latest", GetLatestGameCampaignSnapshot)
+            .WithSummary("Latest campaign snapshot")
+            .WithDescription("Retrieve the latest scores snapshot for the specified campaign in the specified game. Currently, only 'TMF' is supported as game ID.");
 
-        group.MapGet("/{gameId}/campaigns/{campaignId}/snapshots/{createdAt}/{mapUid}/records", GetGameCampaignSnapshotRecordsByMapUid);
+        group.MapGet("/{gameId}/campaigns/{campaignId}/snapshots/{createdAt}/{mapUid}/records", GetGameCampaignSnapshotRecordsByMapUid)
+            .WithSummary("Snapshot records by map UID")
+            .WithDescription("Retrieve all records for a specific map UID from a specific snapshot of the specified campaign in the specified game. Currently, only 'TMF' is supported as game ID.");
 
-        group.MapGet("/{gameId}/logins/{loginId}", GetGameLogin);
+        group.MapGet("/{gameId}/logins/{loginId}", GetGameLogin)
+            .WithSummary("Game login by ID")
+            .WithDescription("Retrieve details of a specific game login by its ID for the specified game. Currently, only 'TMF' is supported as game ID.");
     }
 
     private static async Task<Ok<IEnumerable<Game>>> GetGames(
@@ -183,7 +202,7 @@ public static class GamesEndpoint
         return TypedResults.Ok(dto);
     }
 
-    private static async Task<Results<Ok<IEnumerable<TMFCampaignScoresRecord>>, ValidationProblem>> GetGameCampaignRecordsByMapUid(
+    /*private static async Task<Results<Ok<IEnumerable<TMFCampaignScoresRecord>>, ValidationProblem>> GetGameCampaignRecordsByMapUid(
         EGame gameId,
         string campaignId, 
         string mapUid,
@@ -211,7 +230,7 @@ public static class GamesEndpoint
         var dtos = await scoresSnapshotService.GetLatestRecordDtosAsync(campaignId, mapUid, cancellationToken);
 
         return TypedResults.Ok(dtos);
-    }
+    }*/
 
     private static async Task<Results<Ok<TMFCampaignScoresSnapshot>, ValidationProblem, NotFound>> GetLatestGameCampaignSnapshot(
         EGame gameId, 

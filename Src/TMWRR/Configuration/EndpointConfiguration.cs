@@ -1,4 +1,5 @@
-﻿using TMWRR.Endpoints;
+﻿using TMWRR.Api;
+using TMWRR.Endpoints;
 
 namespace TMWRR.Configuration;
 
@@ -6,19 +7,21 @@ public static class EndpointConfiguration
 {
     public static void MapEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/", async (context) =>
+        app.MapGet("/", () =>
         {
-            await context.Response.WriteAsJsonAsync(new
+            return new TmwrrInformation
             {
-                message = "Welcome to TMWRR! Beware this API version is EXPERIMENTAL and there will be breaking changes."
-            });
-        });
+                Message = "Welcome to TMWRR! Beware this API version is EXPERIMENTAL and there will be breaking changes."
+            };
+        })
+            .WithTags("TMWRR")
+            .WithSummary("Welcome");
 
-        GhostsEndpoint.Map(app.MapGroup("ghosts"));
-        GamesEndpoint.Map(app.MapGroup("games"));
-        EnvironmentsEndpoint.Map(app.MapGroup("environments"));
-        UsersEndpoint.Map(app.MapGroup("users"));
-        MapsEndpoint.Map(app.MapGroup("maps"));
-        ReplaysEndpoint.Map(app.MapGroup("replays"));
+        GhostEndpoints.Map(app.MapGroup("ghosts"));
+        GameEndpoints.Map(app.MapGroup("games"));
+        EnvironmentEndpoints.Map(app.MapGroup("environments"));
+        UserEndpoints.Map(app.MapGroup("users"));
+        Endpoints.MapEndpoints.Map(app.MapGroup("maps"));
+        ReplayEndpoints.Map(app.MapGroup("replays"));
     }
 }

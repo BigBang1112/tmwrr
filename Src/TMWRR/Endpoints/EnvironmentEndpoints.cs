@@ -5,14 +5,20 @@ using TMWRR.Services;
 
 namespace TMWRR.Endpoints;
 
-public static class EnvironmentsEndpoint
+public static class EnvironmentEndpoints
 {
     public static void Map(RouteGroupBuilder group)
     {
+        group.WithTags("Environment");
+
         group.MapGet("/", GetEnvironments)
+            .WithSummary("Environments")
+            .WithDescription("Retrieve a list of all available environments.")
             .CacheOutput(CachePolicy.Environments);
 
         group.MapGet("/{id}", GetEnvironment)
+            .WithSummary("Environment by ID")
+            .WithDescription("Retrieve details of a specific environment by its ID.")
             .CacheOutput(CachePolicy.Environments);
     }
 

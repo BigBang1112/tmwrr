@@ -6,12 +6,19 @@ using TMWRR.Services;
 
 namespace TMWRR.Endpoints;
 
-public static class GhostsEndpoint
+public static class GhostEndpoints
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/{guid}", GetGhost);
-        group.MapGet("/{guid}/download", DownloadGhost);
+        group.WithTags("Ghost");
+
+        group.MapGet("/{guid}", GetGhost)
+            .WithSummary("Ghost by GUID")
+            .WithDescription("Retrieve details of a specific ghost by its GUID.");
+
+        group.MapGet("/{guid}/download", DownloadGhost)
+            .WithSummary("Download ghost")
+            .WithDescription("Download the ghost file associated with the specified GUID.");
     }
 
     private static async Task<Results<Ok<Ghost>, NotFound>> GetGhost(Guid guid, IGhostService ghostService, CancellationToken cancellationToken)

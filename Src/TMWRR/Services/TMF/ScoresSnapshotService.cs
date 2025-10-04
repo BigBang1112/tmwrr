@@ -38,7 +38,7 @@ public interface IScoresSnapshotService
     Task SaveSnapshotAsync(TMFGeneralScoresSnapshotEntity snapshot, CancellationToken cancellationToken);
     ValueTask<IEnumerable<TMFCampaignScoresRecordEntity>> GetLatestRecordsAsync(IEnumerable<MapEntity> maps, CancellationToken cancellationToken);
     Task<TMFCampaignScoresSnapshot?> GetLatestSnapshotDtoAsync(string campaignId, CancellationToken cancellationToken);
-    Task<IEnumerable<TMFCampaignScoresRecord>> GetLatestRecordDtosAsync(string campaignId, string mapUid, CancellationToken cancellationToken);
+    Task<IEnumerable<TMFCampaignScoresRecord>> GetLatestRecordDtosAsync(string mapUid, CancellationToken cancellationToken);
     Task<IEnumerable<TMFCampaignScoresRecord>> GetSnapshotRecordDtosAsync(string campaignId, DateTimeOffset createdAt, string mapUid, CancellationToken cancellationToken);
     Task<IEnumerable<TMFCampaignScoresSnapshot>> GetMapSnapshotDtosAsync(string mapUid, CancellationToken cancellationToken);
     Task<TMFCampaignScoresRecordEntity?> GetRecordAsync(MapEntity map, TMFLoginEntity login, int score, CancellationToken cancellationToken);
@@ -182,15 +182,15 @@ public sealed class ScoresSnapshotService : IScoresSnapshotService
         }, new() { Expiration = TimeSpan.FromDays(1) }, ["snapshot-campaign-tmf"], cancellationToken);
     }
 
-    public async Task<IEnumerable<TMFCampaignScoresRecord>> GetLatestRecordDtosAsync(string campaignId, string mapUid, CancellationToken cancellationToken)
+    public async Task<IEnumerable<TMFCampaignScoresRecord>> GetLatestRecordDtosAsync(string mapUid, CancellationToken cancellationToken)
     {
-        return await hybridCache.GetOrCreateAsync($"snapshot-tmf-records-latest-{campaignId}-{mapUid}", async token =>
+        return await hybridCache.GetOrCreateAsync($"snapshot-tmf-records-latest-{mapUid}", async token =>
         {
             var records = await db.TMFCampaignScoresRecords
                 .Include(x => x.Player)
                 .Include(x => x.Ghost)
                 .Include(x => x.Replay)
-                .Where(x => x.Snapshot.Campaign.Id == campaignId && x.Map.MapUid == mapUid)
+                .Where(x => x.Map.MapUid == mapUid)
                 .GroupBy(x => x.Order)
                 .Select(g => g.OrderByDescending(x => x.Snapshot.CreatedAt).First())
                 .AsNoTracking()

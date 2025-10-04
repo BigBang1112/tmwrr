@@ -2,8 +2,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using TmEssentials;
+using TMWRR.Api;
 using TMWRR.Entities.TMF;
-using TMWRR.Enums;
 
 namespace TMWRR.Entities;
 

@@ -1,4 +1,4 @@
-﻿namespace TMWRR.Enums;
+﻿namespace TMWRR.Api;
 
 public enum EGame
 {

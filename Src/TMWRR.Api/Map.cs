@@ -20,4 +20,9 @@ public sealed class Map
     public ImmutableList<TMFCampaignScoresRecord>? RecordsTMF { get; set; }
     public int? Order { get; set; }
     public string? FileName { get; set; }
+
+    public string GetDisplayName()
+    {
+        return DeformattedName ?? (Name is null ? MapUid : TextFormatter.Deformat(Name));
+    }
 }

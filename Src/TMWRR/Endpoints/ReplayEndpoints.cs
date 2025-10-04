@@ -6,12 +6,19 @@ using TMWRR.Services;
 
 namespace TMWRR.Endpoints;
 
-public static class ReplaysEndpoint
+public static class ReplayEndpoints
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/{guid}", GetReplay);
-        group.MapGet("/{guid}/download", DownloadReplay);
+        group.WithTags("Replay");
+
+        group.MapGet("/{guid}", GetReplay)
+            .WithSummary("Replay by GUID")
+            .WithDescription("Retrieve details of a specific replay by its GUID.");
+
+        group.MapGet("/{guid}/download", DownloadReplay)
+            .WithSummary("Download replay")
+            .WithDescription("Download the replay file associated with the specified GUID.");
     }
 
     private static async Task<Results<Ok<Replay>, NotFound>> GetReplay(Guid guid, IReplayService replayService, CancellationToken cancellationToken)
