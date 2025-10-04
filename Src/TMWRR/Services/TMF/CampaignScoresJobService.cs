@@ -9,7 +9,7 @@ namespace TMWRR.Services.TMF;
 
 public interface ICampaignScoresJobService
 {
-    Task<IReadOnlyDictionary<string, TMFCampaignScoreDiff>> ProcessAsync(
+    Task<(IReadOnlyDictionary<string, TMFCampaignScoreDiff>, PlayerCountDiff)> ProcessAsync(
         string campaignId, 
         IReadOnlyDictionary<string, CampaignScoresLeaderboard> maps, 
         CampaignScoresMedalZone medals, 
@@ -45,7 +45,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         this.logger = logger;
     }
 
-    public async Task<IReadOnlyDictionary<string, TMFCampaignScoreDiff>> ProcessAsync(
+    public async Task<(IReadOnlyDictionary<string, TMFCampaignScoreDiff>, PlayerCountDiff)> ProcessAsync(
         string campaignId,
         IReadOnlyDictionary<string, CampaignScoresLeaderboard> maps,
         CampaignScoresMedalZone medals,
@@ -158,9 +158,14 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             await PopulateSnapshotAsync(snapshot, playersByLogin, map, leaderboard, diff, cancellationToken);
         }
 
+        logger.LogInformation("Counting total record count...");
+
+        var prevTotalRecords = prevPlayerCounts.Count == 0 ? default(int?) : prevPlayerCounts.Sum(x => x.Value);
+        var newTotalRecords = playerCounts.Sum(x => x.Value);
+
         logger.LogInformation("Returning diffs for {Count} maps...", diffs.Count);
 
-        return diffs;
+        return (diffs, new PlayerCountDiff(prevTotalRecords, newTotalRecords));
     }
 
     private async Task<GhostEntity?> DownloadGhostAsync(MapEntity map, TMFLoginEntity login, int score, CancellationToken cancellationToken)

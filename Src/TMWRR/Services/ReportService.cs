@@ -7,7 +7,10 @@ namespace TMWRR.Services;
 
 public interface IReportService
 {
-    Task ReportAsync(IReadOnlyDictionary<string, TMFCampaignScoreDiff> mapUidCampaignScoreDiffs, CancellationToken cancellationToken);
+    Task ReportAsync(
+        IReadOnlyDictionary<string, TMFCampaignScoreDiff> mapUidCampaignScoreDiffs, 
+        IReadOnlyDictionary<string, PlayerCountDiff> allPlayerCountDiffs, 
+        CancellationToken cancellationToken);
     Task ReportAsync(TMFGeneralScoresSnapshotEntity snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken);
 }
 
@@ -33,7 +36,10 @@ public sealed class ReportService : IReportService
         this.logger = logger;
     }
 
-    public async Task ReportAsync(IReadOnlyDictionary<string, TMFCampaignScoreDiff> mapUidCampaignScoreDiffs, CancellationToken cancellationToken)
+    public async Task ReportAsync(
+        IReadOnlyDictionary<string, TMFCampaignScoreDiff> mapUidCampaignScoreDiffs,
+        IReadOnlyDictionary<string, PlayerCountDiff> recordCountDiffsByCampaignId, 
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(mapUidCampaignScoreDiffs);
 
@@ -67,7 +73,7 @@ public sealed class ReportService : IReportService
 
         logger.LogInformation("Reporting {Count} campaign score diffs to Discord...", campaignScoreDiffReports.Count);
 
-        await reportDiscordService.ReportAsync(reportedAt, campaignScoreDiffReports, cancellationToken);
+        await reportDiscordService.ReportAsync(reportedAt, campaignScoreDiffReports, recordCountDiffsByCampaignId, cancellationToken);
 
         logger.LogInformation("Report completed.");
     }

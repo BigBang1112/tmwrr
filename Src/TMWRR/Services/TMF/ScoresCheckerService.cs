@@ -105,6 +105,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
         var hasNewCampaignSnapshots = false;
         var allCampaignDiffs = new Dictionary<string, TMFCampaignScoreDiff>();
+        var recordCountDiffsByCampaignId = new Dictionary<string, PlayerCountDiff>();
 
         await foreach (var (scoreType, lastModifiedAtTask) in dateTimeTasks.WhenEachRemove())
         {
@@ -138,7 +139,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                     await CheckLadderScoresAsync(usedNumber, publishedAt, lastModifiedAt, cancellationToken);
                     break;
                 default:
-                    hasNewCampaignSnapshots = await CheckCampaignScoresAsync(usedNumber, scoreType, allCampaignDiffs, publishedAt, lastModifiedAt, cancellationToken);
+                    hasNewCampaignSnapshots = await CheckCampaignScoresAsync(usedNumber, scoreType, allCampaignDiffs, recordCountDiffsByCampaignId, publishedAt, lastModifiedAt, cancellationToken);
                     break;
             }
         }
@@ -149,7 +150,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         {
             logger.LogInformation("Reporting campaign score changes...");
 
-            await reportService.ReportAsync(allCampaignDiffs, cancellationToken);
+            await reportService.ReportAsync(allCampaignDiffs, recordCountDiffsByCampaignId, cancellationToken);
         }
 
         if (scoresDate is null)
@@ -235,7 +236,8 @@ public sealed class ScoresCheckerService : IScoresCheckerService
     private async Task<bool> CheckCampaignScoresAsync(
         ScoresNumber number, 
         string scoreType, 
-        Dictionary<string, TMFCampaignScoreDiff> allCampaignDiffs, 
+        Dictionary<string, TMFCampaignScoreDiff> allCampaignDiffsByMapUid,
+        Dictionary<string, PlayerCountDiff> recordCountDiffsByCampaignId,
         DateTimeOffset publishedAt, 
         DateTimeOffset lastModifiedAt,
         CancellationToken cancellationToken)
@@ -261,7 +263,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
         var campaignScores = await masterServer.DownloadCampaignScoresAsync(scoreType, number, EarliestZoneId, cancellationToken);
 
-        var campaignDiffs = await campaignScoresJobService.ProcessAsync(
+        var (campaignDiffs, playerDiff) = await campaignScoresJobService.ProcessAsync(
             scoreType,
             campaignScores.Maps,
             campaignScores.MedalZones[Constants.World],
@@ -273,9 +275,11 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         {
             if (!diff.IsEmpty)
             {
-                allCampaignDiffs[mapUid] = diff;
+                allCampaignDiffsByMapUid[mapUid] = diff;
             }
         }
+
+        recordCountDiffsByCampaignId[scoreType] = playerDiff;
 
         // DO NOT USE DIFFS IN THIS COMPARISON because then fresh maps won't be saved in the snapshot
         // this will rarely hit though cuz player count changes basically everyday

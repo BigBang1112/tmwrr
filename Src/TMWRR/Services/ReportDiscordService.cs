@@ -14,7 +14,7 @@ namespace TMWRR.Services;
 
 public interface IReportDiscordService
 {
-    Task ReportAsync(DateTimeOffset reportedAt, IEnumerable<TMFCampaignScoreDiffReport> campaignScoreDiffReports, CancellationToken cancellationToken);
+    Task ReportAsync(DateTimeOffset reportedAt, IEnumerable<TMFCampaignScoreDiffReport> campaignScoreDiffReports, IReadOnlyDictionary<string, PlayerCountDiff> recordCountDiffsByCampaignId, CancellationToken cancellationToken);
     Task ReportAsync(DateTimeOffset reportedAt, TMFGeneralScoresSnapshotEntity snapshot, TMFGeneralScoreDiff? generalDiff, CancellationToken cancellationToken);
 }
 
@@ -37,9 +37,29 @@ public class ReportDiscordService : IReportDiscordService
         this.logger = logger;
     }
 
-    public async Task ReportAsync(DateTimeOffset reportedAt, IEnumerable<TMFCampaignScoreDiffReport> campaignScoreDiffReports, CancellationToken cancellationToken)
+    public async Task ReportAsync(
+        DateTimeOffset reportedAt, 
+        IEnumerable<TMFCampaignScoreDiffReport> campaignScoreDiffReports, 
+        IReadOnlyDictionary<string, PlayerCountDiff> recordCountDiffsByCampaignId,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(campaignScoreDiffReports);
+
+        var totalRecordCountDiff = recordCountDiffsByCampaignId.Values.Sum(x => x.CountAfter - x.CountBefore.GetValueOrDefault());
+
+        string totalRecordCountDiffMessage;
+        if (totalRecordCountDiff > 0)
+        {
+            totalRecordCountDiffMessage = $"{totalRecordCountDiff} record{(totalRecordCountDiff == 1 ? " has" : "s have")} been driven (for the first time).";
+        }
+        else if (totalRecordCountDiff < 0)
+        {
+            totalRecordCountDiffMessage = $"At least {-totalRecordCountDiff} record{(totalRecordCountDiff == -1 ? " has" : "s have")} been removed.";
+        }
+        else
+        {
+            totalRecordCountDiffMessage = "No new records has been driven (for the first time).";
+        }
 
         logger.LogInformation("Creating Discord webhook...");
 
@@ -48,7 +68,7 @@ public class ReportDiscordService : IReportDiscordService
         if (!campaignScoreDiffReports.Any())
         {
             logger.LogInformation("Sending report about no changes in TMF campaigns...");
-            await SendReportAsync(webhook, reportedAt, "No changes in TMF campaigns!", [], cancellationToken);
+            await SendReportAsync(webhook, reportedAt, $"No visible changes in TMF campaigns! {totalRecordCountDiffMessage}", [], cancellationToken);
             return;
         }
 
@@ -179,7 +199,7 @@ public class ReportDiscordService : IReportDiscordService
 
         logger.LogInformation("Sending report about changed maps...");
 
-        await SendReportAsync(webhook, reportedAt, $"Solo leaderboards have changed for {string.Join(", ", maps)}.", fields, cancellationToken);
+        await SendReportAsync(webhook, reportedAt, $"Solo leaderboards have changed for {string.Join(", ", maps)}. {totalRecordCountDiffMessage}", fields, cancellationToken);
     }
 
     private static string GetTimeLink(MapEntity map, TMFCampaignScore record, string score)
@@ -372,11 +392,11 @@ public class ReportDiscordService : IReportDiscordService
 
         if (generalDiff.PlayerCountDelta > 0)
         {
-            sb.AppendLine($"`+ {generalDiff.PlayerCountDelta}` player(s) joined the leaderboard!");
+            sb.AppendLine($"+{generalDiff.PlayerCountDelta} player{(generalDiff.PlayerCountDelta != 1 ? "s" : "")} joined the leaderboard!");
         } 
         else if (generalDiff.PlayerCountDelta < 0)
         {
-            sb.AppendLine($"**`- {Math.Abs(generalDiff.PlayerCountDelta)}` player(s) left the leaderboard!**");
+            sb.AppendLine($"**At least {-generalDiff.PlayerCountDelta} player{(generalDiff.PlayerCountDelta != -1 ? "s" : "")} left the leaderboard!**");
         }
         else
         {
