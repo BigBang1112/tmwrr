@@ -205,7 +205,9 @@ public sealed class Seeding
                     TMFCampaignId = x.Value.Campaign,
                     Order = x.Value.Order,
                     FileName = x.Value.FileName,
-                    Thumbnail = x.Value.Thumbnail
+                    Thumbnail = fileSystem.File.Exists(fileSystem.Path.Combine(Resources, "Thumbnails", x.Key + ".jpg"))
+                        ? fileSystem.File.ReadAllBytes(fileSystem.Path.Combine(Resources, "Thumbnails", x.Key + ".jpg"))
+                        : null
                 }), cancellationToken);
             }
             else
@@ -232,7 +234,9 @@ public sealed class Seeding
                     map.TMFCampaignId = mapResource.Campaign;
                     map.Order = mapResource.Order;
                     map.FileName = mapResource.FileName;
-                    map.Thumbnail = mapResource.Thumbnail;
+                    map.Thumbnail = fileSystem.File.Exists(fileSystem.Path.Combine(Resources, "Thumbnails", map.MapUid + ".jpg"))
+                        ? fileSystem.File.ReadAllBytes(fileSystem.Path.Combine(Resources, "Thumbnails", map.MapUid + ".jpg"))
+                        : null;
                 }
 
                 var existingMapUids = maps.Select(x => x.MapUid).ToHashSet();
@@ -252,7 +256,9 @@ public sealed class Seeding
                         TMFCampaignId = kv.Value.Campaign,
                         Order = kv.Value.Order,
                         FileName = kv.Value.FileName,
-                        Thumbnail = kv.Value.Thumbnail
+                        Thumbnail = fileSystem.File.Exists(fileSystem.Path.Combine(Resources, "Thumbnails", kv.Key + ".jpg"))
+                            ? fileSystem.File.ReadAllBytes(fileSystem.Path.Combine(Resources, "Thumbnails", kv.Key + ".jpg"))
+                            : null
                     });
 
                 await db.Maps.AddRangeAsync(missingMaps, cancellationToken);

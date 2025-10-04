@@ -69,7 +69,7 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
 
         var embed = new EmbedBuilder
         {
-            Title = map.GetDisplayName(),
+            Title = map.GetDisplayName() + " (Official Mode)",
             Description = description,
             ThumbnailUrl = $"{apiOptions.Value.PublicBaseAddress}/{TmwrrClient.GetMapThumbnailEndpoint(map.MapUid)}",
             Footer = new EmbedFooterBuilder { Text = $"TMWR v2 (executed in {Stopwatch.GetElapsedTime(startedAt).TotalSeconds:0.00}s)" },

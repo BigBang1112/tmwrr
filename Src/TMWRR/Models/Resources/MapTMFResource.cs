@@ -10,5 +10,4 @@ public sealed record MapTMFResource(
     int NbLaps,
     string? Campaign,
     int? Order,
-    string FileName,
-    byte[]? Thumbnail);
+    string FileName);
