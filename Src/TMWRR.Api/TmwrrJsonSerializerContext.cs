@@ -7,5 +7,8 @@ namespace TMWRR.Api;
 [JsonSerializable(typeof(TmwrrInformation))]
 [JsonSerializable(typeof(IEnumerable<Map>))]
 [JsonSerializable(typeof(TMFCampaignScoresSnapshot))]
-[JsonSourceGenerationOptions(Converters = [typeof(JsonStringEnumConverter), typeof(JsonTimeInt32Converter)], PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSourceGenerationOptions(Converters = [
+    typeof(JsonStringEnumConverter<EGame>), 
+    typeof(JsonStringEnumConverter<EMode>), 
+    typeof(JsonTimeInt32Converter)], PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 public partial class TmwrrJsonSerializerContext : JsonSerializerContext;
