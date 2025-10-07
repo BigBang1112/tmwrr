@@ -6,4 +6,5 @@ public class TMFCampaignScoresPlayerCountEntity
     public required TMFCampaignScoresSnapshotEntity Snapshot { get; set; }
     public required MapEntity Map { get; set; }
     public required int Count { get; set; }
+    public required int? DnfCount { get; set; }
 }

@@ -17,6 +17,7 @@ public sealed class Map
     public int? NbLaps { get; set; }
     public TMFCampaign? CampaignTMF { get; set; }
     public int? RecordCountTMF { get; set; }
+    public int? DnfCountTMF { get; set; }
     public ImmutableList<TMFCampaignScoresRecord>? RecordsTMF { get; set; }
     public int? Order { get; set; }
     public string? FileName { get; set; }

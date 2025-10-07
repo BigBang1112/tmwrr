@@ -86,6 +86,9 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             var currentCount = leaderboard.Skillpoints.Sum(x => x.Count);
             playerCounts[mapUid] = currentCount;
 
+            // DNF count does count towards skillpoints, so it is only for a fun fact to show
+            var dnfCount = leaderboard.Skillpoints.Reverse().FirstOrDefault(x => x.Score == uint.MaxValue).Count;
+
             logger.LogDebug("Map {MapUid} player count: {Count} (previously {ExistingCount})", mapUid, currentCount, existingCount);
 
             if (existingCount == currentCount)
@@ -99,6 +102,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 Snapshot = snapshot,
                 Map = map,
                 Count = currentCount,
+                DnfCount = dnfCount
             });
         }
 

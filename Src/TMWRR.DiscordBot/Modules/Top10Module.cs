@@ -83,9 +83,15 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
                     Name = "Record count",
                     Value = map.RecordCountTMF?.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' ') ?? "(not available)",
                     IsInline = true
+                },
+                new EmbedFieldBuilder
+                {
+                    Name = "DNF count",
+                    Value = map.DnfCountTMF?.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' ') ?? "(not available)",
+                    IsInline = true
                 }
             }
-        };
+        }.WithCurrentTimestamp();
 
         if (lastUpdatedAt.HasValue)
         {

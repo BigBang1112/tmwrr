@@ -144,6 +144,10 @@ public sealed class MapService : IMapService
                         .OrderByDescending(x => x.Snapshot.CreatedAt)
                         .Select(x => x.Count)
                         .FirstOrDefault(),
+                    DnfCountTMF = x.TMFPlayerCounts
+                        .OrderByDescending(x => x.Snapshot.CreatedAt)
+                        .Select(x => x.DnfCount)
+                        .FirstOrDefault(),
                     RecordsTMF = recordsTMF.ToNullableImmutableListIfEmpty(),
                     Order = x.Order,
                     FileName = x.FileName
