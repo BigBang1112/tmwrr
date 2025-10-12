@@ -87,7 +87,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             playerCounts[mapUid] = currentCount;
 
             // DNF count does count towards skillpoints, so it is only for a fun fact to show
-            var dnfCount = leaderboard.Skillpoints.Reverse().FirstOrDefault(x => x.Score == uint.MaxValue).Count;
+            var dnfCount = leaderboard.Skillpoints.LastOrDefault(x => x.Score == uint.MaxValue - 1).Count;
 
             logger.LogDebug("Map {MapUid} player count: {Count} (previously {ExistingCount})", mapUid, currentCount, existingCount);
 
