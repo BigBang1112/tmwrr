@@ -1,6 +1,6 @@
 ﻿using Discord;
 using Discord.Interactions;
-using Microsoft.Extensions.Configuration;
+using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
@@ -27,15 +27,15 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
     }
 
     [SlashCommand("2top10", "Show Top 10 records on a map")]
-    public async Task Top10([Summary("map"), Autocomplete(typeof(MapAutocompleteHandler))] string mapName)
+    public async Task Top10([Summary("map"), Autocomplete(typeof(MapAutocompleteHandler))] string mapNameQuery)
     {
         var startedAt = Stopwatch.GetTimestamp();
 
-        var maps = await tmwrr.GetMapsAsync(mapName);
+        var maps = await tmwrr.GetMapsAsync(mapNameQuery);
 
         if (!maps.Any())
         {
-            await RespondAsync($"No maps found matching '{mapName}'.", ephemeral: true);
+            await RespondAsync($"No maps found matching '{mapNameQuery}'.", ephemeral: true);
             return;
         }
 
@@ -49,6 +49,14 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
             return;
         }
 
+        var embed = await CreateEmbedAsync(map, startedAt);
+        var components = CreateComponents(mapNameQuery, map, maps);
+
+        await RespondAsync(embed: embed, components: components);
+    }
+
+    private async ValueTask<Embed> CreateEmbedAsync(Map map, long startedAt)
+    {
         var description = BuildRecords(map, playerNoLink: false, timeNoLink: false);
 
         if (description.Length > 4096)
@@ -98,7 +106,65 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
             embed.AddField("Last detected change at", TimestampTag.FromDateTimeOffset(lastUpdatedAt.Value, TimestampTagStyles.LongDateTime), inline: true);
         }
 
-        await RespondAsync(embed: embed.Build());
+        return embed.Build();
+    }
+
+    private static MessageComponent CreateComponents(string mapNameQuery, Map map, IEnumerable<Map> mapsFound)
+    {
+        var components = new ComponentBuilder();
+
+        if (mapsFound.Count() > 1)
+        {
+            components = components.WithSelectMenu(new SelectMenuBuilder
+            {
+                CustomId = $"maps_{mapNameQuery}",
+                Options = mapsFound.Select(x => new SelectMenuOptionBuilder
+                {
+                    Label = x.Name?.Length > 100 ? x.Name[..100] : x.Name,
+                    Value = x.MapUid,
+                    Description = x.Environment?.Name ?? x.Environment?.Id,
+                    IsDefault = x.MapUid == map.MapUid
+                }).ToList(),
+            });
+        }
+
+        return components.Build();
+    }
+
+    [ComponentInteraction("maps_*")]
+    public async Task SelectMap(string mapNameQuery, string[] mapUids)
+    {
+        if (mapUids.Length != 1)
+        {
+            return;
+        }
+
+        var mapUid = mapUids[0];
+
+        if (Context.Interaction is not SocketMessageComponent component)
+        {
+            return;
+        }
+
+        var startedAt = Stopwatch.GetTimestamp();
+
+        var map = await tmwrr.GetMapAsync(mapUid);
+
+        if (map is null)
+        {
+            return;
+        }
+
+        var maps = await tmwrr.GetMapsAsync(mapNameQuery);
+
+        var embed = await CreateEmbedAsync(map, startedAt);
+        var components = CreateComponents(mapNameQuery, map, maps);
+
+        await component.UpdateAsync(msg =>
+        {
+            msg.Embed = embed;
+            msg.Components = components;
+        });
     }
 
     private string BuildRecords(Map map, bool playerNoLink, bool timeNoLink)
