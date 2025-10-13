@@ -63,12 +63,10 @@ public class ReportDiscordService : IReportDiscordService
 
         logger.LogInformation("Creating Discord webhook...");
 
-        using var webhook = webhookFactory.Create(tmufOptions.Value.Discord.TestWebhookUrl);
-
         if (!campaignScoreDiffReports.Any())
         {
             logger.LogInformation("Sending report about no changes in TMF campaigns...");
-            await SendReportAsync(webhook, reportedAt, $"No visible changes in TMF campaigns! {totalRecordCountDiffMessage}", [], cancellationToken);
+            await SendReportAsync(reportedAt, $"No visible changes in TMF campaigns! {totalRecordCountDiffMessage}", [], cancellationToken);
             return;
         }
 
@@ -95,12 +93,12 @@ public class ReportDiscordService : IReportDiscordService
         {
             var sb = new StringBuilder();
 
+            var isScore = report.Map.IsStunts() || report.Map.IsPlatform();
+
             foreach (var removedRecord in report.Diff.RemovedRecords)
             {
                 var removedRecordNickname = logins.GetValueOrDefault(removedRecord.Login) ?? removedRecord.Login;
-                var score = report.Map.IsStunts() || report.Map.IsPlatform()
-                    ? removedRecord.Score.ToString()
-                    : removedRecord.GetTime().ToString(useHundredths: true);
+                var score = isScore ? removedRecord.Score.ToString() : removedRecord.GetTime().ToString(useHundredths: true);
                 var timeLink = GetTimeLink(report.Map, removedRecord, score);
 
                 sb.AppendFormat("`{0}` {1} by **[{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>)** was **removed**",
@@ -114,9 +112,7 @@ public class ReportDiscordService : IReportDiscordService
             foreach (var newRecord in report.Diff.NewRecords)
             {
                 var newRecordNickname = logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login;
-                var score = report.Map.IsStunts() || report.Map.IsPlatform()
-                    ? newRecord.Score.ToString()
-                    : newRecord.GetTime().ToString(useHundredths: true);
+                var score = isScore ? newRecord.Score.ToString() : newRecord.GetTime().ToString(useHundredths: true);
                 var timestampStyle = DateTimeOffset.UtcNow - newRecord.Timestamp > TimeSpan.FromDays(1)
                     ? TimestampTagStyles.ShortDateTime
                     : TimestampTagStyles.ShortTime;
@@ -138,9 +134,7 @@ public class ReportDiscordService : IReportDiscordService
             foreach (var pushedOffRecord in report.Diff.PushedOffRecords)
             {
                 var pushedOffRecordNickname = logins.GetValueOrDefault(pushedOffRecord.Login) ?? pushedOffRecord.Login;
-                var score = report.Map.IsStunts() || report.Map.IsPlatform()
-                    ? pushedOffRecord.Score.ToString()
-                    : pushedOffRecord.GetTime().ToString(useHundredths: true);
+                var score = isScore ? pushedOffRecord.Score.ToString() : pushedOffRecord.GetTime().ToString(useHundredths: true);
 
                 sb.AppendFormat("-# `{0}` `{1}` by [{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>) was pushed off",
                     pushedOffRecord.Rank.ToString("00"),
@@ -153,9 +147,7 @@ public class ReportDiscordService : IReportDiscordService
             foreach (var (oldRecord, newRecord) in report.Diff.ImprovedRecords)
             {
                 var newRecordNickname = logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login;
-                var score = report.Map.IsStunts() || report.Map.IsPlatform()
-                    ? newRecord.Score.ToString()
-                    : newRecord.GetTime().ToString(useHundredths: true);
+                var score = isScore ? newRecord.Score.ToString() : newRecord.GetTime().ToString(useHundredths: true);
                 var delta = report.Map.GetMode() switch
                 {
                     EMode.Stunts => $"+{newRecord.Score - oldRecord.Score}",
@@ -199,26 +191,33 @@ public class ReportDiscordService : IReportDiscordService
 
         logger.LogInformation("Sending report about changed maps...");
 
-        await SendReportAsync(webhook, reportedAt, $"Solo leaderboards have changed for {string.Join(", ", maps)}. {totalRecordCountDiffMessage}", fields, cancellationToken);
+        await SendReportAsync(reportedAt, $"Solo leaderboards have changed for {string.Join(", ", maps)}. {totalRecordCountDiffMessage}", fields, cancellationToken);
     }
 
     private static string GetTimeLink(MapEntity map, TMFCampaignScore record, string score)
     {
         if (record.ReplayGuid is not null)
         {
-            return $"[`{score}`](https://3d.gbx.tools/view/replay?url=https://api.tmwrr.bigbang1112.cz/replays/{record.ReplayGuid}/download)";
+            var downloadUrl = $"https://api.tmwrr.bigbang1112.cz/replays/{record.ReplayGuid}/download";
+            var encodedDownloadUrl = Uri.EscapeDataString(downloadUrl);
+            return $"[`{score}`](https://3d.gbx.tools/view/replay?url={encodedDownloadUrl})";
         }
 
         if (record.GhostGuid is not null)
         {
-            return $"[`{score}`](https://3d.gbx.tools/view/ghost?url=https://api.tmwrr.bigbang1112.cz/ghosts/{record.GhostGuid}/download&mapuid={map.MapUid})";
+            var downloadUrl = $"https://api.tmwrr.bigbang1112.cz/ghosts/{record.GhostGuid}/download";
+            var encodedDownloadUrl = Uri.EscapeDataString(downloadUrl);
+            var encodedMapUid = Uri.EscapeDataString(map.MapUid);
+            return $"[`{score}`](https://3d.gbx.tools/view/ghost?url={encodedDownloadUrl}&mapuid={encodedMapUid})";
         }
 
         return $"`{score}`";
     }
 
-    private async Task SendReportAsync(IDiscordWebhook webhook, DateTimeOffset reportedAt, string text, IEnumerable<EmbedFieldBuilder> fields, CancellationToken cancellationToken)
+    private async Task SendReportAsync(DateTimeOffset reportedAt, string text, IEnumerable<EmbedFieldBuilder> fields, CancellationToken cancellationToken)
     {
+        // Total embed length must be less than or equal to 6000.
+
         var embed = new EmbedBuilder()
             .WithDescription(text)
             .WithFields(fields)
@@ -228,6 +227,8 @@ public class ReportDiscordService : IReportDiscordService
             .WithUrl("https://github.com/BigBang1112/tmwrr")
             .WithTimestamp(reportedAt)
             .Build();
+
+        using var webhook = webhookFactory.Create(tmufOptions.Value.Discord.TestWebhookUrl);
 
         await webhook.SendMessageAsync(embed, cancellationToken);
 
@@ -240,12 +241,10 @@ public class ReportDiscordService : IReportDiscordService
 
         logger.LogInformation("Creating Discord webhook...");
 
-        using var webhook = webhookFactory.Create(tmufOptions.Value.Discord.TestWebhookUrl);
-
         if (snapshot.NoChanges || generalDiff is null)
         {
             logger.LogInformation("Sending report about no changes in TMF general scores...");
-            await SendReportAsync(webhook, reportedAt, "No changes in TMF skillpoint leaderboard!", [], cancellationToken);
+            await SendReportAsync(reportedAt, "No changes in TMF skillpoint leaderboard!", [], cancellationToken);
             return;
         }
 
@@ -405,7 +404,7 @@ public class ReportDiscordService : IReportDiscordService
 
         logger.LogInformation("Sending report about changed general scores...");
 
-        await SendReportAsync(webhook, reportedAt, sb.ToString(), [], cancellationToken);
+        await SendReportAsync(reportedAt, sb.ToString(), [], cancellationToken);
     }
 
     private static string SimplifyUnicode(string input)
