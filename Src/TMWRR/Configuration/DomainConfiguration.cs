@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using TMWRR.DiscordReport;
 using TMWRR.Services;
+using TMWRR.Services.TM2;
 using TMWRR.Services.TMF;
 
 namespace TMWRR.Configuration;
@@ -19,6 +20,8 @@ public static class DomainConfiguration
         services.AddScoped<IScoresSnapshotService, ScoresSnapshotService>();
         services.AddScoped<ICampaignService, CampaignService>();
 
+        services.AddHostedService<TM2LeaderboardCheckerHostedService>();
+        
         //services.AddHostedService<TransferGhostToReplayHostedService>();
         services.AddHostedService<GhostFillDataHostedService>();
         services.AddScoped<IGhostService, GhostService>();

@@ -20,6 +20,10 @@ builder.Services.AddOptions<TMUFOptions>()
     .Bind(builder.Configuration.GetSection("TMUF"))
     .ValidateDataAnnotations();
 
+builder.Services.AddOptions<TM2Options>()
+    .Bind(builder.Configuration.GetSection("TM2"))
+    .ValidateDataAnnotations();
+
 // Add services to the container.
 builder.Services.AddDomainServices();
 builder.Services.AddWebServices(builder.Configuration);

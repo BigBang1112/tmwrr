@@ -2,8 +2,10 @@
 using ManiaAPI.TrackmaniaWS.Extensions.Hosting;
 using ManiaAPI.UnitedLadder;
 using ManiaAPI.Xml.Extensions.Hosting;
+using ManiaAPI.Xml.MP4;
 using Microsoft.AspNetCore.HttpOverrides;
 using Polly;
+using System.Net;
 using System.Text.Json.Serialization;
 using TMWRR.Api;
 using TMWRR.Api.Converters.Json;
@@ -30,6 +32,16 @@ public static class WebConfiguration
             Credentials = new TrackmaniaWSCredentials(tmufOptions.WebServices.ApiUsername, tmufOptions.WebServices.ApiPassword)
         }).AddStandardResilienceHandler();
         services.AddHttpClient<UnitedLadder>().AddStandardResilienceHandler();
+
+        services.AddHttpClient<MasterServerMP4>(client =>
+        {
+            client.BaseAddress = new Uri("http://relay02.v04.maniaplanet.com/game/request.php");
+        }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(10L),
+            AutomaticDecompression = DecompressionMethods.GZip
+        });
+        services.AddSingleton<MasterServerMP4>(provider => new MasterServerMP4(provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(MasterServerMP4))));
 
         services.AddResiliencePipeline("scores", x =>
         {

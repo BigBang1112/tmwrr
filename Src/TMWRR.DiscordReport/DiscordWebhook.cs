@@ -5,7 +5,7 @@ namespace TMWRR.DiscordReport;
 
 public interface IDiscordWebhook : IDisposable
 {
-    Task SendMessageAsync(Embed embed, CancellationToken cancellationToken);
+    Task<ulong> SendMessageAsync(Embed embed, CancellationToken cancellationToken);
 }
 
 internal sealed class DiscordWebhook : IDiscordWebhook
@@ -17,9 +17,9 @@ internal sealed class DiscordWebhook : IDiscordWebhook
         this.client = client;
     }
 
-    public async Task SendMessageAsync(Embed embed, CancellationToken cancellationToken)
+    public async Task<ulong> SendMessageAsync(Embed embed, CancellationToken cancellationToken)
     {
-        await client.SendMessageAsync(embeds: [embed], options: new() { CancelToken = cancellationToken });
+        return await client.SendMessageAsync(embeds: [embed], options: new() { CancelToken = cancellationToken });
     }
 
     public static DiscordWebhook Create(string url)
