@@ -20,7 +20,7 @@ public static class DomainConfiguration
         services.AddScoped<IScoresSnapshotService, ScoresSnapshotService>();
         services.AddScoped<ICampaignService, CampaignService>();
 
-        services.AddHostedService<TM2LeaderboardCheckerHostedService>();
+        //services.AddHostedService<TM2LeaderboardCheckerHostedService>();
         
         //services.AddHostedService<TransferGhostToReplayHostedService>();
         services.AddHostedService<GhostFillDataHostedService>();
