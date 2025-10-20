@@ -89,96 +89,28 @@ public class ReportDiscordService : IReportDiscordService
 
         var fields = new List<EmbedFieldBuilder>();
 
+        // TODO: detect if one player mades >5 top 10 changes, and if so, use player's name as field name and list all his changes inside
+
         foreach (var report in campaignScoreDiffReports)
         {
-            var sb = new StringBuilder();
+            var sb = BuildMapDiffText(report, logins, playerNoLink: false, timeNoLink: false);
 
-            var isScore = report.Map.IsStunts() || report.Map.IsPlatform();
-
-            foreach (var removedRecord in report.Diff.RemovedRecords)
+            if (sb.Length == 0)
             {
-                var removedRecordNickname = logins.GetValueOrDefault(removedRecord.Login) ?? removedRecord.Login;
-                var score = isScore ? removedRecord.Score.ToString() : removedRecord.GetTime().ToString(useHundredths: true);
-                var timeLink = GetTimeLink(report.Map, removedRecord, score);
-
-                sb.AppendFormat("`{0}` {1} by **[{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>)** was **removed**",
-                    removedRecord.Rank.ToString("00"),
-                    timeLink,
-                    TextFormatter.Deformat(removedRecordNickname),
-                    removedRecord.Login);
-                sb.AppendLine();
+                logger.LogWarning("Skipping empty report for map {MapUid}...", report.Map.MapUid);
+                continue;
             }
 
-            foreach (var newRecord in report.Diff.NewRecords)
+            if (sb.Length > 1024)
             {
-                var newRecordNickname = logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login;
-                var score = isScore ? newRecord.Score.ToString() : newRecord.GetTime().ToString(useHundredths: true);
-                var timestampStyle = DateTimeOffset.UtcNow - newRecord.Timestamp > TimeSpan.FromDays(1)
-                    ? TimestampTagStyles.ShortDateTime
-                    : TimestampTagStyles.ShortTime;
-                var timestamp = newRecord.Timestamp.HasValue
-                    ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
-                    : string.Empty;
-                var timeLink = GetTimeLink(report.Map, newRecord, score);
+                sb = BuildMapDiffText(report, logins, playerNoLink: true, timeNoLink: false);
 
-                sb.AppendFormat("`{0}` **{1}** by **[{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>)** {4} [`{5} SP`]",
-                    newRecord.Rank.ToString("00"),
-                    timeLink,
-                    TextFormatter.Deformat(newRecordNickname),
-                    newRecord.Login,
-                    timestamp,
-                    newRecord.Skillpoints?.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' '));
-                sb.AppendLine();
-            }
-
-            foreach (var pushedOffRecord in report.Diff.PushedOffRecords)
-            {
-                var pushedOffRecordNickname = logins.GetValueOrDefault(pushedOffRecord.Login) ?? pushedOffRecord.Login;
-                var score = isScore ? pushedOffRecord.Score.ToString() : pushedOffRecord.GetTime().ToString(useHundredths: true);
-
-                sb.AppendFormat("-# `{0}` `{1}` by [{2}](<https://ul.unitedascenders.xyz/lookup?login={3}>) was pushed off",
-                    pushedOffRecord.Rank.ToString("00"),
-                    score,
-                    TextFormatter.Deformat(pushedOffRecordNickname),
-                    pushedOffRecord.Login);
-                sb.AppendLine();
-            }
-
-            foreach (var (oldRecord, newRecord) in report.Diff.ImprovedRecords)
-            {
-                var newRecordNickname = logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login;
-                var score = isScore ? newRecord.Score.ToString() : newRecord.GetTime().ToString(useHundredths: true);
-                var delta = report.Map.GetMode() switch
+                if (sb.Length > 1024)
                 {
-                    EMode.Stunts => $"+{newRecord.Score - oldRecord.Score}",
-                    EMode.Platform => (newRecord.Score - oldRecord.Score).ToString(),
-                    _ => (newRecord.GetTime() - oldRecord.GetTime()).TotalSeconds.ToString("0.00", CultureInfo.InvariantCulture)
-                };
-                var timestampStyle = DateTimeOffset.UtcNow - newRecord.Timestamp > TimeSpan.FromDays(1)
-                    ? TimestampTagStyles.ShortDateTime
-                    : TimestampTagStyles.ShortTime;
-                var timestamp = newRecord.Timestamp.HasValue
-                    ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
-                    : string.Empty;
-                var skillpointDiff = newRecord.Skillpoints.GetValueOrDefault() - oldRecord.Skillpoints.GetValueOrDefault();
-                var skillpointDiffStr = skillpointDiff.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' ');
-                var skillpointDiffPlusStr = skillpointDiff >= 0 ? $"+{skillpointDiffStr}" : skillpointDiffStr;
-                var timeLink = GetTimeLink(report.Map, newRecord, score);
-
-                sb.AppendFormat("`{0}` **{1}** `{2}` from `{3}` by **[{4}](<https://ul.unitedascenders.xyz/lookup?login={5}>)** {6} [`{8} SP`]",
-                    newRecord.Rank.ToString("00"),
-                    timeLink,
-                    delta,
-                    oldRecord.Rank.ToString("00"),
-                    TextFormatter.Deformat(newRecordNickname),
-                    newRecord.Login,
-                    timestamp,
-                    newRecord.Skillpoints?.ToString("N0"),
-                    skillpointDiffPlusStr);
-                sb.AppendLine();
+                    sb = BuildMapDiffText(report, logins, playerNoLink: true, timeNoLink: true);
+                }
             }
 
-            // Field value length must be less than or equal to 1024
             fields.Add(new EmbedFieldBuilder
             {
                 Name = report.Map.GetDeformattedName(),
@@ -192,6 +124,106 @@ public class ReportDiscordService : IReportDiscordService
         logger.LogInformation("Sending report about changed maps...");
 
         await SendReportAsync(reportedAt, $"Solo leaderboards have changed for {string.Join(", ", maps)}. {totalRecordCountDiffMessage}", fields, cancellationToken);
+    }
+
+    private static StringBuilder BuildMapDiffText(TMFCampaignScoreDiffReport report, IReadOnlyDictionary<string, string?> logins, bool playerNoLink, bool timeNoLink)
+    {
+        var sb = new StringBuilder();
+
+        var isScore = report.Map.IsStunts() || report.Map.IsPlatform();
+
+        foreach (var removedRecord in report.Diff.RemovedRecords)
+        {
+            var removedRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(removedRecord.Login) ?? removedRecord.Login);
+            var score = isScore ? removedRecord.Score.ToString() : removedRecord.GetTime().ToString(useHundredths: true);
+            var timeLink = timeNoLink ? score : GetTimeLink(report.Map, removedRecord, score);
+            var playerLink = playerNoLink
+                ? removedRecordNickname
+                : $"[{removedRecordNickname}](<https://ul.unitedascenders.xyz/lookup?login={removedRecord.Login}>)";
+
+            sb.AppendFormat("`{0}` {1} by **{2}** was **removed**",
+                removedRecord.Rank.ToString("00"),
+                timeLink,
+                playerLink);
+            sb.AppendLine();
+        }
+
+        foreach (var newRecord in report.Diff.NewRecords)
+        {
+            var newRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login);
+            var score = isScore ? newRecord.Score.ToString() : newRecord.GetTime().ToString(useHundredths: true);
+            var timestampStyle = DateTimeOffset.UtcNow - newRecord.Timestamp > TimeSpan.FromDays(1)
+                ? TimestampTagStyles.ShortDateTime
+                : TimestampTagStyles.ShortTime;
+            var timestamp = newRecord.Timestamp.HasValue
+                ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
+                : string.Empty;
+            var timeLink = timeNoLink ? score : GetTimeLink(report.Map, newRecord, score);
+            var playerLink = playerNoLink
+                ? newRecordNickname
+                : $"[{newRecordNickname}](<https://ul.unitedascenders.xyz/lookup?login={newRecord.Login}>)";
+
+            sb.AppendFormat("`{0}` **{1}** by **{2}** {3} [`{4} SP`]",
+                newRecord.Rank.ToString("00"),
+                timeLink,
+                playerLink,
+                timestamp,
+                newRecord.Skillpoints?.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' '));
+            sb.AppendLine();
+        }
+
+        foreach (var (oldRecord, newRecord) in report.Diff.ImprovedRecords)
+        {
+            var improvedRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login);
+            var score = isScore ? newRecord.Score.ToString() : newRecord.GetTime().ToString(useHundredths: true);
+            var delta = report.Map.GetMode() switch
+            {
+                EMode.Stunts => $"+{newRecord.Score - oldRecord.Score}",
+                EMode.Platform => (newRecord.Score - oldRecord.Score).ToString(),
+                _ => (newRecord.GetTime() - oldRecord.GetTime()).TotalSeconds.ToString("0.00", CultureInfo.InvariantCulture)
+            };
+            var timestampStyle = DateTimeOffset.UtcNow - newRecord.Timestamp > TimeSpan.FromDays(1)
+                ? TimestampTagStyles.ShortDateTime
+                : TimestampTagStyles.ShortTime;
+            var timestamp = newRecord.Timestamp.HasValue
+                ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
+                : string.Empty;
+            var skillpointDiff = newRecord.Skillpoints.GetValueOrDefault() - oldRecord.Skillpoints.GetValueOrDefault();
+            var skillpointDiffStr = skillpointDiff.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' ');
+            var skillpointDiffPlusStr = skillpointDiff >= 0 ? $"+{skillpointDiffStr}" : skillpointDiffStr;
+            var timeLink = timeNoLink ? score : GetTimeLink(report.Map, newRecord, score);
+            var playerLink = playerNoLink
+                ? improvedRecordNickname
+                : $"[{improvedRecordNickname}](<https://ul.unitedascenders.xyz/lookup?login={newRecord.Login}>)";
+
+            sb.AppendFormat("`{0}` **{1}** `{2}` from `{3}` by **{4}** {5} [`{7} SP`]",
+                newRecord.Rank.ToString("00"),
+                timeLink,
+                delta,
+                oldRecord.Rank.ToString("00"),
+                playerLink,
+                timestamp,
+                newRecord.Skillpoints?.ToString("N0"),
+                skillpointDiffPlusStr);
+            sb.AppendLine();
+        }
+
+        foreach (var pushedOffRecord in report.Diff.PushedOffRecords)
+        {
+            var pushedOffRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(pushedOffRecord.Login) ?? pushedOffRecord.Login);
+            var score = isScore ? pushedOffRecord.Score.ToString() : pushedOffRecord.GetTime().ToString(useHundredths: true);
+            var playerLink = playerNoLink
+                ? pushedOffRecordNickname
+                : $"[{pushedOffRecordNickname}](<https://ul.unitedascenders.xyz/lookup?login={pushedOffRecord.Login}>)";
+
+            sb.AppendFormat("-# `{0}` `{1}` by {2} was pushed off",
+                pushedOffRecord.Rank.ToString("00"),
+                score,
+                playerLink);
+            sb.AppendLine();
+        }
+
+        return sb;
     }
 
     private static string GetTimeLink(MapEntity map, TMFCampaignScore record, string score)
@@ -216,21 +248,25 @@ public class ReportDiscordService : IReportDiscordService
 
     private async Task SendReportAsync(DateTimeOffset reportedAt, string text, IEnumerable<EmbedFieldBuilder> fields, CancellationToken cancellationToken)
     {
-        // Total embed length must be less than or equal to 6000.
-
-        var embed = new EmbedBuilder()
+        var embedBuilder = new EmbedBuilder()
             .WithDescription(text)
             .WithFields(fields)
             .WithColor(Color.Blue)
             .WithFooter("TMWRR (TMUF Solo Changes) Experimental")
             .WithTitle("TMWRR")
             .WithUrl("https://github.com/BigBang1112/tmwrr")
-            .WithTimestamp(reportedAt)
-            .Build();
+            .WithTimestamp(reportedAt);
+
+        var embeds = new List<Embed>();
+
+        embeds.Add(embedBuilder.Build());
 
         using var webhook = webhookFactory.Create(tmufOptions.Value.Discord.TestWebhookUrl);
 
-        await webhook.SendMessageAsync(embed, cancellationToken);
+        foreach (var embed in embeds)
+        {
+            await webhook.SendMessageAsync(embed, cancellationToken);
+        }
 
         logger.LogInformation("Discord report sent.");
     }
