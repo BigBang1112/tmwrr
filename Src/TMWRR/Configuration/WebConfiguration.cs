@@ -75,13 +75,25 @@ public static class WebConfiguration
 
         services.AddProblemDetails();
 
+        // Figures out HTTPS behind proxies
         services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders =
-                ForwardedHeaders.XForwardedFor |
-                ForwardedHeaders.XForwardedProto;
-            options.KnownIPNetworks.Clear();
-            options.KnownProxies.Clear();
+                ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+            foreach (var knownProxy in config.GetSection("KnownProxies").Get<string[]>() ?? [])
+            {
+                if (IPAddress.TryParse(knownProxy, out var ipAddress))
+                {
+                    options.KnownProxies.Add(ipAddress);
+                    continue;
+                }
+
+                foreach (var hostIpAddress in Dns.GetHostAddresses(knownProxy))
+                {
+                    options.KnownProxies.Add(hostIpAddress);
+                }
+            }
         });
     }
 }
