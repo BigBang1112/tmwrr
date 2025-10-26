@@ -42,15 +42,8 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            Discord = new TMUFDiscord
-            {
-                TestWebhookUrl = ""
-            },
-            WebServices = new TMUFWebServices
-            {
-                ApiUsername = "",
-                ApiPassword = ""
-            }
+            Discord = new TMUFDiscord { TestWebhookUrl = "" },
+            WebServices = new TMUFWebServices { ApiUsername = "", ApiPassword = "" }
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(2)), TimeSpan.Zero);
@@ -81,15 +74,8 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            Discord = new TMUFDiscord
-            {
-                TestWebhookUrl = ""
-            },
-            WebServices = new TMUFWebServices
-            {
-                ApiUsername = "",
-                ApiPassword = ""
-            }
+            Discord = new TMUFDiscord { TestWebhookUrl = "" },
+            WebServices = new TMUFWebServices { ApiUsername = "", ApiPassword = "" }
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST.Add(TimeSpan.FromDays(1)) - TimeSpan.FromHours(2)), TimeSpan.Zero);
@@ -120,15 +106,8 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            Discord = new TMUFDiscord
-            {
-                TestWebhookUrl = ""
-            },
-            WebServices = new TMUFWebServices
-            {
-                ApiUsername = "",
-                ApiPassword = ""
-            }
+            Discord = new TMUFDiscord { TestWebhookUrl = "" },
+            WebServices = new TMUFWebServices { ApiUsername = "", ApiPassword = "" }
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(1)), TimeSpan.Zero);
@@ -159,15 +138,8 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            Discord = new TMUFDiscord
-            {
-                TestWebhookUrl = ""
-            },
-            WebServices = new TMUFWebServices
-            {
-                ApiUsername = "",
-                ApiPassword = ""
-            }
+            Discord = new TMUFDiscord { TestWebhookUrl = "" },
+            WebServices = new TMUFWebServices { ApiUsername = "", ApiPassword = "" }
         });
 
         var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST.Add(TimeSpan.FromDays(1)) - TimeSpan.FromHours(1)), TimeSpan.Zero);
@@ -182,6 +154,36 @@ public class DailyScoreCheckerHostedServiceTests
     }
 
     [Test]
+    public async Task GetNextCheckDateTime_DaylightSavingTransition_PreDST_ReturnsCorrectNextDateTime()
+    {
+        // 29. 3. 2025 (sobota) – stále CET (UTC+1)
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddScoped(_ => options);
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+        var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
+
+        var now = new DateTimeOffset(2025, 3, 29, 8, 0, 0, TimeSpan.Zero); // 08:00 UTC
+        timeProvider.GetUtcNow().Returns(now);
+
+        var checkTimeOfDayCEST = new TimeSpan(11, 0, 0); // 11:00 "CEST" definovaný v konfiguraci
+        options.Value.Returns(new TMUFOptions
+        {
+            CheckTimeOfDayCEST = checkTimeOfDayCEST,
+            Discord = new TMUFDiscord { TestWebhookUrl = "" },
+            WebServices = new TMUFWebServices { ApiUsername = "", ApiPassword = "" }
+        });
+
+        // Očekáváme offset -1 hod (CET) => 10:00 UTC
+        var expectedTime = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(1)), TimeSpan.Zero);
+
+        var service = new DailyScoreCheckerHostedService(scopeFactory, delayService, timeProvider, options, logger);
+
+        var nextCheckDateTime = service.GetNextCheckDateTime();
+
+        await Assert.That(nextCheckDateTime).IsEqualTo(expectedTime);
+    }
+
+    [Test]
     public async Task RunScoreCheckAsync_ShouldReturnExpectedScoresResult()
     {
         // Arrange
@@ -192,15 +194,8 @@ public class DailyScoreCheckerHostedServiceTests
         options.Value.Returns(new TMUFOptions
         {
             CheckTimeOfDayCEST = checkTimeOfDayCEST,
-            Discord = new TMUFDiscord
-            {
-                TestWebhookUrl = ""
-            },
-            WebServices = new TMUFWebServices
-            {
-                ApiUsername = "",
-                ApiPassword = ""
-            }
+            Discord = new TMUFDiscord { TestWebhookUrl = "" },
+            WebServices = new TMUFWebServices { ApiUsername = "", ApiPassword = "" }
         });
 
         var expectedNextCheck = new DateTimeOffset(now.Date.Add(checkTimeOfDayCEST - TimeSpan.FromHours(1)), TimeSpan.Zero);
@@ -248,24 +243,13 @@ public class DailyScoreCheckerHostedServiceTests
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
             CheckRetryTimeout = TimeSpan.FromSeconds(30),
-            Discord = new TMUFDiscord
-            {
-                TestWebhookUrl = ""
-            },
-            WebServices = new TMUFWebServices
-            {
-                ApiUsername = "",
-                ApiPassword = ""
-            }
+            Discord = new TMUFDiscord { TestWebhookUrl = "" },
+            WebServices = new TMUFWebServices { ApiUsername = "", ApiPassword = "" }
         });
 
-        // Setup delay to complete successfully.
         delayService.DelayAsync(Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         var scoreCheckerService = Substitute.For<IScoresCheckerService>();
-
-        // Setup the scoreCheckerService to return a valid result.
-        // The RunScoreCheckAsync method uses the result of CheckScoresAsync.
         scoreCheckerService.CheckScoresAsync(Arg.Any<ScoresNumber?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(expectedNumber));
 
@@ -312,18 +296,10 @@ public class DailyScoreCheckerHostedServiceTests
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
             CheckRetryTimeout = TimeSpan.FromSeconds(30),
-            Discord = new TMUFDiscord
-            {
-                TestWebhookUrl = ""
-            },
-            WebServices = new TMUFWebServices
-            {
-                ApiUsername = "",
-                ApiPassword = ""
-            }
+            Discord = new TMUFDiscord { TestWebhookUrl = "" },
+            WebServices = new TMUFWebServices { ApiUsername = "", ApiPassword = "" }
         });
 
-        // Setup delay to throw TaskCanceledException.
         delayService.DelayAsync(Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Throws(new TaskCanceledException());
 
@@ -366,15 +342,8 @@ public class DailyScoreCheckerHostedServiceTests
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
             CheckRetryTimeout = TimeSpan.FromSeconds(30),
-            Discord = new TMUFDiscord
-            {
-                TestWebhookUrl = ""
-            },
-            WebServices = new TMUFWebServices
-            {
-                ApiUsername = "",
-                ApiPassword = ""
-            }
+            Discord = new TMUFDiscord { TestWebhookUrl = "" },
+            WebServices = new TMUFWebServices { ApiUsername = "", ApiPassword = "" }
         });
 
         var scoreCheckerService = Substitute.For<IScoresCheckerService>();
@@ -420,18 +389,10 @@ public class DailyScoreCheckerHostedServiceTests
             CheckTimeOfDayCEST = new TimeSpan(11, 0, 0),
             CheckRetryDelay = TimeSpan.FromSeconds(5),
             CheckRetryTimeout = TimeSpan.FromSeconds(30),
-            Discord = new TMUFDiscord
-            {
-                TestWebhookUrl = ""
-            },
-            WebServices = new TMUFWebServices
-            {
-                ApiUsername = "",
-                ApiPassword = ""
-            }
+            Discord = new TMUFDiscord { TestWebhookUrl = "" },
+            WebServices = new TMUFWebServices { ApiUsername = "", ApiPassword = "" }
         });
 
-        // Setup delay to complete successfully.
         delayService.DelayAsync(Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         var scoreCheckerService = Substitute.For<IScoresCheckerService>();

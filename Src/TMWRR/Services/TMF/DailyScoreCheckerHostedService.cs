@@ -112,9 +112,14 @@ public sealed class DailyScoreCheckerHostedService : BackgroundService
 
         var options = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<TMUFOptions>>();
 
-        var now = timeProvider.GetUtcNow();
-        var nextCheckTimeUtc = options.Value.CheckTimeOfDayCEST - CET.GetUtcOffset(now);
-        return new DateTimeOffset(now.Date.Add(nextCheckTimeUtc), TimeSpan.Zero)
-            .AddDays(now.TimeOfDay > nextCheckTimeUtc ? 1 : 0);
+        var nowUtc = timeProvider.GetUtcNow();
+        var nowLocal = TimeZoneInfo.ConvertTime(nowUtc, CET);
+
+        var todayCheckLocal = nowLocal.Date + options.Value.CheckTimeOfDayCEST;
+        var nextCheckLocal = nowLocal > todayCheckLocal
+            ? todayCheckLocal.AddDays(1)
+            : todayCheckLocal;
+
+        return TimeZoneInfo.ConvertTimeToUtc(nextCheckLocal, CET);
     }
 }
