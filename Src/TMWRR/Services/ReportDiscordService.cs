@@ -89,11 +89,58 @@ public class ReportDiscordService : IReportDiscordService
 
         var fields = new List<EmbedFieldBuilder>();
 
-        // TODO: detect if one player mades >5 top 10 changes, and if so, use player's name as field name and list all his changes inside
+        // TODO: detect if one player mades >10 top 10 changes, and if so, use player's name as field name and list all his changes inside
+
+        var newRecordsBySinglePlayer = campaignScoreDiffReports
+            .SelectMany(x => x.Diff.NewRecords.Select(record => (x.Map, record)))
+            .GroupBy(x => x.record.Login)
+            .Where(g => g.Count() > 10);
+
+        var loginsWithMoreThan5Changes = newRecordsBySinglePlayer.Select(g => g.Key);
+
+        foreach (var recordsGroup in newRecordsBySinglePlayer)
+        {
+            var login = recordsGroup.Key;
+
+            var sb = BuildPlayerDiffText(recordsGroup, timeNoLink: false);
+
+            if (sb.Length == 0)
+            {
+                logger.LogWarning("Skipping empty report for player {Login}...", login);
+                continue;
+            }
+
+            var skips = 0;
+            while (sb.Length > EmbedFieldBuilder.MaxFieldValueLength)
+            {
+                skips++;
+                sb = BuildPlayerDiffText(recordsGroup.SkipLast(skips), timeNoLink: false);
+                sb.AppendLine($"...and {skips} more records");
+
+                if (skips >= recordsGroup.Count())
+                {
+                    throw new InvalidOperationException("Cannot reduce player diff text to fit into embed field.");
+                }
+            }
+
+            var playerName = TextFormatter.Deformat(logins.GetValueOrDefault(login) ?? login);
+
+            fields.Add(new EmbedFieldBuilder
+            {
+                Name = $"Performance by **{playerName}**:",
+                Value = sb.ToString()
+            });
+        }
 
         foreach (var report in campaignScoreDiffReports)
         {
-            var sb = BuildMapDiffText(report, logins, playerNoLink: false, timeNoLink: false);
+            if (fields.Count >= EmbedBuilder.MaxFieldCount)
+            {
+                logger.LogWarning("Maximum number of embed fields reached, skipping remaining reports...");
+                break;
+            }
+
+            var sb = BuildMapDiffText(report, logins, playerNoLink: false, timeNoLink: false, loginsWithMoreThan5Changes);
 
             if (sb.Length == 0)
             {
@@ -101,13 +148,13 @@ public class ReportDiscordService : IReportDiscordService
                 continue;
             }
 
-            if (sb.Length > 1024)
+            if (sb.Length > EmbedFieldBuilder.MaxFieldValueLength)
             {
-                sb = BuildMapDiffText(report, logins, playerNoLink: true, timeNoLink: false);
+                sb = BuildMapDiffText(report, logins, playerNoLink: true, timeNoLink: false, loginsWithMoreThan5Changes);
 
-                if (sb.Length > 1024)
+                if (sb.Length > EmbedFieldBuilder.MaxFieldValueLength)
                 {
-                    sb = BuildMapDiffText(report, logins, playerNoLink: true, timeNoLink: true);
+                    sb = BuildMapDiffText(report, logins, playerNoLink: true, timeNoLink: true, loginsWithMoreThan5Changes);
                 }
             }
 
@@ -118,15 +165,43 @@ public class ReportDiscordService : IReportDiscordService
             });
         }
 
-        var maps = campaignScoreDiffReports.Select(x =>
-            string.Format("[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)", x.Map.GetDeformattedName(), x.Map.MapUid));
+        string mapsStr;
+        if (campaignScoreDiffReports.Count() > 10)
+        { 
+            mapsStr = $"{campaignScoreDiffReports.Count()} maps";
+        }
+        else
+        {
+            mapsStr = string.Join(", ", campaignScoreDiffReports.Select(x =>
+                string.Format("[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)", x.Map.GetDeformattedName(), x.Map.MapUid)));
+        }
 
         logger.LogInformation("Sending report about changed maps...");
 
-        await SendReportAsync(reportedAt, $"Solo leaderboards have changed for {string.Join(", ", maps)}. {totalRecordCountDiffMessage}", fields, cancellationToken);
+        await SendReportAsync(reportedAt, $"Solo leaderboards have changed for {mapsStr}. {totalRecordCountDiffMessage}", fields, cancellationToken);
     }
 
-    private static StringBuilder BuildMapDiffText(TMFCampaignScoreDiffReport report, IReadOnlyDictionary<string, string?> logins, bool playerNoLink, bool timeNoLink)
+    private static StringBuilder BuildPlayerDiffText(IEnumerable<(MapEntity Map, TMFCampaignScore record)> records, bool timeNoLink)
+    {
+        var sb = new StringBuilder();
+
+        foreach (var (map, record) in records)
+        {
+            var score = map.IsStunts() || map.IsPlatform()
+                ? record.Score.ToString()
+                : record.GetTime().ToString(useHundredths: true);
+            var timeLink = timeNoLink ? score : GetTimeLink(map, record, score);
+            sb.AppendFormat("`{0}` {1} on **{2}**",
+                record.Rank.ToString("00"),
+                timeLink,
+                map.GetDeformattedName());
+            sb.AppendLine();
+        }
+
+        return sb;
+    }
+
+    private static StringBuilder BuildMapDiffText(TMFCampaignScoreDiffReport report, IReadOnlyDictionary<string, string?> logins, bool playerNoLink, bool timeNoLink, IEnumerable<string> loginsWithMoreThan5Changes)
     {
         var sb = new StringBuilder();
 
@@ -150,6 +225,12 @@ public class ReportDiscordService : IReportDiscordService
 
         foreach (var newRecord in report.Diff.NewRecords)
         {
+            if (loginsWithMoreThan5Changes.Contains(newRecord.Login))
+            {
+                // Skip new records for players with more than 5 changes, they will be reported separately
+                continue;
+            }
+
             var newRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login);
             var score = isScore ? newRecord.Score.ToString() : newRecord.GetTime().ToString(useHundredths: true);
             var timestampStyle = DateTimeOffset.UtcNow - newRecord.Timestamp > TimeSpan.FromDays(1)
@@ -249,17 +330,50 @@ public class ReportDiscordService : IReportDiscordService
     private async Task SendReportAsync(DateTimeOffset reportedAt, string text, IEnumerable<EmbedFieldBuilder> fields, CancellationToken cancellationToken)
     {
         var embedBuilder = new EmbedBuilder()
+            .WithTitle("TMWRR")
             .WithDescription(text)
             .WithFields(fields)
             .WithColor(Color.Blue)
             .WithFooter("TMWRR (TMUF Solo Changes) Experimental")
-            .WithTitle("TMWRR")
             .WithUrl("https://github.com/BigBang1112/tmwrr")
             .WithTimestamp(reportedAt);
 
-        var embeds = new List<Embed>();
+        Embed finalEmbed;
+        var removedFields = new List<EmbedFieldBuilder>();
+        while (true)
+        {
+            try
+            {
+                finalEmbed = embedBuilder.Build();
+                break;
+            }
+            catch (InvalidOperationException)
+            {
+                if (embedBuilder.Fields.Count == 0)
+                {
+                    logger.LogError("Cannot build embed even after removing all fields.");
+                    throw;
+                }
 
-        embeds.Add(embedBuilder.Build());
+                // Remove the last field and try again
+                removedFields.Add(embedBuilder.Fields.Last());
+                embedBuilder.Fields.RemoveAt(embedBuilder.Fields.Count - 1);
+                logger.LogWarning("Embed fields exceed maximum, removing last field and retrying... Removed fields so far: {RemovedFieldsCount}", removedFields.Count);
+            }
+        }
+
+        var embeds = new List<Embed> { finalEmbed };
+
+        foreach (var removedFieldsChunk in removedFields.Chunk(EmbedBuilder.MaxFieldCount))
+        {
+            embeds.Add(new EmbedBuilder()
+                .WithTitle("More changes")
+                .WithFields(removedFieldsChunk)
+                .WithColor(Color.Orange)
+                .WithFooter("TMWRR (TMUF Solo Changes) Experimental")
+                .WithTimestamp(reportedAt)
+                .Build());
+        }
 
         using var webhook = webhookFactory.Create(tmufOptions.Value.Discord.TestWebhookUrl);
 
