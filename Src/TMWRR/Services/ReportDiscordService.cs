@@ -223,6 +223,8 @@ public class ReportDiscordService : IReportDiscordService
             sb.AppendLine();
         }
 
+        var newRecCount = 0;
+
         foreach (var newRecord in report.Diff.NewRecords)
         {
             if (loginsWithMoreThan5Changes.Contains(newRecord.Login))
@@ -230,6 +232,8 @@ public class ReportDiscordService : IReportDiscordService
                 // Skip new records for players with more than 5 changes, they will be reported separately
                 continue;
             }
+
+            newRecCount++;
 
             var newRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login);
             var score = isScore ? newRecord.Score.ToString() : newRecord.GetTime().ToString(useHundredths: true);
@@ -289,19 +293,23 @@ public class ReportDiscordService : IReportDiscordService
             sb.AppendLine();
         }
 
-        foreach (var pushedOffRecord in report.Diff.PushedOffRecords)
+        // do not report pushed off recs when there are no new recs to report (they may have been reported separately)
+        if (newRecCount > 0)
         {
-            var pushedOffRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(pushedOffRecord.Login) ?? pushedOffRecord.Login);
-            var score = isScore ? pushedOffRecord.Score.ToString() : pushedOffRecord.GetTime().ToString(useHundredths: true);
-            var playerLink = playerNoLink
-                ? pushedOffRecordNickname
-                : $"[{pushedOffRecordNickname}](<https://ul.unitedascenders.xyz/lookup?login={pushedOffRecord.Login}>)";
+            foreach (var pushedOffRecord in report.Diff.PushedOffRecords)
+            {
+                var pushedOffRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(pushedOffRecord.Login) ?? pushedOffRecord.Login);
+                var score = isScore ? pushedOffRecord.Score.ToString() : pushedOffRecord.GetTime().ToString(useHundredths: true);
+                var playerLink = playerNoLink
+                    ? pushedOffRecordNickname
+                    : $"[{pushedOffRecordNickname}](<https://ul.unitedascenders.xyz/lookup?login={pushedOffRecord.Login}>)";
 
-            sb.AppendFormat("-# `{0}` `{1}` by {2} was pushed off",
-                pushedOffRecord.Rank.ToString("00"),
-                score,
-                playerLink);
-            sb.AppendLine();
+                sb.AppendFormat("-# `{0}` `{1}` by {2} was pushed off",
+                    pushedOffRecord.Rank.ToString("00"),
+                    score,
+                    playerLink);
+                sb.AppendLine();
+            }
         }
 
         return sb;
