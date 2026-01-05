@@ -25,6 +25,8 @@ public class ReportDiscordService : IReportDiscordService
     private readonly IOptionsSnapshot<TMUFOptions> tmufOptions;
     private readonly ILogger<ReportDiscordService> logger;
 
+    private sealed record PlayerRecordMoreThanUsual(MapEntity Map, TMFCampaignScore Record, bool IsRemoved);
+
     public ReportDiscordService(
         IDiscordWebhookFactory webhookFactory,
         ILoginService loginService,
@@ -92,17 +94,19 @@ public class ReportDiscordService : IReportDiscordService
         // TODO: detect if one player mades >10 top 10 changes, and if so, use player's name as field name and list all his changes inside
 
         var newRecordsBySinglePlayer = campaignScoreDiffReports
-            .SelectMany(x => x.Diff.NewRecords.Select(record => (x.Map, record)))
-            .GroupBy(x => x.record.Login)
+            .SelectMany(x => x.Diff.NewRecords.Select(record => new PlayerRecordMoreThanUsual(x.Map, record, IsRemoved: false))
+                .Concat(x.Diff.RemovedRecords.Select(record => new PlayerRecordMoreThanUsual(x.Map, record, IsRemoved: true))))
+            .GroupBy(x => (x.Record.Login, x.IsRemoved))
             .Where(g => g.Count() > 10);
 
-        var loginsWithMoreThan5Changes = newRecordsBySinglePlayer.Select(g => g.Key);
+        var loginsWithMoreThanUsualChanges = newRecordsBySinglePlayer.Select(g => g.Key.Login);
 
         foreach (var recordsGroup in newRecordsBySinglePlayer)
         {
-            var login = recordsGroup.Key;
+            var login = recordsGroup.Key.Login;
+            var isRemoved = recordsGroup.Key.IsRemoved;
 
-            var sb = BuildPlayerDiffText(recordsGroup, timeNoLink: false);
+            var sb = BuildPlayerDiffText(recordsGroup.AsEnumerable(), timeNoLink: false);
 
             if (sb.Length == 0)
             {
@@ -127,7 +131,7 @@ public class ReportDiscordService : IReportDiscordService
 
             fields.Add(new EmbedFieldBuilder
             {
-                Name = $"Performance by **{playerName}**:",
+                Name = $"{(isRemoved ? "Removed" : "New")} records by **{playerName}**:",
                 Value = sb.ToString()
             });
         }
@@ -140,7 +144,7 @@ public class ReportDiscordService : IReportDiscordService
                 break;
             }
 
-            var sb = BuildMapDiffText(report, logins, playerNoLink: false, timeNoLink: false, loginsWithMoreThan5Changes);
+            var sb = BuildMapDiffText(report, logins, playerNoLink: false, timeNoLink: false, loginsWithMoreThanUsualChanges);
 
             if (sb.Length == 0)
             {
@@ -150,11 +154,11 @@ public class ReportDiscordService : IReportDiscordService
 
             if (sb.Length > EmbedFieldBuilder.MaxFieldValueLength)
             {
-                sb = BuildMapDiffText(report, logins, playerNoLink: true, timeNoLink: false, loginsWithMoreThan5Changes);
+                sb = BuildMapDiffText(report, logins, playerNoLink: true, timeNoLink: false, loginsWithMoreThanUsualChanges);
 
                 if (sb.Length > EmbedFieldBuilder.MaxFieldValueLength)
                 {
-                    sb = BuildMapDiffText(report, logins, playerNoLink: true, timeNoLink: true, loginsWithMoreThan5Changes);
+                    sb = BuildMapDiffText(report, logins, playerNoLink: true, timeNoLink: true, loginsWithMoreThanUsualChanges);
                 }
             }
 
@@ -181,11 +185,11 @@ public class ReportDiscordService : IReportDiscordService
         await SendReportAsync(reportedAt, $"Solo leaderboards have changed for {mapsStr}. {totalRecordCountDiffMessage}", fields, cancellationToken);
     }
 
-    private static StringBuilder BuildPlayerDiffText(IEnumerable<(MapEntity Map, TMFCampaignScore record)> records, bool timeNoLink)
+    private static StringBuilder BuildPlayerDiffText(IEnumerable<PlayerRecordMoreThanUsual> records, bool timeNoLink)
     {
         var sb = new StringBuilder();
 
-        foreach (var (map, record) in records)
+        foreach (var (map, record, _) in records)
         {
             var score = map.IsStunts() || map.IsPlatform()
                 ? record.Score.ToString()
@@ -201,14 +205,24 @@ public class ReportDiscordService : IReportDiscordService
         return sb;
     }
 
-    private static StringBuilder BuildMapDiffText(TMFCampaignScoreDiffReport report, IReadOnlyDictionary<string, string?> logins, bool playerNoLink, bool timeNoLink, IEnumerable<string> loginsWithMoreThan5Changes)
+    private static StringBuilder BuildMapDiffText(TMFCampaignScoreDiffReport report, IReadOnlyDictionary<string, string?> logins, bool playerNoLink, bool timeNoLink, IEnumerable<string> loginsWithMoreThanUsualChanges)
     {
+        var newRecCount = 0;
+        var hasManyRemovals = false;
+
         var sb = new StringBuilder();
 
         var isScore = report.Map.IsStunts() || report.Map.IsPlatform();
 
         foreach (var removedRecord in report.Diff.RemovedRecords)
         {
+            if (loginsWithMoreThanUsualChanges.Contains(removedRecord.Login))
+            {
+                // Skip removed records for players with more than usual changes, they will be reported separately
+                hasManyRemovals = true;
+                continue;
+            }
+
             var removedRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(removedRecord.Login) ?? removedRecord.Login);
             var score = isScore ? removedRecord.Score.ToString() : removedRecord.GetTime().ToString(useHundredths: true);
             var timeLink = timeNoLink ? score : GetTimeLink(report.Map, removedRecord, score);
@@ -223,38 +237,40 @@ public class ReportDiscordService : IReportDiscordService
             sb.AppendLine();
         }
 
-        var newRecCount = 0;
-
-        foreach (var newRecord in report.Diff.NewRecords)
+        // Only report new records if there are not many removals, and if there are, only report new records beyond those made by players with many changes
+        if (!hasManyRemovals || report.Diff.NewRecords.Count > loginsWithMoreThanUsualChanges.Count())
         {
-            if (loginsWithMoreThan5Changes.Contains(newRecord.Login))
+            foreach (var newRecord in report.Diff.NewRecords)
             {
-                // Skip new records for players with more than 5 changes, they will be reported separately
-                continue;
+                if (loginsWithMoreThanUsualChanges.Contains(newRecord.Login))
+                {
+                    // Skip new records for players with more than usual changes, they will be reported separately
+                    continue;
+                }
+
+                newRecCount++;
+
+                var newRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login);
+                var score = isScore ? newRecord.Score.ToString() : newRecord.GetTime().ToString(useHundredths: true);
+                var timestampStyle = DateTimeOffset.UtcNow - newRecord.Timestamp > TimeSpan.FromDays(1)
+                    ? TimestampTagStyles.ShortDateTime
+                    : TimestampTagStyles.ShortTime;
+                var timestamp = newRecord.Timestamp.HasValue
+                    ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
+                    : string.Empty;
+                var timeLink = timeNoLink ? score : GetTimeLink(report.Map, newRecord, score);
+                var playerLink = playerNoLink
+                    ? newRecordNickname
+                    : $"[{newRecordNickname}](<https://ul.unitedascenders.xyz/lookup?login={newRecord.Login}>)";
+
+                sb.AppendFormat("`{0}` **{1}** by **{2}** {3} [`{4} SP`]",
+                    newRecord.Rank.ToString("00"),
+                    timeLink,
+                    playerLink,
+                    timestamp,
+                    newRecord.Skillpoints?.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' '));
+                sb.AppendLine();
             }
-
-            newRecCount++;
-
-            var newRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login);
-            var score = isScore ? newRecord.Score.ToString() : newRecord.GetTime().ToString(useHundredths: true);
-            var timestampStyle = DateTimeOffset.UtcNow - newRecord.Timestamp > TimeSpan.FromDays(1)
-                ? TimestampTagStyles.ShortDateTime
-                : TimestampTagStyles.ShortTime;
-            var timestamp = newRecord.Timestamp.HasValue
-                ? $"({TimestampTag.FormatFromDateTimeOffset(newRecord.Timestamp.Value, timestampStyle)})"
-                : string.Empty;
-            var timeLink = timeNoLink ? score : GetTimeLink(report.Map, newRecord, score);
-            var playerLink = playerNoLink
-                ? newRecordNickname
-                : $"[{newRecordNickname}](<https://ul.unitedascenders.xyz/lookup?login={newRecord.Login}>)";
-
-            sb.AppendFormat("`{0}` **{1}** by **{2}** {3} [`{4} SP`]",
-                newRecord.Rank.ToString("00"),
-                timeLink,
-                playerLink,
-                timestamp,
-                newRecord.Skillpoints?.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' '));
-            sb.AppendLine();
         }
 
         foreach (var (oldRecord, newRecord) in report.Diff.ImprovedRecords)
