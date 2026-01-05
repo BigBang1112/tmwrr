@@ -18,6 +18,8 @@ jobs:
             image_name: tmwrr
           - project: TMWRR.DiscordBot
             image_name: tmwrr-discord-bot
+          - project: TMWRR.Frontend/TMWRR.Frontend
+            image_name: tmwrr-frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4

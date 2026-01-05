@@ -335,17 +335,12 @@ public class ReportDiscordService : IReportDiscordService
     {
         if (record.ReplayGuid is not null)
         {
-            var downloadUrl = $"https://api.tmwrr.bigbang1112.cz/replays/{record.ReplayGuid}/download";
-            var encodedDownloadUrl = Uri.EscapeDataString(downloadUrl);
-            return $"[`{score}`](https://3d.gbx.tools/view/replay?url={encodedDownloadUrl})";
+            return $"[`{score}`](https://tmwrr.bigbang1112.cz/v/r/{record.ReplayGuid})";
         }
 
         if (record.GhostGuid is not null)
         {
-            var downloadUrl = $"https://api.tmwrr.bigbang1112.cz/ghosts/{record.GhostGuid}/download";
-            var encodedDownloadUrl = Uri.EscapeDataString(downloadUrl);
-            var encodedMapUid = Uri.EscapeDataString(map.MapUid);
-            return $"[`{score}`](https://3d.gbx.tools/view/ghost?url={encodedDownloadUrl}&mapuid={encodedMapUid})";
+            return $"[`{score}`](https://tmwrr.bigbang1112.cz/v/g/{record.GhostGuid}/{map.MapUid})";
         }
 
         return $"`{score}`";

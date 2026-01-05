@@ -167,7 +167,7 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
         });
     }
 
-    private string BuildRecords(Map map, bool playerNoLink, bool timeNoLink)
+    private static string BuildRecords(Map map, bool playerNoLink, bool timeNoLink)
     {
         var sb = new StringBuilder();
 
@@ -206,7 +206,7 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
         return sb.ToString();
     }
 
-    private string GetTimeLink(Map map, TMFCampaignScoresRecord record, bool noLink = false)
+    private static string GetTimeLink(Map map, TMFCampaignScoresRecord record, bool noLink = false)
     {
         var hasScoreFormat = map.Mode is not null && (map.Mode.IsStunts() || map.Mode.IsPlatform());
         var isTMUF = map.Environment?.Game?.IsTMF() ?? false;
@@ -219,12 +219,12 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
         {
             if (record.Replay is not null)
             {
-                return $"[`{score}`](https://3d.gbx.tools/view/replay?url={apiOptions.Value.PublicBaseAddress}/replays/{record.Replay.Guid}/download)";
+                return $"[`{score}`](https://tmwrr.bigbang1112.cz/v/r/{record.Replay.Guid})";
             }
 
             if (record.Ghost is not null)
             {
-                return $"[`{score}`](https://3d.gbx.tools/view/ghost?url={apiOptions.Value.PublicBaseAddress}/ghosts/{record.Ghost.Guid}/download&mapuid={map.MapUid})";
+                return $"[`{score}`](https://tmwrr.bigbang1112.cz/v/g/{record.Ghost.Guid}/{map.MapUid})";
             }
         }
 
