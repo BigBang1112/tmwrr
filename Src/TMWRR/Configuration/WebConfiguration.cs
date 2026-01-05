@@ -33,15 +33,7 @@ public static class WebConfiguration
         }).AddStandardResilienceHandler();
         services.AddHttpClient<UnitedLadder>().AddStandardResilienceHandler();
 
-        services.AddHttpClient<MasterServerMP4>(client =>
-        {
-            client.BaseAddress = new Uri("http://relay02.v04.maniaplanet.com/game/request.php");
-        }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
-        {
-            PooledConnectionLifetime = TimeSpan.FromMinutes(10L),
-            AutomaticDecompression = DecompressionMethods.GZip
-        });
-        services.AddSingleton<MasterServerMP4>(provider => new MasterServerMP4(provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(MasterServerMP4))));
+        services.AddMasterServerMP4();
 
         services.AddResiliencePipeline("scores", x =>
         {

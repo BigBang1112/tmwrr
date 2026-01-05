@@ -94,7 +94,7 @@ public sealed class TM2LeaderboardCheckerHostedService : BackgroundService
         var options = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<TM2Options>>();
         var masterServerMP4 = scope.ServiceProvider.GetRequiredService<MasterServerMP4>();
 
-        var response = await masterServerMP4.GetMapLeaderBoardSummariesResponseAsync("TMStadium@nadeo", [new MapSummaryRequest("Ye6btWgKsS2M4vCqGsL8COTOUoh")], cancellationToken);
+        var response = await masterServerMP4.GetMapLeaderBoardSummariesResponseAsync("TMStadium@nadeo", [new MapSummaryRequest("Ye6btWgKsS2M4vCqGsL8COTOUoh")], isBinary: true, cancellationToken);
 
         if (response.Result.Count > 0)
         {
