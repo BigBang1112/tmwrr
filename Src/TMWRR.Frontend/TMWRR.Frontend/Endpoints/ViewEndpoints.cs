@@ -52,4 +52,14 @@ public static class ViewEndpoints
 
         return TypedResults.Redirect($"https://3d.gbx.tools/view/ghost?url={Uri.EscapeDataString($"https://api.tmwrr.bigbang1112.cz/ghosts/{guid}/download")}&mapuid={Uri.EscapeDataString(mapUid)}");
     }
+
+    public static Results<RedirectHttpResult, BadRequest<string>> ViewPlayer(EGame game, string login)
+    {
+        if (game != EGame.TMF)
+        {
+            return TypedResults.BadRequest("Only TMF game is supported for checking a player.");
+        }
+
+        return TypedResults.Redirect($"https://ul.unitedascenders.xyz/lookup?login={login}");
+    }
 }

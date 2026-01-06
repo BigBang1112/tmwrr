@@ -80,7 +80,7 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
         var embed = new EmbedBuilder
         {
             Title = map.GetDisplayName() + " (Official Mode)",
-            Url = $"https://ul.unitedascenders.xyz/leaderboards/tracks/{map.MapUid}",
+            Url = $"https://tmwrr.bigbang1112.cz/m/{map.MapUid}",
             Description = description,
             ThumbnailUrl = $"{apiOptions.Value.PublicBaseAddress}/{TmwrrClient.GetMapThumbnailEndpoint(map.MapUid)}",
             Footer = new EmbedFooterBuilder { Text = $"TMWR v2 (executed in {Stopwatch.GetElapsedTime(startedAt).TotalSeconds:0.00}s)" },
@@ -238,7 +238,7 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
             return $"**{player.GetDisplayName()}**";
         }
 
-        return $"[**{player.GetDisplayName()}**](<https://ul.unitedascenders.xyz/lookup?login={Uri.EscapeDataString(player.Id)}>)";
+        return $"[**{player.GetDisplayName()}**](<https://tmwrr.bigbang1112.cz/p/TMF/{player.Id}>)";
     }
 
     public class MapAutocompleteHandler : AutocompleteHandler

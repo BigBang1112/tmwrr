@@ -177,7 +177,7 @@ public class ReportDiscordService : IReportDiscordService
         else
         {
             mapsStr = string.Join(", ", campaignScoreDiffReports.Select(x =>
-                string.Format("[{0}](<https://ul.unitedascenders.xyz/leaderboards/tracks/{1}>)", x.Map.GetDeformattedName(), x.Map.MapUid)));
+                string.Format("[{0}](<https://tmwrr.bigbang1112.cz/m/{1}>)", x.Map.GetDeformattedName(), x.Map.MapUid)));
         }
 
         logger.LogInformation("Sending report about changed maps...");
@@ -228,7 +228,7 @@ public class ReportDiscordService : IReportDiscordService
             var timeLink = timeNoLink ? score : GetTimeLink(report.Map, removedRecord, score);
             var playerLink = playerNoLink
                 ? removedRecordNickname
-                : $"[{removedRecordNickname}](<https://ul.unitedascenders.xyz/lookup?login={removedRecord.Login}>)";
+                : $"[{removedRecordNickname}](<https://tmwrr.bigbang1112.cz/p/TMF/{removedRecord.Login}>)";
 
             sb.AppendFormat("`{0}` {1} by **{2}** was **removed**",
                 removedRecord.Rank.ToString("00"),
@@ -261,7 +261,7 @@ public class ReportDiscordService : IReportDiscordService
                 var timeLink = timeNoLink ? score : GetTimeLink(report.Map, newRecord, score);
                 var playerLink = playerNoLink
                     ? newRecordNickname
-                    : $"[{newRecordNickname}](<https://ul.unitedascenders.xyz/lookup?login={newRecord.Login}>)";
+                    : $"[{newRecordNickname}](<https://tmwrr.bigbang1112.cz/p/TMF/{newRecord.Login}>)";
 
                 sb.AppendFormat("`{0}` **{1}** by **{2}** {3} [`{4} SP`]",
                     newRecord.Rank.ToString("00"),
@@ -295,7 +295,7 @@ public class ReportDiscordService : IReportDiscordService
             var timeLink = timeNoLink ? score : GetTimeLink(report.Map, newRecord, score);
             var playerLink = playerNoLink
                 ? improvedRecordNickname
-                : $"[{improvedRecordNickname}](<https://ul.unitedascenders.xyz/lookup?login={newRecord.Login}>)";
+                : $"[{improvedRecordNickname}](<https://tmwrr.bigbang1112.cz/p/TMF/{newRecord.Login}>)";
 
             sb.AppendFormat("`{0}` **{1}** `{2}` from `{3}` by **{4}** {5} [`{7} SP`]",
                 newRecord.Rank.ToString("00"),
@@ -318,7 +318,7 @@ public class ReportDiscordService : IReportDiscordService
                 var score = isScore ? pushedOffRecord.Score.ToString() : pushedOffRecord.GetTime().ToString(useHundredths: true);
                 var playerLink = playerNoLink
                     ? pushedOffRecordNickname
-                    : $"[{pushedOffRecordNickname}](<https://ul.unitedascenders.xyz/lookup?login={pushedOffRecord.Login}>)";
+                    : $"[{pushedOffRecordNickname}](<https://tmwrr.bigbang1112.cz/p/TMF/{pushedOffRecord.Login}>)";
 
                 sb.AppendFormat("-# `{0}` `{1}` by {2} was pushed off",
                     pushedOffRecord.Rank.ToString("00"),
