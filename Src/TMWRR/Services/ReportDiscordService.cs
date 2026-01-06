@@ -131,7 +131,7 @@ public class ReportDiscordService : IReportDiscordService
 
             fields.Add(new EmbedFieldBuilder
             {
-                Name = $"{(isRemoved ? "Removed" : "New")} records by **{playerName}**:",
+                Name = $"{(isRemoved ? "Removed" : "New")} records by **{playerName}**",
                 Value = sb.ToString()
             });
         }
@@ -333,14 +333,14 @@ public class ReportDiscordService : IReportDiscordService
 
     private static string GetTimeLink(MapEntity map, TMFCampaignScore record, string score)
     {
-        if (record.ReplayGuid is not null)
+        if (record.ReplayGuid.HasValue)
         {
-            return $"[`{score}`](https://tmwrr.bigbang1112.cz/v/r/{record.ReplayGuid})";
+            return $"[`{score}`](https://tmwrr.bigbang1112.cz/v/r/{GuidHelpers.ToBase64String(record.ReplayGuid.Value)})";
         }
 
-        if (record.GhostGuid is not null)
+        if (record.GhostGuid.HasValue)
         {
-            return $"[`{score}`](https://tmwrr.bigbang1112.cz/v/g/{record.GhostGuid}/{map.MapUid})";
+            return $"[`{score}`](https://tmwrr.bigbang1112.cz/v/g/{GuidHelpers.ToBase64String(record.GhostGuid.Value)}/{map.MapUid})";
         }
 
         return $"`{score}`";

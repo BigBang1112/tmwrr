@@ -13,6 +13,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Src/TMWRR.Frontend/TMWRR.Frontend/TMWRR.Frontend.csproj", "Src/TMWRR.Frontend/TMWRR.Frontend/"]
+COPY ["Src/TMWRR.Api/TMWRR.Api.csproj", "Src/TMWRR.Api/"]
 RUN dotnet restore "./Src/TMWRR.Frontend/TMWRR.Frontend/TMWRR.Frontend.csproj"
 COPY . .
 WORKDIR "/src/Src/TMWRR.Frontend/TMWRR.Frontend"

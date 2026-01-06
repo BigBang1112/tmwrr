@@ -219,12 +219,12 @@ public sealed class Top10Module : InteractionModuleBase<SocketInteractionContext
         {
             if (record.Replay is not null)
             {
-                return $"[`{score}`](https://tmwrr.bigbang1112.cz/v/r/{record.Replay.Guid})";
+                return $"[`{score}`](https://tmwrr.bigbang1112.cz/v/r/{GuidHelpers.ToBase64String(record.Replay.Guid)})";
             }
 
             if (record.Ghost is not null)
             {
-                return $"[`{score}`](https://tmwrr.bigbang1112.cz/v/g/{record.Ghost.Guid}/{map.MapUid})";
+                return $"[`{score}`](https://tmwrr.bigbang1112.cz/v/g/{GuidHelpers.ToBase64String(record.Ghost.Guid)}/{map.MapUid})";
             }
         }
 
