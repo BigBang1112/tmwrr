@@ -383,7 +383,7 @@ public class ReportDiscordService : IReportDiscordService
 
         var embeds = new List<Embed> { finalEmbed };
 
-        foreach (var removedFieldsChunk in removedFields.Chunk(EmbedBuilder.MaxFieldCount))
+        foreach (var removedFieldsChunk in removedFields.Chunk(15))
         {
             embeds.Add(new EmbedBuilder()
                 .WithTitle("More changes")

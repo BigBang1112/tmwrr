@@ -34,11 +34,11 @@ public sealed class TMFCampaignScoreDiff
             }
 
             // Compare by rank first, then by score if needed
-            if (updated.Rank < old.Rank || (isStunts ? updated.Score > old.Score : updated.Score < old.Score))
+            if (updated.Rank < old.Rank && (isStunts ? updated.Score > old.Score : updated.Score < old.Score))
             {
                 diff.ImprovedRecords.Add((old, updated));
             }
-            else if (updated.Rank > old.Rank || (isStunts ? updated.Score < old.Score : updated.Score > old.Score))
+            else if (updated.Rank > old.Rank && (isStunts ? updated.Score < old.Score : updated.Score > old.Score))
             {
                 diff.WorsenedRecords.Add((old, updated));
             }
