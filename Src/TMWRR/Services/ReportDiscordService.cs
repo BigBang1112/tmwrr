@@ -127,11 +127,9 @@ public class ReportDiscordService : IReportDiscordService
                 }
             }
 
-            var playerName = TextFormatter.Deformat(logins.GetValueOrDefault(login) ?? login);
-
             fields.Add(new EmbedFieldBuilder
             {
-                Name = $"{(isRemoved ? "Removed" : "New")} records by **{playerName}**",
+                Name = $"{(isRemoved ? "Removed" : "New")} records by **{GetPlayerName(login, logins)}**",
                 Value = sb.ToString()
             });
         }
@@ -223,7 +221,7 @@ public class ReportDiscordService : IReportDiscordService
                 continue;
             }
 
-            var removedRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(removedRecord.Login) ?? removedRecord.Login);
+            var removedRecordNickname = GetPlayerName(removedRecord.Login, logins);
             var score = isScore ? removedRecord.Score.ToString() : removedRecord.GetTime().ToString(useHundredths: true);
             var timeLink = timeNoLink ? score : GetTimeLink(report.Map, removedRecord, score);
             var playerLink = playerNoLink
@@ -250,7 +248,7 @@ public class ReportDiscordService : IReportDiscordService
 
                 newRecCount++;
 
-                var newRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login);
+                var newRecordNickname = GetPlayerName(newRecord.Login, logins);
                 var score = isScore ? newRecord.Score.ToString() : newRecord.GetTime().ToString(useHundredths: true);
                 var timestampStyle = DateTimeOffset.UtcNow - newRecord.Timestamp > TimeSpan.FromDays(1)
                     ? TimestampTagStyles.ShortDateTime
@@ -275,7 +273,7 @@ public class ReportDiscordService : IReportDiscordService
 
         foreach (var (oldRecord, newRecord) in report.Diff.ImprovedRecords)
         {
-            var improvedRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(newRecord.Login) ?? newRecord.Login);
+            var improvedRecordNickname = GetPlayerName(newRecord.Login, logins);
             var score = isScore ? newRecord.Score.ToString() : newRecord.GetTime().ToString(useHundredths: true);
             var delta = report.Map.GetMode() switch
             {
@@ -314,7 +312,7 @@ public class ReportDiscordService : IReportDiscordService
         {
             foreach (var pushedOffRecord in report.Diff.PushedOffRecords)
             {
-                var pushedOffRecordNickname = TextFormatter.Deformat(logins.GetValueOrDefault(pushedOffRecord.Login) ?? pushedOffRecord.Login);
+                var pushedOffRecordNickname = GetPlayerName(pushedOffRecord.Login, logins);
                 var score = isScore ? pushedOffRecord.Score.ToString() : pushedOffRecord.GetTime().ToString(useHundredths: true);
                 var playerLink = playerNoLink
                     ? pushedOffRecordNickname
@@ -329,6 +327,25 @@ public class ReportDiscordService : IReportDiscordService
         }
 
         return sb;
+    }
+
+    private static string GetPlayerName(string login, IReadOnlyDictionary<string, string?> logins)
+    {
+        var nickname = logins.GetValueOrDefault(login);
+
+        if (nickname is null)
+        {
+            return login;
+        }
+
+        var deformattedNickname = TextFormatter.Deformat(nickname);
+
+        if (string.IsNullOrWhiteSpace(deformattedNickname))
+        {
+            return login;
+        }
+
+        return deformattedNickname;
     }
 
     private static string GetTimeLink(MapEntity map, TMFCampaignScore record, string score)
@@ -484,7 +501,7 @@ public class ReportDiscordService : IReportDiscordService
 
         foreach (var player in snapshot.Players.OrderBy(x => x.Order))
         {
-            var playerName = SimplifyUnicode(TextFormatter.Deformat(logins.GetValueOrDefault(player.PlayerId) ?? player.PlayerId));
+            var playerName = SimplifyUnicode(GetPlayerName(player.PlayerId, logins));
             
             if (playerName.Length > 16)
             {
@@ -524,7 +541,7 @@ public class ReportDiscordService : IReportDiscordService
 
         foreach (var removedPlayer in generalDiff.RemovedPlayers)
         {
-            var playerName = SimplifyUnicode(TextFormatter.Deformat(logins.GetValueOrDefault(removedPlayer.Login) ?? removedPlayer.Login));
+            var playerName = SimplifyUnicode(GetPlayerName(removedPlayer.Login, logins));
             
             if (playerName.Length > 16)
             {
@@ -540,7 +557,7 @@ public class ReportDiscordService : IReportDiscordService
 
         foreach (var pushedOffPlayer in generalDiff.PushedOffPlayers)
         {
-            var playerName = SimplifyUnicode(TextFormatter.Deformat(logins.GetValueOrDefault(pushedOffPlayer.Login) ?? pushedOffPlayer.Login));
+            var playerName = SimplifyUnicode(GetPlayerName(pushedOffPlayer.Login, logins));
 
             if (playerName.Length > 16)
             {
