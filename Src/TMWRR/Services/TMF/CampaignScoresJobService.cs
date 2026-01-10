@@ -179,6 +179,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         var existingRecord = await scoresSnapshotService.GetRecordAsync(map, login, score, cancellationToken);
         var ghost = existingRecord?.Ghost;
 
+        // this COULD fail if the record was removed before and the player drove the same time again, but it should be very rare
         if (ghost is null)
         {
             logger.LogDebug("No existing ghost found, attempting to download for map {MapUid} and login {Login}...", map.MapUid, login.Id);
@@ -283,6 +284,40 @@ public class CampaignScoresJobService : ICampaignScoresJobService
                 {
                     diffScore.Timestamp = replay.LastModifiedAt;
                     diffScore.ReplayGuid = replay.Guid;
+                }
+            }
+        }
+
+        // Set the timestamp for removed records
+        if (diff is not null)
+        {
+            foreach (var removed in diff.RemovedRecords)
+            {
+                if (!playersByLogin.TryGetValue(removed.Login, out var player))
+                {
+                    continue;
+                }
+
+                var existingRecord = await scoresSnapshotService.GetRecordAsync(map, player, removed.Score, cancellationToken);
+
+                if (existingRecord is null)
+                {
+                    continue;
+                }
+
+                var ghost = existingRecord.Ghost;
+                var replay = existingRecord.Replay;
+
+                if (ghost is not null)
+                {
+                    removed.Timestamp = ghost.LastModifiedAt;
+                    removed.GhostGuid = ghost.Guid;
+                }
+
+                if (replay is not null)
+                {
+                    removed.Timestamp = replay.LastModifiedAt;
+                    removed.ReplayGuid = replay.Guid;
                 }
             }
         }
