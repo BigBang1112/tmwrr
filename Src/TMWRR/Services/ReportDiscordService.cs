@@ -106,7 +106,7 @@ public class ReportDiscordService : IReportDiscordService
             var login = recordsGroup.Key.Login;
             var isRemoved = recordsGroup.Key.IsRemoved;
 
-            var sb = BuildPlayerDiffText(recordsGroup.AsEnumerable(), timeNoLink: false);
+            var sb = BuildPlayerDiffText(recordsGroup.AsEnumerable(), timeNoLink: false, isRemoved);
 
             if (sb.Length == 0)
             {
@@ -118,7 +118,7 @@ public class ReportDiscordService : IReportDiscordService
             while (sb.Length > EmbedFieldBuilder.MaxFieldValueLength)
             {
                 skips++;
-                sb = BuildPlayerDiffText(recordsGroup.SkipLast(skips), timeNoLink: false);
+                sb = BuildPlayerDiffText(recordsGroup.SkipLast(skips), timeNoLink: false, isRemoved);
                 sb.AppendLine($"...and {skips} more records");
 
                 if (skips >= recordsGroup.Count())
@@ -183,20 +183,41 @@ public class ReportDiscordService : IReportDiscordService
         await SendReportAsync(reportedAt, $"Solo leaderboards have changed for {mapsStr}. {totalRecordCountDiffMessage}", fields, cancellationToken);
     }
 
-    private static StringBuilder BuildPlayerDiffText(IEnumerable<PlayerRecordMoreThanUsual> records, bool timeNoLink)
+    private static StringBuilder BuildPlayerDiffText(IEnumerable<PlayerRecordMoreThanUsual> records, bool timeNoLink, bool isRemoved)
     {
         var sb = new StringBuilder();
 
         foreach (var (map, record, _) in records)
         {
+            var timestampStyle = DateTimeOffset.UtcNow - record.Timestamp > TimeSpan.FromDays(1)
+                ? TimestampTagStyles.ShortDateTime
+                : TimestampTagStyles.ShortTime;
+            var timestamp = record.Timestamp.HasValue
+                ? $"({TimestampTag.FormatFromDateTimeOffset(record.Timestamp.Value, timestampStyle)})"
+                : string.Empty;
+
             var score = map.IsStunts() || map.IsPlatform()
                 ? record.Score.ToString()
                 : record.GetTime().ToString(useHundredths: true);
+
             var timeLink = timeNoLink ? score : GetTimeLink(map, record, score);
-            sb.AppendFormat("`{0}` {1} on **{2}**",
-                record.Rank.ToString("00"),
-                timeLink,
-                map.GetDeformattedName());
+
+            if (isRemoved)
+            {
+                sb.AppendFormat("`{0}` {1} on **{2}** {3}",
+                    record.Rank.ToString("00"),
+                    timeLink,
+                    map.GetDeformattedName(),
+                    timestamp);
+            }
+            else
+            {
+                sb.AppendFormat("`{0}` {1} on **{2}**",
+                    record.Rank.ToString("00"),
+                    timeLink,
+                    map.GetDeformattedName());
+            }
+
             sb.AppendLine();
         }
 
