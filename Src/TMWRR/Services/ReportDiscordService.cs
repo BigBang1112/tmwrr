@@ -585,7 +585,7 @@ public class ReportDiscordService : IReportDiscordService
                 playerName = playerName[..16] + "…";
             }
 
-            sb.AppendFormat("- {0,2} | -- | {1,-16}   {2,11}   {3,-11}\n",
+            sb.AppendFormat("- {0,2} | {1,-16}   {2,11}   {3,-11}\n",
                 pushedOffPlayer.Rank,
                 playerName,
                 pushedOffPlayer.Score.ToString("N0").Replace(',', ' '),
