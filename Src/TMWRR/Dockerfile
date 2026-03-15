@@ -3,6 +3,8 @@ ARG TARGETARCH
 ARG APPNAME=TMWRR
 WORKDIR /src
 
+RUN apk add --no-cache git
+
 # Copy project file and restore as distinct layers
 COPY --link Src/$APPNAME/*.csproj $APPNAME/
 COPY --link Src/$APPNAME.Api/*.csproj $APPNAME.Api/
