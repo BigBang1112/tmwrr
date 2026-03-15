@@ -3,4 +3,5 @@
 public sealed class TmwrrInformation
 {
     public required string Message { get; set; }
+    public required string CommitHash { get; set; }
 }

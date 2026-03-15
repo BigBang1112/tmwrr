@@ -11,7 +11,8 @@ public static class EndpointConfiguration
         {
             return new TmwrrInformation
             {
-                Message = "Welcome to TMWRR! Beware this API version is EXPERIMENTAL and there will be breaking changes."
+                Message = "Welcome to TMWRR! Beware this API version is EXPERIMENTAL and there will be breaking changes.",
+                CommitHash = SimplestGitSourceGenerator.SimplestGit.CommitHash
             };
         })
             .WithTags("TMWRR")
