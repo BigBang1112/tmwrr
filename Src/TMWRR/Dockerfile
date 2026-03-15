@@ -4,6 +4,7 @@ ARG APPNAME=TMWRR
 WORKDIR /src
 
 RUN apk add --no-cache git
+COPY .git .
 
 # Copy project file and restore as distinct layers
 COPY --link Src/$APPNAME/*.csproj $APPNAME/
