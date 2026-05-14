@@ -185,7 +185,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
         var generalScores = await masterServer.DownloadGeneralScoresAsync(number, EarliestZoneId, cancellationToken);
 
-        var generalDiff = await generalScoresJobService.ProcessAsync(generalScores.Zones[Constants.World], snapshot, cancellationToken);
+        var generalDiff = await generalScoresJobService.ProcessAsync(generalScores[Constants.World], snapshot, cancellationToken);
 
         if (snapshot.Players.Count == 0 || generalDiff?.PlayerCountDelta == 0)
         {
@@ -222,7 +222,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
         var ladderScores = await masterServer.DownloadLadderScoresAsync(number, EarliestZoneId, cancellationToken);
 
-        var ladderHasChanged = await ladderScoresJobService.ProcessAsync(ladderScores.Zones[Constants.World], snapshot, cancellationToken);
+        var ladderHasChanged = await ladderScoresJobService.ProcessAsync(ladderScores[Constants.World], snapshot, cancellationToken);
 
         if (!ladderHasChanged)
         {
@@ -265,8 +265,8 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
         var (campaignDiffs, playerDiff) = await campaignScoresJobService.ProcessAsync(
             scoreType,
-            campaignScores.Maps,
-            campaignScores.MedalZones[Constants.World],
+            campaignScores[0].ChallengeScores,
+            campaignScores[0].MedalLeagues.First(x => x.Name == Constants.World),
             snapshot,
             cancellationToken);
 

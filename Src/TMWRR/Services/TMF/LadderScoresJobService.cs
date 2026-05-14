@@ -1,11 +1,11 @@
-﻿using ManiaAPI.Xml.TMUF;
+﻿using TmScores;
 using TMWRR.Entities.TMF;
 
 namespace TMWRR.Services.TMF;
 
 public interface ILadderScoresJobService
 {
-    Task<bool> ProcessAsync(LadderZone ladder, TMFLadderScoresSnapshotEntity snapshot, CancellationToken cancellationToken);
+    Task<bool> ProcessAsync(LadderLeague ladder, TMFLadderScoresSnapshotEntity snapshot, CancellationToken cancellationToken);
 }
 
 public class LadderScoresJobService : ILadderScoresJobService
@@ -19,7 +19,7 @@ public class LadderScoresJobService : ILadderScoresJobService
         this.logger = logger;
     }
 
-    public async Task<bool> ProcessAsync(LadderZone ladder, TMFLadderScoresSnapshotEntity snapshot, CancellationToken cancellationToken)
+    public async Task<bool> ProcessAsync(LadderLeague ladder, TMFLadderScoresSnapshotEntity snapshot, CancellationToken cancellationToken)
     {
         snapshot.PlayerCount = ladder.PlayerCount;
 
@@ -29,15 +29,13 @@ public class LadderScoresJobService : ILadderScoresJobService
 
         var prevSnapshot = await scoresSnapshotService.GetLatestLadderSnapshotAsync(cancellationToken);
 
-        var rankPoints = ladder.Ranks.Zip(ladder.Points).ToList();
-
         if (prevSnapshot is not null)
         {
             var prevRankPoints = prevSnapshot.XYs
                 .OrderBy(x => x.Order)
                 .Select(x => (x.Rank, x.Points));
 
-            if (rankPoints.SequenceEqual(prevRankPoints) && prevSnapshot.PlayerCount == ladder.PlayerCount)
+            if (ladder.Points.SequenceEqual(prevRankPoints) && prevSnapshot.PlayerCount == ladder.PlayerCount)
             {
                 // no changes
                 logger.LogInformation("No changes detected, skipping snapshot data creation...");
@@ -47,7 +45,7 @@ public class LadderScoresJobService : ILadderScoresJobService
 
         logger.LogInformation("Populating snapshot with new data...");
 
-        foreach (var (i, (rank, points)) in rankPoints.Index())
+        foreach (var (i, (rank, points)) in ladder.Points.Index())
         {
             snapshot.XYs.Add(new TMFLadderScoresXYEntity
             {

@@ -1,5 +1,5 @@
-﻿using ManiaAPI.Xml.TMUF;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
+using TmScores;
 using TMWRR.Entities;
 using TMWRR.Entities.TMF;
 using TMWRR.Models;
@@ -11,8 +11,8 @@ public interface ICampaignScoresJobService
 {
     Task<(IReadOnlyDictionary<string, TMFCampaignScoreDiff>, PlayerCountDiff)> ProcessAsync(
         string campaignId, 
-        IReadOnlyDictionary<string, CampaignScoresLeaderboard> maps, 
-        CampaignScoresMedalZone medals, 
+        CampaignChallengeScores[] maps, 
+        CampaignMedalLeague medals, 
         TMFCampaignScoresSnapshotEntity snapshot, 
         CancellationToken cancellationToken);
 }
@@ -47,17 +47,17 @@ public class CampaignScoresJobService : ICampaignScoresJobService
 
     public async Task<(IReadOnlyDictionary<string, TMFCampaignScoreDiff>, PlayerCountDiff)> ProcessAsync(
         string campaignId,
-        IReadOnlyDictionary<string, CampaignScoresLeaderboard> maps,
-        CampaignScoresMedalZone medals,
+        CampaignChallengeScores[] maps,
+        CampaignMedalLeague medals,
         TMFCampaignScoresSnapshotEntity snapshot,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation("Processing campaign {CampaignId} with {MapCount} maps...", campaignId, maps.Count);
+        logger.LogInformation("Processing campaign {CampaignId} with {MapCount} maps...", campaignId, maps.Length);
 
-        var mapsByUid = await mapService.PopulateAsync(maps.Keys, cancellationToken);
+        var mapsByUid = await mapService.PopulateAsync(maps.Select(x => x.MapUid), cancellationToken);
 
-        var nicknamesByLogin = maps.Values
-            .SelectMany(x => x.ChallengeScores[Constants.World].HighScores)
+        var nicknamesByLogin = maps
+            .SelectMany(x => x[Constants.World].HighScores)
             .DistinctBy(x => x.Login)
             .ToDictionary(x => x.Login, x => x.Nickname);
 
@@ -76,10 +76,12 @@ public class CampaignScoresJobService : ICampaignScoresJobService
 
         logger.LogInformation("Populating snapshot with player counts...");
         // Populate snapshot with player counts if they are different
-        foreach (var (mapUid, leaderboardZones) in maps)
+        foreach (var leaderboardZones in maps)
         {
+            var mapUid = leaderboardZones.MapUid;
+
             var map = mapsByUid[mapUid];
-            var leaderboard = leaderboardZones.ChallengeScores[Constants.World];
+            var leaderboard = leaderboardZones[Constants.World];
 
             prevPlayerCounts.TryGetValue(mapUid, out var existingCount);
 
@@ -87,7 +89,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
             playerCounts[mapUid] = currentCount;
 
             // DNF count does count towards skillpoints, so it is only for a fun fact to show
-            var dnfCount = leaderboard.Skillpoints.LastOrDefault(x => x.Score == uint.MaxValue - 1).Count;
+            var dnfCount = leaderboard.Skillpoints.LastOrDefault(x => x.Score == -2).Count;
 
             logger.LogDebug("Map {MapUid} player count: {Count} (previously {ExistingCount})", mapUid, currentCount, existingCount);
 
@@ -110,10 +112,12 @@ public class CampaignScoresJobService : ICampaignScoresJobService
 
         var diffs = new Dictionary<string, TMFCampaignScoreDiff>();
 
-        foreach (var (mapUid, leaderboardZones) in maps)
+        foreach (var leaderboardZones in maps)
         {
+            var mapUid = leaderboardZones.MapUid;
+
             var map = mapsByUid[mapUid];
-            var leaderboard = leaderboardZones.ChallengeScores[Constants.World];
+            var leaderboard = leaderboardZones[Constants.World];
 
             var existingRecords = prevRecords
                 .Where(x => x.Map.MapUid == mapUid)
@@ -229,7 +233,7 @@ public class CampaignScoresJobService : ICampaignScoresJobService
         TMFCampaignScoresSnapshotEntity snapshot, 
         IDictionary<string, TMFLoginEntity> playersByLogin, 
         MapEntity map,
-        Leaderboard leaderboard, 
+        Scores leaderboard, 
         TMFCampaignScoreDiff? diff,
         CancellationToken cancellationToken)
     {

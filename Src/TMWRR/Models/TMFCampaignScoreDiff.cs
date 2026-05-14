@@ -1,4 +1,4 @@
-﻿using ManiaAPI.Xml.TMUF;
+﻿using TmScores;
 
 namespace TMWRR.Models;
 
@@ -19,7 +19,7 @@ public sealed class TMFCampaignScoreDiff
 
     private TMFCampaignScoreDiff() { }
 
-    public static TMFCampaignScoreDiff Calculate(Leaderboard leaderboard, IDictionary<string, TMFCampaignScore> oldByLogin, IDictionary<string, TMFCampaignScore> newByLogin, bool isStunts)
+    public static TMFCampaignScoreDiff Calculate(Scores leaderboard, IDictionary<string, TMFCampaignScore> oldByLogin, IDictionary<string, TMFCampaignScore> newByLogin, bool isStunts)
     {
         var diff = new TMFCampaignScoreDiff();
 

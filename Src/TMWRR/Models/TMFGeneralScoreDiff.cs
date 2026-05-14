@@ -1,4 +1,4 @@
-﻿using ManiaAPI.Xml.TMUF;
+﻿using TmScores;
 
 namespace TMWRR.Models;
 
@@ -21,7 +21,7 @@ public sealed class TMFGeneralScoreDiff
 
     private TMFGeneralScoreDiff() { }
 
-    public static TMFGeneralScoreDiff Calculate(Leaderboard leaderboard, IDictionary<string, TMFGeneralScore> oldByLogin, IDictionary<string, TMFGeneralScore> newByLogin)
+    public static TMFGeneralScoreDiff Calculate(Scores leaderboard, IDictionary<string, TMFGeneralScore> oldByLogin, IDictionary<string, TMFGeneralScore> newByLogin)
     {
         var diff = new TMFGeneralScoreDiff();
 

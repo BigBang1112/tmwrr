@@ -19,12 +19,12 @@
     <ItemGroup>
         <PackageReference Include="FluentValidation" Version="12.1.1" />
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-        <PackageReference Include="GBX.NET" Version="2.3.4" />
-        <PackageReference Include="GBX.NET.LZO" Version="2.1.4" />
+        <PackageReference Include="GBX.NET" Version="2.4.2" />
+        <PackageReference Include="GBX.NET.LZO" Version="2.1.5" />
         <PackageReference Include="ManiaAPI.TrackmaniaWS" Version="2.7.0" />
         <PackageReference Include="ManiaAPI.TrackmaniaWS.Extensions.Hosting" Version="2.7.0" />
         <PackageReference Include="ManiaAPI.UnitedLadder" Version="2.7.0" />
-        <PackageReference Include="ManiaAPI.Xml" Version="2.8.1" />
+        <PackageReference Include="ManiaAPI.Xml" Version="2.8.3" />
         <PackageReference Include="ManiaAPI.Xml.Extensions.Hosting" Version="2.8.0" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
@@ -62,7 +62,7 @@
         </PackageReference>
         <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" Version="22.1.0" />
         <PackageReference Include="TimeZoneConverter" Version="7.2.0" />
-        <PackageReference Include="TmEssentials" Version="2.6.2" />
+        <PackageReference Include="TmEssentials" Version="2.8.0" />
     </ItemGroup>
 
     <ItemGroup>

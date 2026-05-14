@@ -1,5 +1,5 @@
-﻿using ManiaAPI.Xml.TMUF;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+using TmScores;
 using TMWRR.Converters.Json;
 using TMWRR.Models.Resources;
 

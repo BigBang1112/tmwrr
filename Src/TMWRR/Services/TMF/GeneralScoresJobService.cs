@@ -1,5 +1,5 @@
-﻿using ManiaAPI.Xml.TMUF;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
+using TmScores;
 using TMWRR.Entities.TMF;
 using TMWRR.Models;
 using TMWRR.Options;
@@ -8,7 +8,7 @@ namespace TMWRR.Services.TMF;
 
 public interface IGeneralScoresJobService
 {
-    Task<TMFGeneralScoreDiff?> ProcessAsync(Leaderboard leaderboard, TMFGeneralScoresSnapshotEntity snapshot, CancellationToken cancellationToken);
+    Task<TMFGeneralScoreDiff?> ProcessAsync(Scores leaderboard, TMFGeneralScoresSnapshotEntity snapshot, CancellationToken cancellationToken);
 }
 
 public class GeneralScoresJobService : IGeneralScoresJobService
@@ -31,7 +31,7 @@ public class GeneralScoresJobService : IGeneralScoresJobService
     }
 
     public async Task<TMFGeneralScoreDiff?> ProcessAsync(
-        Leaderboard leaderboard, 
+        Scores leaderboard, 
         TMFGeneralScoresSnapshotEntity snapshot, 
         CancellationToken cancellationToken)
     {
@@ -84,7 +84,7 @@ public class GeneralScoresJobService : IGeneralScoresJobService
     private static void PopulateSnapshot(
         TMFGeneralScoresSnapshotEntity snapshot,
         IDictionary<string, TMFLoginEntity> playersByLogin,
-        Leaderboard leaderboard)
+        Scores leaderboard)
     {
         foreach (var (i, score) in leaderboard.HighScores.Index())
         {
