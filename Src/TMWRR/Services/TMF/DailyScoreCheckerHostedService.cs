@@ -7,8 +7,6 @@ namespace TMWRR.Services.TMF;
 
 public sealed class DailyScoreCheckerHostedService : BackgroundService
 {
-    internal readonly record struct ScoresResult(DateTimeOffset NextCheckAt, ScoresNumber? NextNumber);
-
     private readonly IServiceScopeFactory scopeFactory;
     private readonly IDelayService delayService;
     private readonly TimeProvider timeProvider;
@@ -40,25 +38,23 @@ public sealed class DailyScoreCheckerHostedService : BackgroundService
         }
 
         // Execute the scheduled task immediately when the service starts
-        var (nextCheckAt, nextNumber) = await RunScoreCheckAsync(number: null, stoppingToken);
+        await RunScoreCheckAsync(stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            var result = await WaitForNextCheckAsync(nextCheckAt, nextNumber, stoppingToken);
+            await WaitForNextCheckAsync(stoppingToken);
 
-            if (result is null)
+            if (stoppingToken.IsCancellationRequested)
             {
                 logger.LogInformation("The scheduled task was cancelled.");
                 break;
             }
-
-            (nextCheckAt, nextNumber) = result.Value;
         }
     }
 
-    internal async Task<ScoresResult?> WaitForNextCheckAsync(DateTimeOffset nextCheckAt, ScoresNumber? nextNumber, CancellationToken stoppingToken)
+    internal async Task WaitForNextCheckAsync(CancellationToken stoppingToken)
     {
-        var delay = nextCheckAt - timeProvider.GetUtcNow();
+        var delay = GetNextCheckDateTime() - timeProvider.GetUtcNow();
 
         if (delay < TimeSpan.Zero)
         {
@@ -74,36 +70,27 @@ public sealed class DailyScoreCheckerHostedService : BackgroundService
             }
             catch (TaskCanceledException)
             {
-                return null;
+                return;
             }
         }
 
         try
         {
-            return await RunScoreCheckAsync(nextNumber, stoppingToken);
+            await RunScoreCheckAsync(stoppingToken);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "An error occurred executing the scheduled task.");
         }
-
-        // its better to look for the latest score again by full scan, so that it can recognize either stucked same scores file, or a skipped one
-        return new ScoresResult(GetNextCheckDateTime(), NextNumber: null);
     }
 
-    internal async Task<ScoresResult> RunScoreCheckAsync(ScoresNumber? number, CancellationToken cancellationToken)
+    internal async Task RunScoreCheckAsync(CancellationToken cancellationToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
 
         var scoreCheckerService = scope.ServiceProvider.GetRequiredService<IScoresCheckerService>();
 
-        var nextScoreNumber = await scoreCheckerService.CheckScoresAsync(number, cancellationToken);
-
-        var nextCheckDateTime = GetNextCheckDateTime();
-
-        logger.LogInformation("Next check at {NextCheckAt} on {ScoreNumber}.", nextCheckDateTime, nextScoreNumber);
-
-        return new ScoresResult(nextCheckDateTime, nextScoreNumber);
+        await scoreCheckerService.CheckScoresAsync(cancellationToken);
     }
 
     internal DateTimeOffset GetNextCheckDateTime()

@@ -13,7 +13,7 @@ namespace TMWRR.Services.TMF;
 
 public interface IScoresCheckerService
 {
-    Task<ScoresNumber?> CheckScoresAsync(ScoresNumber? number, CancellationToken cancellationToken);
+    Task CheckScoresAsync(CancellationToken cancellationToken);
 }
 
 public sealed class ScoresCheckerService : IScoresCheckerService
@@ -65,59 +65,47 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         this.logger = logger;
     }
 
-    public async Task<ScoresNumber?> CheckScoresAsync(ScoresNumber? number, CancellationToken cancellationToken)
+    public async Task CheckScoresAsync(CancellationToken cancellationToken)
     {
-        ScoresNumber usedNumber;
-
-        if (number.HasValue)
-        {
-            usedNumber = number.Value;
-        }
-        else
-        {
-            logger.LogInformation("No score number provided, fetching the latest one from master server...");
-            var scoresInfo = await masterServer.FetchLatestGeneralScoresInfoAsync(EarliestZoneId, cancellationToken: cancellationToken);
-            usedNumber = scoresInfo.Number;
-        }
-
-        logger.LogInformation("Checking scores for {ScoresNumber}...", usedNumber);
+        logger.LogInformation("Checking scores...");
 
         var pipeline = pipelineProvider.GetPipeline("scores");
 
-        var dateTimeTasks = new Dictionary<Task<DateTimeOffset>, string>
+        var scoresInfoTasks = new Dictionary<Task<ScoresInfo>, string>
         {
             { pipeline.ExecuteAsync(
-                async token => ThrowIfOlderThanDay(await masterServer.FetchGeneralScoresDateTimeAsync(usedNumber, EarliestZoneId, cancellationToken: token)),
+                async token => await masterServer.FetchLatestGeneralScoresInfoAsync(EarliestZoneId, cancellationToken: token),
                 cancellationToken).AsTask(), Constants.General },
             { pipeline.ExecuteAsync(
-                async token => ThrowIfOlderThanDay(await masterServer.FetchLadderScoresDateTimeAsync(usedNumber, EarliestZoneId, cancellationToken: token)),
+                async token => await masterServer.FetchLatestLadderScoresInfoAsync(EarliestZoneId, cancellationToken: token),
                 cancellationToken).AsTask(), Constants.Multi }
         };
 
         foreach (var campaign in Campaigns)
         {
-            dateTimeTasks.Add(pipeline.ExecuteAsync(
-                async token => ThrowIfOlderThanDay(await masterServer.FetchCampaignScoresDateTimeAsync(campaign, usedNumber, EarliestZoneId, cancellationToken: token)),
+            scoresInfoTasks.Add(pipeline.ExecuteAsync(
+                async token => await masterServer.FetchLatestCampaignScoresInfoAsync(campaign, EarliestZoneId, cancellationToken: token),
                 cancellationToken).AsTask(), campaign);
         }
 
+        var usedNumber = default(ScoresNumber?);
         var scoresDate = default(DateTime?);
 
         var hasNewCampaignSnapshots = false;
         var allCampaignDiffs = new Dictionary<string, TMFCampaignScoreDiff>();
         var recordCountDiffsByCampaignId = new Dictionary<string, PlayerCountDiff>();
 
-        await foreach (var (scoreType, lastModifiedAtTask) in dateTimeTasks.WhenEachRemove())
+        await foreach (var (scoreType, scoresInfoTask) in scoresInfoTasks.WhenEachRemove())
         {
             logger.LogInformation("Received {ScoreType} scores, processing...", scoreType);
 
             var publishedAt = timeProvider.GetUtcNow();
 
-            DateTimeOffset lastModifiedAt;
+            ScoresInfo scoresInfo;
 
             try
             {
-                lastModifiedAt = await lastModifiedAtTask;
+                scoresInfo = await scoresInfoTask;
             }
             catch (Exception ex)
             {
@@ -125,26 +113,30 @@ public sealed class ScoresCheckerService : IScoresCheckerService
                 continue;
             }
 
-            logger.LogInformation("{ScoreType} scores were made at {LastModifiedAt}.", scoreType, lastModifiedAt);
+            logger.LogInformation("{ScoreType} scores were made at {LastModifiedAt}.", scoreType, scoresInfo.LastModified);
 
-            scoresDate = lastModifiedAt.Date;
+            usedNumber = scoresInfo.Number;
+            scoresDate = scoresInfo.LastModified.Date;
 
             // TODO: should be executed per-thread so that each is not bottlenecked
             switch (scoreType)
             {
                 case Constants.General:
-                    await CheckGeneralScoresAsync(usedNumber, publishedAt, lastModifiedAt, cancellationToken);
+                    await CheckGeneralScoresAsync(usedNumber.Value, publishedAt, scoresInfo.LastModified, cancellationToken);
                     break;
                 case Constants.Multi:
-                    await CheckLadderScoresAsync(usedNumber, publishedAt, lastModifiedAt, cancellationToken);
+                    await CheckLadderScoresAsync(usedNumber.Value, publishedAt, scoresInfo.LastModified, cancellationToken);
                     break;
                 default:
-                    hasNewCampaignSnapshots = await CheckCampaignScoresAsync(usedNumber, scoreType, allCampaignDiffs, recordCountDiffsByCampaignId, publishedAt, lastModifiedAt, cancellationToken);
+                    hasNewCampaignSnapshots = await CheckCampaignScoresAsync(usedNumber.Value, scoreType, allCampaignDiffs, recordCountDiffsByCampaignId, publishedAt, scoresInfo.LastModified, cancellationToken);
                     break;
             }
         }
 
-        logger.LogInformation("Score check for {ScoresNumber} completed.", usedNumber);
+        if (usedNumber.HasValue)
+        {
+            logger.LogInformation("Score check for {ScoresNumber} completed.", usedNumber);
+        }
 
         if (hasNewCampaignSnapshots)
         {
@@ -157,10 +149,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         {
             using var webhook = Sample.CreateWebhook(options.Value.Discord.TestWebhookUrl);
             await webhook.SendMessageAsync("No scores were processed. Master server is likely having issues.");
-            return null;
         }
-        
-        return (ScoresNumber)(((int)usedNumber % 6) + 1);
     }
 
     private async Task CheckGeneralScoresAsync(ScoresNumber number, DateTimeOffset publishedAt, DateTimeOffset lastModifiedAt, CancellationToken cancellationToken)
@@ -292,15 +281,5 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         await scoresSnapshotService.SaveSnapshotAsync(snapshot, cancellationToken);
 
         return true; // hasNewCampaignSnapshots
-    }
-
-    internal DateTimeOffset ThrowIfOlderThanDay(DateTimeOffset dateTime)
-    {
-        if (dateTime < timeProvider.GetUtcNow().AddDays(-1.5))
-        {
-            throw new ScoresOlderThanDayException();
-        }
-
-        return dateTime;
     }
 }
