@@ -74,17 +74,17 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         var scoresInfoTasks = new Dictionary<Task<ScoresInfo>, string>
         {
             { pipeline.ExecuteAsync(
-                async token => await masterServer.FetchLatestGeneralScoresInfoAsync(EarliestZoneId, cancellationToken: token),
+                async token => ThrowIfOlderThanDay(await masterServer.FetchLatestGeneralScoresInfoAsync(EarliestZoneId, cancellationToken: token)),
                 cancellationToken).AsTask(), Constants.General },
             { pipeline.ExecuteAsync(
-                async token => await masterServer.FetchLatestLadderScoresInfoAsync(EarliestZoneId, cancellationToken: token),
+                async token => ThrowIfOlderThanDay(await masterServer.FetchLatestLadderScoresInfoAsync(EarliestZoneId, cancellationToken: token)),
                 cancellationToken).AsTask(), Constants.Multi }
         };
 
         foreach (var campaign in Campaigns)
         {
             scoresInfoTasks.Add(pipeline.ExecuteAsync(
-                async token => await masterServer.FetchLatestCampaignScoresInfoAsync(campaign, EarliestZoneId, cancellationToken: token),
+                async token => ThrowIfOlderThanDay(await masterServer.FetchLatestCampaignScoresInfoAsync(campaign, EarliestZoneId, cancellationToken: token)),
                 cancellationToken).AsTask(), campaign);
         }
 
@@ -281,5 +281,15 @@ public sealed class ScoresCheckerService : IScoresCheckerService
         await scoresSnapshotService.SaveSnapshotAsync(snapshot, cancellationToken);
 
         return true; // hasNewCampaignSnapshots
+    }
+
+    internal ScoresInfo ThrowIfOlderThanDay(ScoresInfo scoresInfo)
+    {
+        if (scoresInfo.LastModified < timeProvider.GetUtcNow().AddDays(-1.5))
+        {
+            throw new ScoresOlderThanDayException();
+        }
+
+        return scoresInfo;
     }
 }
