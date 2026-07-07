@@ -285,7 +285,7 @@ public sealed class ScoresCheckerService : IScoresCheckerService
 
     internal ScoresInfo ThrowIfOlderThanDay(ScoresInfo scoresInfo)
     {
-        if (scoresInfo.LastModified < timeProvider.GetUtcNow().AddDays(-1.5))
+        if (scoresInfo.LastModified < timeProvider.GetUtcNow().AddDays(-1))
         {
             throw new ScoresOlderThanDayException();
         }
