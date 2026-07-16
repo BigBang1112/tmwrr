@@ -366,7 +366,7 @@ public class ReportDiscordService : IReportDiscordService
             return login;
         }
 
-        return deformattedNickname;
+        return $"\u200E{deformattedNickname}";
     }
 
     private static string GetTimeLink(MapEntity map, TMFCampaignScore record, string score)
